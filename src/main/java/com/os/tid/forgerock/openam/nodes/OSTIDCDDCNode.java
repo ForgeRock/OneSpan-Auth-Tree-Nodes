@@ -1,0 +1,174 @@
+/*
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2017-2018 ForgeRock AS.
+ */
+package com.os.tid.forgerock.openam.nodes;
+
+import com.google.common.collect.ImmutableSet;
+import com.google.inject.assistedinject.Assisted;
+import com.os.tid.forgerock.openam.config.Constants;
+import com.os.tid.forgerock.openam.utils.CollectionsUtils;
+import com.os.tid.forgerock.openam.utils.ScriptUtils;
+import com.sun.identity.authentication.callbacks.HiddenValueCallback;
+import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
+import org.forgerock.json.JsonValue;
+import org.forgerock.openam.annotations.sm.Attribute;
+import org.forgerock.openam.auth.node.api.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
+import javax.security.auth.callback.Callback;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+
+/**
+ * A node which collects CDDC information through script callback.
+ *
+ * <p>Places the result in the shared state as 'osstid_cddc_json', 'osstid_cddc_hash' and 'osstid_cddc_ip'.</p>
+ */
+@Node.Metadata(outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
+            configClass = OSTIDCDDCNode.Config.class)
+public class OSTIDCDDCNode extends SingleOutcomeNode {
+    private final Logger logger = LoggerFactory.getLogger("amAuth");
+    private final OSTIDCDDCNode.Config config;
+
+    /**
+     * Configuration for the OS TID CDDC Collector Node.
+     */
+    public interface Config {
+
+        /**
+         * If false, allows user to make POST API to invoke this node
+         *
+         * @return
+         */
+        @Attribute(order = 100)
+        default boolean pushCDDCJsAsCallback() {
+            return true;
+        }
+
+        /**
+         *
+         * @return
+         */
+        @Attribute(order = 200)
+        default String CDDCJsonHiddenValueId() {
+            return Constants.OSTID_CDDC_JSON;
+        }
+        /**
+         *
+         * @return
+         */
+        @Attribute(order = 300)
+        default String CDDCHashHiddenValueId() {
+            return Constants.OSTID_CDDC_HASH;
+        }
+    }
+
+    @Inject
+    public OSTIDCDDCNode(@Assisted Config config){
+        this.config = config;
+    }
+
+    @Override
+    public Action process(TreeContext context) throws NodeProcessException {
+        logger.debug("OSTIDCDDCNode started");
+
+        //try finding CDDC valus from hiddenValueCallback
+        Map<String, String> attrValueMap = new HashMap<>();
+        ImmutableSet<String> attrNameSet = ImmutableSet.of(getCDDCJsonInHiddenValue(), getCDDCHashInHiddenValue());
+        attrNameSet.forEach(attrName -> attrValueMap.putIfAbsent(attrName,null));
+
+        if(context.getCallbacks(HiddenValueCallback.class) != null &&
+           context.getCallbacks(HiddenValueCallback.class).size() >= 2 ){
+           context.getCallbacks(HiddenValueCallback.class)
+                    .forEach(hiddenValueCallback -> {
+                        if (attrNameSet.contains(hiddenValueCallback.getId())) {
+                            attrValueMap.put(hiddenValueCallback.getId(), hiddenValueCallback.getValue());
+                        }
+                    });
+        }
+
+        if(!CollectionsUtils.hasAnyNullValues(attrValueMap)) { //second time, with collected data
+            String CDDCJson = attrValueMap.get(getCDDCJsonInHiddenValue());
+            String CDDCHash = attrValueMap.get(getCDDCHashInHiddenValue());
+            String CDDCIp = context.request.clientIp;
+
+            JsonValue sharedState = context.sharedState.copy();
+            sharedState.put(getCDDCJsonInHiddenValue(),CDDCJson);
+            sharedState.put(getCDDCHashInHiddenValue(),CDDCHash);
+            sharedState.put(Constants.OSTID_CDDC_IP,CDDCIp);
+
+            return goToNext()
+                    .replaceSharedState(sharedState)
+                    .build();
+        }else{
+            if(config.pushCDDCJsAsCallback()){ //first time, without collected data
+                return collectCDDC(context);
+            }else{
+                //todo, should throw an error
+                return goToNext().build();
+            }
+        }
+    }
+
+    private Action collectCDDC(TreeContext context) throws NodeProcessException {
+        logger.debug("collecting OneSpan TID CDDC info!");
+        JsonValue sharedState = context.sharedState;
+
+        List<Callback> returnCallback = new ArrayList<>();
+
+        //only push CDDC JS once
+        JsonValue hasPushedJSJsonValue = sharedState.get(Constants.OSTID_CDDC_HAS_PUSHED_JS);
+        if(hasPushedJSJsonValue.isNull()) {
+            String jqueryScript = ScriptUtils.getScriptFromFile("/js/jquery-1.11.3.min.js");
+            ScriptTextOutputCallback jqueryScriptCallback = new ScriptTextOutputCallback(jqueryScript);
+
+            String JsonScript = ScriptUtils.getScriptFromFile("/js/Json2.js");
+            ScriptTextOutputCallback JsonScriptScriptCallback = new ScriptTextOutputCallback(JsonScript);
+
+            String CDDCScript = ScriptUtils.getScriptFromFile("/js/Vasco.IdKey.RM.CDDC.min.js");
+            ScriptTextOutputCallback CDDCScriptCallback = new ScriptTextOutputCallback(CDDCScript);
+
+            returnCallback.add(jqueryScriptCallback);
+            returnCallback.add(JsonScriptScriptCallback);
+            returnCallback.add(CDDCScriptCallback);
+            sharedState.put(Constants.OSTID_CDDC_HAS_PUSHED_JS, true);
+        }
+
+        String customCDDCScriptBase =   "document.getElementById('%1$s').value = $.Vasco.getJSON(true);\n" +
+                                        "document.getElementById('%2$s').value = $.Vasco.getHASH(true);\n" +
+                                        "//document.getElementById('loginButton_0').click();";
+        String customCDDCScript = String.format(customCDDCScriptBase, Constants.OSTID_CDDC_JSON,Constants.OSTID_CDDC_HASH);
+        ScriptTextOutputCallback customCDDCScriptCallback = new ScriptTextOutputCallback(customCDDCScript);
+        returnCallback.add(customCDDCScriptCallback);
+
+        HiddenValueCallback hiddenValueCDDCJson = new HiddenValueCallback(Constants.OSTID_CDDC_JSON,"");
+        HiddenValueCallback hiddenValueCDDCHash = new HiddenValueCallback(Constants.OSTID_CDDC_HASH,"");
+        returnCallback.add(hiddenValueCDDCJson);
+        returnCallback.add(hiddenValueCDDCHash);
+
+        return Action.send(returnCallback)
+                .replaceSharedState(sharedState)
+                .build();
+    }
+
+    private String getCDDCJsonInHiddenValue(){return config.pushCDDCJsAsCallback() ? Constants.OSTID_CDDC_JSON : config.CDDCJsonHiddenValueId();}
+    private String getCDDCHashInHiddenValue(){return config.pushCDDCJsAsCallback() ? Constants.OSTID_CDDC_HASH : config.CDDCHashHiddenValueId();}
+
+}
