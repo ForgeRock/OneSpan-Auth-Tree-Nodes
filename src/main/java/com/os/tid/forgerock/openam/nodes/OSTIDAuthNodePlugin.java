@@ -64,7 +64,7 @@ import org.forgerock.openam.plugins.PluginException;
  * @since AM 5.5.0
  */
 public class OSTIDAuthNodePlugin extends AbstractNodeAmPlugin {
-	static private String currentVersion = "1.0.4";
+	static private String currentVersion = "1.0.5";
 
 	private final List<Class<? extends Node>> nodeList = ImmutableList.of(
 			OSTIDVisualCodeNode.class,
@@ -99,14 +99,8 @@ public class OSTIDAuthNodePlugin extends AbstractNodeAmPlugin {
      * 
      * No need to implement this unless your AuthNode has specific requirements on install.
      */
-	//todo, need to remove the function once released
 	@Override
 	public void onInstall() throws PluginException {
-		pluginTools.installService(serviceClass);
-		for (Class nodeClass: nodeList) {
-			pluginTools.uninstallAuthNode(nodeClass);
-			pluginTools.installAuthNode(nodeClass);
-		}
 		super.onInstall();
 	}
 
@@ -119,7 +113,6 @@ public class OSTIDAuthNodePlugin extends AbstractNodeAmPlugin {
      *
      * @param fromVersion The old version of the plugin that has been installed.
      */
-	//todo, need to refactor this function once released
 	@Override
 	public void upgrade(String fromVersion) throws PluginException {
 		//reinstall the service
