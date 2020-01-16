@@ -19,6 +19,9 @@ public class RestUtils {
     }
 
     public static HttpEntity doPostJSON(String url, String payload) throws IOException{
+        logger.debug("RestUtils doPostJSON url: " + url);
+        logger.debug("RestUtils doPostJSON payload: " + payload);
+
         URL client = new URL(url);
         HttpURLConnection conn = (HttpURLConnection) client.openConnection();
         conn.setRequestProperty("Content-Type", "application/json;");
@@ -35,8 +38,7 @@ public class RestUtils {
         String headerField = conn.getHeaderField(Constants.OSTID_LOG_CORRELATION_ID);
         String log_correlation_id = StringUtils.isEmpty(headerField) ? "" : headerField;
 
-        logger.debug("RestUtils request payload: " + payload);
-        logger.debug("RestUtils doPostJSON: " + url + " : " +sourceResponseCode);
+        logger.debug("RestUtils doPostJSON response status: " + sourceResponseCode);
 
         Reader ir = (sourceResponseCode >= 200 && sourceResponseCode <= 299) ? new InputStreamReader(conn.getInputStream())
                 : new InputStreamReader(conn.getErrorStream());
@@ -50,13 +52,15 @@ public class RestUtils {
 
         in.close();
         conn.disconnect();
-        logger.debug("RestUtils response: " + response.toString());
+        logger.debug("RestUtils doPostJSON response: " + response.toString());
 
         return new HttpEntity(JSON.parseObject(response.toString()),sourceResponseCode,log_correlation_id);
     }
 
 
     public static HttpEntity doGet(String url) throws IOException{
+        logger.debug("RestUtils doGet url: " + url);
+
         URL client = new URL(url);
         HttpURLConnection conn = (HttpURLConnection) client.openConnection();
         conn.setRequestProperty("Content-Type", "application/json;");
@@ -67,7 +71,7 @@ public class RestUtils {
         String headerField = conn.getHeaderField(Constants.OSTID_LOG_CORRELATION_ID);
         String log_correlation_id = StringUtils.isEmpty(headerField) ? "" : headerField;
 
-        logger.debug("RestUtils doGet: " + url + " : " +sourceResponseCode);
+        logger.debug("RestUtils doGet response status: " + sourceResponseCode);
 
         Reader ir = (sourceResponseCode >= 200 && sourceResponseCode <= 299) ? new InputStreamReader(conn.getInputStream())
                 : new InputStreamReader(conn.getErrorStream());
@@ -81,7 +85,7 @@ public class RestUtils {
 
         in.close();
         conn.disconnect();
-        logger.debug("RestUtils response: " + response.toString());
+        logger.debug("RestUtils doGet response: " + response.toString());
 
         return new HttpEntity(JSON.parseObject(response.toString()),sourceResponseCode,log_correlation_id);
     }

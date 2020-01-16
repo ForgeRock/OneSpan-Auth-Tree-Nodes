@@ -177,6 +177,7 @@ public class OSTIDUserRegisterNode implements Node {
                     passKey,                                                                         //param6
                     optionalAttributesStringBuilder.toString()                                       //param7
             );
+            logger.debug("OSTIDUserRegisterNode userRegisterJSON:" + userRegisterJSON);
 
             String APIUrl = config.nodeFunction() == NodeFunction.UserRegister ? Constants.OSTID_API_USER_REGISTER : Constants.OSTID_API_USER_UNREGISTER;
 
