@@ -64,7 +64,7 @@ import org.forgerock.openam.plugins.PluginException;
  * @since AM 5.5.0
  */
 public class OSTIDAuthNodePlugin extends AbstractNodeAmPlugin {
-	static private String currentVersion = "1.0.7";
+	static private String currentVersion = "1.0.8";
 
 	private final List<Class<? extends Node>> nodeList = ImmutableList.of(
 			OSTIDVisualCodeNode.class,
@@ -116,6 +116,7 @@ public class OSTIDAuthNodePlugin extends AbstractNodeAmPlugin {
      */
 	@Override
 	public void upgrade(String fromVersion) throws PluginException {
+		pluginTools.installService(serviceClass);
 		super.upgrade(fromVersion);
 	}
 
