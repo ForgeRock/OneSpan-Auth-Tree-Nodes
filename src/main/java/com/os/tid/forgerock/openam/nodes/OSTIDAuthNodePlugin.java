@@ -64,7 +64,7 @@ import org.forgerock.openam.plugins.PluginException;
  * @since AM 5.5.0
  */
 public class OSTIDAuthNodePlugin extends AbstractNodeAmPlugin {
-	static private String currentVersion = "1.0.8";
+	static private String currentVersion = "1.0.14";
 
 	private final List<Class<? extends Node>> nodeList = ImmutableList.of(
 			OSTIDVisualCodeNode.class,
@@ -116,7 +116,18 @@ public class OSTIDAuthNodePlugin extends AbstractNodeAmPlugin {
      */
 	@Override
 	public void upgrade(String fromVersion) throws PluginException {
+		//reinstall the service
+		SSOToken adminToken = AccessController.doPrivileged(AdminTokenAction.getInstance());
+		try {
+			ServiceManager sm = new ServiceManager(adminToken);
+			if (sm.getServiceNames().contains(serviceClass.getSimpleName())) {
+				sm.removeService(serviceClass.getSimpleName(),"1.0");
+			}
+		} catch (SSOException | SMSException e) {
+			e.printStackTrace();
+		}
 		pluginTools.installService(serviceClass);
+
 		super.upgrade(fromVersion);
 	}
 

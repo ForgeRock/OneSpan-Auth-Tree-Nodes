@@ -43,10 +43,9 @@ import java.util.*;
 
 /**
  * This node invokes the User Register/Unregister Service API, in order to validate and process the registration/unregistration of a user.
- *
  */
 @Node.Metadata(outcomeProvider = OSTIDUserRegisterNode.OSTIDUserRegisterOutcomeProvider.class,
-            configClass = OSTIDUserRegisterNode.Config.class)
+        configClass = OSTIDUserRegisterNode.Config.class)
 public class OSTIDUserRegisterNode implements Node {
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OSTIDUserRegisterNode";
     private final Logger logger = LoggerFactory.getLogger("amAuth");
@@ -58,7 +57,6 @@ public class OSTIDUserRegisterNode implements Node {
      */
     public interface Config {
         /**
-         *
          * @return
          */
         @Attribute(order = 100)
@@ -67,19 +65,17 @@ public class OSTIDUserRegisterNode implements Node {
         }
 
         /**
-         *
          * @return
          */
-        @Attribute(order = 200,validators = RequiredValueValidator.class)
+        @Attribute(order = 200, validators = RequiredValueValidator.class)
         default String userNameInSharedData() {
             return Constants.OSTID_DEFAULT_USERNAME;
         }
 
         /**
-         *
          * @return
          */
-        @Attribute(order = 300,validators = RequiredValueValidator.class)
+        @Attribute(order = 300, validators = RequiredValueValidator.class)
         default String passwordInTransientState() {
             return Constants.OSTID_DEFAULT_PASSKEY;
         }
@@ -95,10 +91,9 @@ public class OSTIDUserRegisterNode implements Node {
         }
 
         /**
-         *
          * @return Hidden Value Callback Id contains the Visual Code URL
          */
-        @Attribute(order = 500,validators = RequiredValueValidator.class)
+        @Attribute(order = 500, validators = RequiredValueValidator.class)
         default int activationTokenExpiry() {
             return Constants.OSTID_DEFAULT_EVENT_EXPIRY;
         }
@@ -115,28 +110,28 @@ public class OSTIDUserRegisterNode implements Node {
     }
 
     @Override
-    public Action process(TreeContext context){
+    public Action process(TreeContext context) {
         logger.debug("OSTIDUserRegisterNode started");
         JsonValue sharedState = context.sharedState;
         JsonValue transientState = context.transientState;
-        String tenantName = serviceConfig.tenantName();
-        String environment = serviceConfig.environment();
+        String tenantName = serviceConfig.tenantNameToLowerCase();
+        String environment = serviceConfig.environment().name();
 
         JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
         JsonValue cddcJsonJsonValue = sharedState.get(Constants.OSTID_CDDC_JSON);
         JsonValue cddcHashJsonValue = sharedState.get(Constants.OSTID_CDDC_HASH);
         JsonValue cddcIpJsonValue = sharedState.get(Constants.OSTID_CDDC_IP);
 
-        sharedState.put(Constants.OSTID_USERNAME_IN_SHARED_STATE,config.userNameInSharedData());
+        sharedState.put(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
 
         boolean isPasskeyIncluded = true;
         String passKey = "";
-        if(config.nodeFunction() == NodeFunction.UserRegister){
+        if (config.nodeFunction() == NodeFunction.UserRegister) {
             JsonValue passwordJsonValue = transientState.get(config.passwordInTransientState());
-            if(!passwordJsonValue.isString()){
+            if (!passwordJsonValue.isString()) {
                 isPasskeyIncluded = false;
-            }else{
-                passKey = String.format(Constants.OSTID_JSON_PASSKEY,passwordJsonValue.asString());
+            } else {
+                passKey = String.format(Constants.OSTID_JSON_PASSKEY, passwordJsonValue.asString());
             }
         }
 
@@ -145,23 +140,23 @@ public class OSTIDUserRegisterNode implements Node {
         Map<String, String> optionalAttributesMap = config.optionalAttributes();
         for (Map.Entry<String, String> entrySet : optionalAttributesMap.entrySet()) {
             JsonValue jsonValue = sharedState.get(entrySet.getKey());
-            if(jsonValue.isString()){
+            if (jsonValue.isString()) {
                 optionalAttributesStringBuilder.append("\"").append(entrySet.getValue()).append("\":\"").append(jsonValue.asString()).append("\",");
-            }else{
+            } else {
                 allOptionalFieldsIncluded = false;
             }
         }
 
         if (!isPasskeyIncluded || !allOptionalFieldsIncluded ||
-            CollectionsUtils.hasAnyNullValues(ImmutableList.of(
-                usernameJsonValue,
-                cddcJsonJsonValue,
-                cddcHashJsonValue,
-                cddcIpJsonValue
-        ))
+                CollectionsUtils.hasAnyNullValues(ImmutableList.of(
+                        usernameJsonValue,
+                        cddcJsonJsonValue,
+                        cddcHashJsonValue,
+                        cddcIpJsonValue
+                ))
         ) {  //missing data
             logger.debug("OSTIDUserRegisterNode exception: Oopts, there's missing data for OneSpan TID User Register Process!");
-            sharedState.put(Constants.OSTID_ERROR_MESSAGE,"Oopts, there's missing data for OneSpan TID User Register Process!");
+            sharedState.put(Constants.OSTID_ERROR_MESSAGE, "Oopts, there's missing data for OneSpan TID User Register Process!");
             return goTo(UserRegisterOutcome.Error)
                     .replaceSharedState(sharedState)
                     .build();
@@ -169,7 +164,7 @@ public class OSTIDUserRegisterNode implements Node {
             String sessionIdentifier = sharedState.get(Constants.OSTID_SESSIONID).isString() ? StringUtils.hexToString(sharedState.get(Constants.OSTID_SESSIONID).asString()) : UUID.randomUUID().toString();
 
             String userRegisterJSON = String.format(Constants.OSTID_JSON_USER_REGISTER,
-                    usernameJsonValue.asString(),                                                    //param1
+                    usernameJsonValue.asString().toLowerCase(),                                      //param1
                     cddcIpJsonValue.asString(),                                                      //param2
                     cddcHashJsonValue.asString(),                                                    //param3
                     cddcJsonJsonValue.asString(),                                                    //param4
@@ -182,50 +177,50 @@ public class OSTIDUserRegisterNode implements Node {
             String APIUrl = config.nodeFunction() == NodeFunction.UserRegister ? Constants.OSTID_API_USER_REGISTER : Constants.OSTID_API_USER_UNREGISTER;
 
             try {
-                    HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, userRegisterJSON);
-                    JSONObject userRegisterResponseJSON = httpEntity.getResponseJSON();
-                    if (httpEntity.isSuccess()) {
-                        UserRegisterOutput userRegisterResponse = JSON.toJavaObject(userRegisterResponseJSON, UserRegisterOutput.class);
+                HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, userRegisterJSON);
+                JSONObject userRegisterResponseJSON = httpEntity.getResponseJSON();
+                if (httpEntity.isSuccess()) {
+                    UserRegisterOutput userRegisterResponse = JSON.toJavaObject(userRegisterResponseJSON, UserRegisterOutput.class);
 
-                        if(config.nodeFunction() == NodeFunction.UserRegister) {
-                            //"02;user11071;111;duoliang11071-mailin;U6gOkj13;duoliang11071-mailin"
-                            String activationCode = userRegisterResponse.getActivationPassword();
-                            String crontoValueRaw = String.format(Constants.OSTID_CRONTO_FORMULA,
-                                    Constants.OSTID_API_VERSION,        //param1
-                                    usernameJsonValue.asString(),       //param2
-                                    tenantName,                         //param3
-                                    activationCode,                     //param4
-                                    tenantName                          //param5
-                            );
-                            String crontoValueHex = StringUtils.stringToHex(crontoValueRaw);
+                    if (config.nodeFunction() == NodeFunction.UserRegister) {
+                        //"02;user01211;111;duoliang11071-mailin;3zE6RNH5;duoliang11071-mailin"
+                        String activationCode = userRegisterResponse.getActivationPassword();
+                        String crontoValueRaw = String.format(Constants.OSTID_CRONTO_FORMULA,
+                                Constants.OSTID_API_VERSION,                        //param1
+                                usernameJsonValue.asString().toLowerCase(),         //param2
+                                tenantName,                                         //param3
+                                activationCode,                                     //param4
+                                tenantName                                          //param5
+                        );
+                        String crontoValueHex = StringUtils.stringToHex(crontoValueRaw);
 
-                            sharedState.put(Constants.OSTID_SESSIONID, StringUtils.stringToHex(sessionIdentifier));
-                            sharedState.put(Constants.OSTID_ACTIVATION_CODE, activationCode);
-                            sharedState.put(Constants.OSTID_CRONTO_MSG, crontoValueHex);
-                            sharedState.put(Constants.OSTID_DIGI_SERIAL, userRegisterResponse.getDigipassSerial());
-                            sharedState.put(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.activationTokenExpiry()));
+                        sharedState.put(Constants.OSTID_SESSIONID, StringUtils.stringToHex(sessionIdentifier));
+                        sharedState.put(Constants.OSTID_ACTIVATION_CODE, activationCode);
+                        sharedState.put(Constants.OSTID_CRONTO_MSG, crontoValueHex);
+                        sharedState.put(Constants.OSTID_DIGI_SERIAL, userRegisterResponse.getDigipassSerial());
+                        sharedState.put(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.activationTokenExpiry()));
 
-                        }else if(config.nodeFunction() == NodeFunction.UserUnregister){
-                            sharedState.put(Constants.OSTID_SESSIONID, StringUtils.stringToHex(sessionIdentifier));
-                        }
-                        return goTo(UserRegisterOutcome.Success)
-                                .replaceSharedState(sharedState)
-                                .replaceTransientState(transientState)
-                                .build();
-                    } else {
-                        String message = userRegisterResponseJSON.getString("message");
-                        if (message == null) {
-                            throw new NodeProcessException("Fail to parse response: " + JSON.toJSONString(userRegisterResponseJSON));
-                        }else {
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, message);
-                            return goTo(UserRegisterOutcome.Error)
-                                    .replaceSharedState(sharedState)
-                                    .build();
-                        }
+                    } else if (config.nodeFunction() == NodeFunction.UserUnregister) {
+                        sharedState.put(Constants.OSTID_SESSIONID, StringUtils.stringToHex(sessionIdentifier));
                     }
+                    return goTo(UserRegisterOutcome.Success)
+                            .replaceSharedState(sharedState)
+                            .replaceTransientState(transientState)
+                            .build();
+                } else {
+                    String message = userRegisterResponseJSON.getString("message");
+                    if (message == null) {
+                        throw new NodeProcessException("Fail to parse response: " + JSON.toJSONString(userRegisterResponseJSON));
+                    } else {
+                        sharedState.put(Constants.OSTID_ERROR_MESSAGE, message);
+                        return goTo(UserRegisterOutcome.Error)
+                                .replaceSharedState(sharedState)
+                                .build();
+                    }
+                }
             } catch (Exception e) {
                 logger.debug("OSTIDUserRegisterNode exception: " + e.getMessage());
-                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"Fail to Register User to OneSpan TID!");
+                sharedState.put(Constants.OSTID_ERROR_MESSAGE, "Fail to Register User to OneSpan TID!");
                 return goTo(UserRegisterOutcome.Error)
                         .replaceSharedState(sharedState)
                         .build();
@@ -233,12 +228,14 @@ public class OSTIDUserRegisterNode implements Node {
         }
     }
 
-    public enum NodeFunction{
-        UserRegister,UserUnregister
+    public enum NodeFunction {
+        UserRegister, UserUnregister
     }
-    public enum UserRegisterOutcome{
-        Success,Error
+
+    public enum UserRegisterOutcome {
+        Success, Error
     }
+
     private Action.ActionBuilder goTo(OSTIDUserRegisterNode.UserRegisterOutcome outcome) {
         return Action.goTo(outcome.name());
     }

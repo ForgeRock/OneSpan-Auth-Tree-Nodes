@@ -73,8 +73,8 @@ public class OSTIDCheckSessionStatusNode implements Node {
     public Action process(TreeContext context) {
         logger.debug("OSTIDCheckSessionStatusNode started");
         JsonValue sharedState = context.sharedState;
-        String tenantName = serviceConfig.tenantName();
-        String environment = serviceConfig.environment();
+        String tenantName = serviceConfig.tenantNameToLowerCase();
+        String environment = serviceConfig.environment().name();
 
         //1. go to next
         JsonValue ostid_cronto_status = sharedState.get(Constants.OSTID_CRONTO_STATUS);

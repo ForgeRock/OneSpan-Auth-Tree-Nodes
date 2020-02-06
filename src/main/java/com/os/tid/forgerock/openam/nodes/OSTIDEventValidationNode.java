@@ -150,8 +150,8 @@ public class OSTIDEventValidationNode implements Node {
         logger.debug("OSTIDEventValidationNode started");
         JsonValue sharedState = context.sharedState;
         JsonValue transientState = context.transientState;
-        String tenantName = serviceConfig.tenantName();
-        String environment = serviceConfig.environment();
+        String tenantName = serviceConfig.tenantNameToLowerCase();
+        String environment = serviceConfig.environment().name();
 
         boolean passwordInclude = true;
         String passKeyJSON = "";
@@ -223,7 +223,7 @@ public class OSTIDEventValidationNode implements Node {
                     passKeyJSON,                                //param1
                     notificationsActivatedJSON,                 //param2
                     eventType,                                  //param3
-                    usernameJsonValue.asString(),               //param4
+                    usernameJsonValue.asString().toLowerCase(), //param4
                     cddcIpJsonValue.asString(),                 //param5
                     cddcHashJsonValue.asString(),               //param6
                     cddcJsonJsonValue.asString(),               //param7

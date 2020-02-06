@@ -65,8 +65,8 @@ public class OSTID_DEMO_BackCommandsNode implements Node {
     public Action process(TreeContext context){
         logger.debug("OSTID_DEMO_BackCommandsNode started");
         JsonValue sharedState = context.sharedState;
-        String tenantName = serviceConfig.tenantName();
-        String environment = serviceConfig.environment();
+        String tenantName = serviceConfig.tenantNameToLowerCase();
+        String environment = serviceConfig.environment().name();
 
         JsonValue ostid_sessionid = sharedState.get(Constants.OSTID_SESSIONID);
         JsonValue ostid_request_id = sharedState.get(Constants.OSTID_REQUEST_ID);

@@ -71,8 +71,8 @@ public class OSTIDCheckActivateNode implements Node {
     public Action process(TreeContext context) {
         logger.debug("OSTIDCheckActivateNode started");
         JsonValue sharedState = context.sharedState;
-        String tenantName = serviceConfig.tenantName();
-        String environment = serviceConfig.environment();
+        String tenantName = serviceConfig.tenantNameToLowerCase();
+        String environment = serviceConfig.environment().name();
 
         //1. go to next
         JsonValue ostid_cronto_status = sharedState.get(Constants.OSTID_CRONTO_STATUS);
@@ -95,7 +95,7 @@ public class OSTIDCheckActivateNode implements Node {
             activationStatusEnum = ActivationStatusOutcome.timeout;
         } else {
             String checkActivationJSON = String.format(Constants.OSTID_JSON_CHECK_ACTIVATION,
-                    usernameJsonValue.asString(),                            //param1
+                    usernameJsonValue.asString().toLowerCase(),              //param1
                     Constants.OSTID_DEFAULT_CHECK_ACTIVATION_TIMEOUT         //param2
             );
             try {

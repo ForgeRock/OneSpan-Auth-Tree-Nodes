@@ -128,7 +128,7 @@ public class OSTIDVisualCodeNode extends SingleOutcomeNode {
          */
         @Attribute(order = 900)
         default String textForPleaseScan() {
-            return "Please Scan the Visual Code within: ";
+            return "Please Scan the Visual Code within:";
         }
 
         /**
@@ -170,8 +170,8 @@ public class OSTIDVisualCodeNode extends SingleOutcomeNode {
     public Action process(TreeContext context) throws NodeProcessException {
         logger.debug("OSTIDVisualCodeNode started");
         JsonValue sharedState = context.sharedState;
-        String tenantName = serviceConfig.tenantName();
-        String environment = serviceConfig.environment();
+        String tenantName = serviceConfig.tenantNameToLowerCase();
+        String environment = serviceConfig.environment().name();
 
         JsonValue crontoMsgJsonValue = config.visualCodeMessageOption() == VisualCodeMessageOptions.CustomCrontoMessage ? sharedState.get(config.customMessageInSharedState()) : sharedState.get(Constants.OSTID_CRONTO_MSG);
 
@@ -233,7 +233,7 @@ public class OSTIDVisualCodeNode extends SingleOutcomeNode {
                         "       var now = new Date().getTime();" +
                         "       var distance = countDownDate - now;      " +
                         "       var seconds = Math.floor((distance / 1000) % 3600);" +
-                        "       document.getElementById('ostid_cronto_countdown').innerHTML = '<p style=\"' + countdownCSS + '\">' + countdownText + seconds + ' s</p>';" +
+                        "       document.getElementById('ostid_cronto_countdown').innerHTML = '<p style=\"' + countdownCSS + '\">' + countdownText + \" \" + seconds + ' s</p>';" +
                         "       if (seconds < 0) {" +
                         "            document.getElementById('ostid_cronto_countdown').innerHTML = '<p style=\"' + expiryCSS + '\">' + expiryText + '</p>';" +
                         "       }" +

@@ -122,8 +122,8 @@ public class OSTIDLoginNode implements Node {
         logger.debug("OSTIDLoginNode started");
         JsonValue sharedState = context.sharedState;
         JsonValue transientState = context.transientState;
-        String tenantName = serviceConfig.tenantName();
-        String environment = serviceConfig.environment();
+        String tenantName = serviceConfig.tenantNameToLowerCase();
+        String environment = serviceConfig.environment().name();
 
         boolean passwordInclude = true;
         String passKeyJSON = "";
@@ -181,7 +181,7 @@ public class OSTIDLoginNode implements Node {
             String loginJSON = String.format(Constants.OSTID_JSON_LOGIN,
                     passKeyJSON,                                //param1
                     notificationsActivatedJSON,                 //param2
-                    usernameJsonValue.asString(),               //param3
+                    usernameJsonValue.asString().toLowerCase(), //param3
                     cddcIpJsonValue.asString(),                 //param4
                     cddcHashJsonValue.asString(),               //param5
                     cddcJsonJsonValue.asString(),               //param6

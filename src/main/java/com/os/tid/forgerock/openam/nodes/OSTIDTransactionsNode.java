@@ -177,8 +177,8 @@ public class OSTIDTransactionsNode implements Node {
         logger.debug("OSTIDTransactionsNode started");
         JsonValue sharedState = context.sharedState;
         JsonValue transientState = context.transientState;
-        String tenantName = serviceConfig.tenantName();
-        String environment = serviceConfig.environment();
+        String tenantName = serviceConfig.tenantNameToLowerCase();
+        String environment = serviceConfig.environment().name();
 
         boolean passwordInclude = true;
         String passKeyJSON = "";
@@ -253,7 +253,7 @@ public class OSTIDTransactionsNode implements Node {
                     transactionTypeJsonValue.asString(),                          //param5
                     creditorIBANJsonValue.asString(),                             //param6
                     creditorNameJsonValue.asString(),                             //param7
-                    usernameJsonValue.asString(),                                 //param8
+                    usernameJsonValue.asString().toLowerCase(),                   //param8
                     sessionID,                                                    //param9
                     cddcJsonJsonValue.asString(),                                 //param10
                     cddcHashJsonValue.asString(),                                 //param11
