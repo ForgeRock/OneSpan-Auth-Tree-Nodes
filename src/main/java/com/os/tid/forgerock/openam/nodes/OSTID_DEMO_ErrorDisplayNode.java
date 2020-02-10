@@ -40,7 +40,7 @@ public class OSTID_DEMO_ErrorDisplayNode extends SingleOutcomeNode {
     }
 
     @Override
-    public Action process(TreeContext context) throws NodeProcessException {
+    public Action process(TreeContext context){
         logger.debug("OSTID_DEMO_ErrorDisplayNode started");
         JsonValue sharedState = context.sharedState;
         JsonValue ostid_error_msg = sharedState.get(Constants.OSTID_ERROR_MESSAGE);

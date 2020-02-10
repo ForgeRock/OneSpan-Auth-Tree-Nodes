@@ -147,7 +147,7 @@ public class OSTIDCheckActivateNode implements Node {
             case unknown:
                 sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan TID check Activation status process: status unknown!");
                 if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()){
-                    return goTo(ActivationStatusOutcome.timeout).replaceSharedState(sharedState).build();
+                    return goTo(ActivationStatusOutcome.unknown).replaceSharedState(sharedState).build();
                 }else {
                     sharedState.put(Constants.OSTID_CRONTO_STATUS, ActivationStatusOutcome.unknown.name());
                     return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();

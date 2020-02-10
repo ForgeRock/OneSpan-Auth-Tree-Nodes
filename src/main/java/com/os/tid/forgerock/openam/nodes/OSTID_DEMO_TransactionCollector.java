@@ -16,6 +16,7 @@
 package com.os.tid.forgerock.openam.nodes;
 
 import com.alibaba.fastjson.JSON;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import com.os.tid.forgerock.openam.config.Constants;
@@ -41,13 +42,14 @@ import java.util.*;
 public class OSTID_DEMO_TransactionCollector extends SingleOutcomeNode {
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private final OSTID_DEMO_TransactionCollector.Config config;
+    private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OSTID_DEMO_TransactionCollector";
+
     /**
      * Configuration for the OSTID_DEMO_TransactionCollector.
      */
     public interface Config {
         /**
-         *
-         * @return
+         * Determine whether to include OneSpan IAA user password when attempting to login.
          */
         @Attribute(order = 100)
         default boolean passKeyRequired() {
@@ -55,15 +57,12 @@ public class OSTID_DEMO_TransactionCollector extends SingleOutcomeNode {
         }
 
         /**
-         * Configurable attributes in request JSON payload
-         *
-         * @return
+         * Specify other optional attributes like user email, user phone number, etc.
          */
         @Attribute(order = 200)
         default Set<String> optionalAttributes() {
             return Collections.emptySet();
         }
-
     }
 
     @Inject
@@ -76,27 +75,28 @@ public class OSTID_DEMO_TransactionCollector extends SingleOutcomeNode {
         JsonValue sharedState = context.sharedState;
         JsonValue transientState = context.transientState;
 
-        //try finding CDDC valus from hiddenValueCallback
-        Map<String, String> attrValueMap = new HashMap<>();
-        Set<String> attrNameSet = new HashSet<>(Arrays.asList(
-                Constants.OSTID_DEFAULT_USERNAME,
-                Constants.OSTID_DEFAULT_TRANSACTIONTYPE,
-                Constants.OSTID_DEFAULT_ACCOUNTREF,
-                Constants.OSTID_DEFAULT_AMOUNT,
-                Constants.OSTID_DEFAULT_CREDITORIBAN,
-                Constants.OSTID_DEFAULT_CREDITORNAME,
-                Constants.OSTID_DEFAULT_CURRENCY,
-                Constants.OSTID_DEFAULT_DEBTORNAME
-        ));
-        attrNameSet.addAll(config.optionalAttributes());
-        attrNameSet.forEach(attrName -> attrValueMap.putIfAbsent(attrName,null));
+        ResourceBundle bundle = context.request.locales.getBundleInPreferredLocale(BUNDLE, getClass().getClassLoader());
+
+        Map<String, String> attrValueMap = new HashMap<>(); //attribute name in sharedState : callback value
+        final Map<String, String> attrMap = new HashMap<String, String>(){{   //label name : attribute name in sharedState
+                put(bundle.getString("callback.username"),Constants.OSTID_DEFAULT_USERNAME);
+                put(bundle.getString("callback.amount"),Constants.OSTID_DEFAULT_AMOUNT);
+                put(bundle.getString("callback.currency"),Constants.OSTID_DEFAULT_CURRENCY);
+                put(bundle.getString("callback.transactionType"),Constants.OSTID_DEFAULT_TRANSACTIONTYPE);
+                put(bundle.getString("callback.accountRef"),Constants.OSTID_DEFAULT_ACCOUNTREF);
+                put(bundle.getString("callback.creditorName"),Constants.OSTID_DEFAULT_CREDITORNAME);
+                put(bundle.getString("callback.creditorIBAN"),Constants.OSTID_DEFAULT_CREDITORIBAN);
+        }};
+
+        config.optionalAttributes().forEach(attr -> attrMap.putIfAbsent(attr,attr));
+        attrMap.values().forEach(attrName -> attrValueMap.putIfAbsent(attrName,null));
 
         if( context.getCallbacks(NameCallback.class) != null &&
-            context.getCallbacks(NameCallback.class).size() >= 8 ){
+            context.getCallbacks(NameCallback.class).size() >= 7 ){
             context.getCallbacks(NameCallback.class)
                     .forEach(nameCallback -> {
-                        if (attrNameSet.contains(nameCallback.getPrompt())) {
-                            attrValueMap.put(nameCallback.getPrompt(), nameCallback.getName());
+                        if (attrMap.keySet().contains(nameCallback.getPrompt())) {
+                            attrValueMap.put(attrMap.get(nameCallback.getPrompt()), nameCallback.getName());
                         }
                     });
         }
@@ -126,39 +126,37 @@ public class OSTID_DEMO_TransactionCollector extends SingleOutcomeNode {
                     .replaceTransientState(transientState)
                     .build();
         }else{
-            return Action.send(collectTransactionData()).build();
+            return Action.send(collectTransactionData(bundle)).build();
         }
 
     }
 
-    private List<Callback> collectTransactionData(){
+    private List<Callback> collectTransactionData(ResourceBundle bundle){
         List<Callback> callbackList = new ArrayList<>();
-        NameCallback OSTID_DEFAULT_USERNAME = new NameCallback(Constants.OSTID_DEFAULT_USERNAME);
+
+        NameCallback OSTID_DEFAULT_USERNAME = new NameCallback(bundle.getString("callback.username"));
         callbackList.add(OSTID_DEFAULT_USERNAME);
         if(config.passKeyRequired()) {
-            PasswordCallback OSTID_DEFAULT_PASSKEY = new PasswordCallback(Constants.OSTID_DEFAULT_PASSKEY,false);
+            PasswordCallback OSTID_DEFAULT_PASSKEY = new PasswordCallback(bundle.getString("callback.password"),false);
             callbackList.add(OSTID_DEFAULT_PASSKEY);
         }
-        NameCallback OSTID_DEFAULT_ACCOUNTREF = new NameCallback(Constants.OSTID_DEFAULT_ACCOUNTREF);
+        NameCallback OSTID_DEFAULT_ACCOUNTREF = new NameCallback(bundle.getString("callback.accountRef"));
         callbackList.add(OSTID_DEFAULT_ACCOUNTREF);
 
-        NameCallback OSTID_DEFAULT_AMOUNT = new NameCallback(Constants.OSTID_DEFAULT_AMOUNT);
+        NameCallback OSTID_DEFAULT_AMOUNT = new NameCallback(bundle.getString("callback.amount"));
         callbackList.add(OSTID_DEFAULT_AMOUNT);
 
-        NameCallback OSTID_DEFAULT_CREDITORIBAN = new NameCallback(Constants.OSTID_DEFAULT_CREDITORIBAN);
+        NameCallback OSTID_DEFAULT_CREDITORIBAN = new NameCallback(bundle.getString("callback.creditorIBAN"));
         callbackList.add(OSTID_DEFAULT_CREDITORIBAN);
 
-        NameCallback OSTID_DEFAULT_CREDITORNAME = new NameCallback(Constants.OSTID_DEFAULT_CREDITORNAME);
+        NameCallback OSTID_DEFAULT_CREDITORNAME = new NameCallback(bundle.getString("callback.creditorName"));
         callbackList.add(OSTID_DEFAULT_CREDITORNAME);
 
-        NameCallback OSTID_DEFAULT_CURRENCY = new NameCallback(Constants.OSTID_DEFAULT_CURRENCY);
+        NameCallback OSTID_DEFAULT_CURRENCY = new NameCallback(bundle.getString("callback.currency"));
         callbackList.add(OSTID_DEFAULT_CURRENCY);
 
-        NameCallback OSTID_DEFAULT_TRANSACTIONTYPE = new NameCallback(Constants.OSTID_DEFAULT_TRANSACTIONTYPE);
+        NameCallback OSTID_DEFAULT_TRANSACTIONTYPE = new NameCallback(bundle.getString("callback.transactionType"));
         callbackList.add(OSTID_DEFAULT_TRANSACTIONTYPE);
-
-        NameCallback OSTID_DEFAULT_DEBTORNAME = new NameCallback(Constants.OSTID_DEFAULT_DEBTORNAME);
-        callbackList.add(OSTID_DEFAULT_DEBTORNAME);
 
         for (String optionalAttribute : config.optionalAttributes()) {
             NameCallback NameCallback = new NameCallback(optionalAttribute);

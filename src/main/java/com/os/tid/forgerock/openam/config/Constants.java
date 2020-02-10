@@ -67,7 +67,6 @@ public class Constants {
     public static final String OSTID_CRONTO_STATUS = "ostid_cronto_status";   //true:display, false:hide
     public static final String OSTID_CRONTO_HAS_RENDERED = "ostid_cronto_has_rendered";   //true:display, false:hide
 
-//    public static String OSTID_SESSIONIDENTIFIER = "osstid_session_identifier";
     public static final String OSTID_SESSIONID = "osstid_session_id";
     public static final String OSTID_REQUEST_ID = "ostid_request_id";
     public static final String OSTID_EVENT_EXPIRY_DATE = "ostid_event_expiry_date";
@@ -90,10 +89,8 @@ public class Constants {
     public static final String OSTID_DEFAULT_TRANSACTIONTYPE = "transactionType";
     public static final String OSTID_DEFAULT_CREDITORIBAN = "creditorIBAN";
     public static final String OSTID_DEFAULT_CREDITORNAME = "creditorName";
-    public static final String OSTID_DEFAULT_DEBTORNAME = "debtorName";
 
     public static final int OSTID_DEFAULT_CHECK_ACTIVATION_TIMEOUT = 0;
-    public static final int OSTID_DEFAULT_ENUM_ERROR_CODE = -1;
     public static final int OSTID_DEFAULT_EVENT_EXPIRY = 60;
 
 
