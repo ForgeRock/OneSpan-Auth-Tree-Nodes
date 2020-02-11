@@ -13,30 +13,36 @@
  *
  * Copyright 2019 ForgeRock AS.
 -->
-# myCustomAuthNode
+# OneSpan IAA Auth Tree Nodes
 
-A simple authentication node for ForgeRock's [Identity Platform][forgerock_platform] 6.5.2 and above. This node... **SHORT DESCRIPTION HERE**
-
-
-Copy the .jar file from the ../target directory into the ../web-container/webapps/openam/WEB-INF/lib directory where AM is deployed.  Restart the web container to pick up the new node.  The node will then appear in the authentication trees components palette.
+OneSpan Intelligent Adaptive Authentication (IAA) secures your web and mobile applications by analyzing vast and disparate data acquired through user actions and events. Based on this analysis, OneSpan Adaptive Authentication dynamically assesses which authentication and/or transaction security measures are appropriate for each unique end user.
 
 
-**USAGE HERE**
+**About OneSpan IAA**
+
+OneSpan Adaptive Authentication provides hosted solutions to test and build web and mobile applications for login and transaction signing flows.
+Integration with OneSpan Adaptive Authentication is incredibly simple and extensible, as it will support future authentication technologies without the need to change anything in your integration code.
+OneSpan intelligent Adaptive Authentication uses a 'trusted device' (e.g. a mobile phone using the OneSpan [Mobile Security Suite SDKs](http://community.onespan.com/products/mobile-security-suite/sdks) to provide strong multi-factor authentication whenever the risk associated with an action is high.
+OneSpan Adaptive Authentication evaluates the risk related to an end-user request through vast data collected from the devices which is then scored with a sophisticated machine-learning engine. Depending on the risk, OneSpan Adaptive Authentication can dynamically adjust the end-user security requirements by requesting step-up authentication for higher risk transactions using various configurations of device-based, PIN-based, fingerprint-based, or face recognition-based authentication as needed to fully secure transactions.
+
+![ScreenShot](./doc/images/Adaptive Authentication Overview.png)
+
+**Installation**
+
+Download the current release [here](https://github.com/ForgeRock/OneSpan-Auth-Tree-Nodes/releases).
+
+Copy the jar file to the "../web-container/webapps/openam/WEB-INF/lib" folder where AM is deployed, then restart the AM. The nodes will be available in the tree designer.
+
+You'll find the complete guide [here](./doc/OneSpan IAA Auth Tree Nodes Guide.pdf).  
+
+**Before You Begin**
+
+1. Create an OneSpan [Developer Community account](https://community.onespan.com/user/registration).
+
+2. Once logged in the Developer Community portal, you'll be able to create an OneSpan [IAA Sandbox account](https://community.onespan.com/tid-sandbox-registration).
+ 
+3. Set up a mobile application integrated with the [Mobile Security Suite](http://community.onespan.com/documentation/mobile-security-suite). As an easy start up, you can install the OneSpan IAA [Demo App](https://sdb.tid.onespan.cloud/devportal/InstallingVAASDemoApp) on your phone. 
+
+4. Configure the [Intelligent Risk Management](https://sdb.tid.onespan.cloud/irm) (IRM) service. 
 
 
-The code in this repository has binary dependencies that live in the ForgeRock maven repository. Maven can be configured to authenticate to this repository by following the following [ForgeRock Knowledge Base Article](https://backstage.forgerock.com/knowledge/kb/article/a74096897).
-
-**SPECIFIC BUILD INSTRUCTIONS HERE**
-
-**SCREENSHOTS ARE GOOD LIKE BELOW**
-
-![ScreenShot](./example.png)
-
-        
-The sample code described herein is provided on an "as is" basis, without warranty of any kind, to the fullest extent permitted by law. ForgeRock does not warrant or guarantee the individual success developers may have in implementing the sample code on their development platforms or in production configurations.
-
-ForgeRock does not warrant, guarantee or make any representations regarding the use, results of use, accuracy, timeliness or completeness of any data or information relating to the sample code. ForgeRock disclaims all warranties, expressed or implied, and in particular, disclaims all warranties of merchantability, and warranties related to the code, or any service or software related thereto.
-
-ForgeRock shall not be liable for any direct, indirect or consequential damages or costs of any type arising out of any action taken by you or others related to the sample code.
-
-[forgerock_platform]: https://www.forgerock.com/platform/  
