@@ -25,7 +25,7 @@ Integration with OneSpan Adaptive Authentication is incredibly simple and extens
 OneSpan intelligent Adaptive Authentication uses a 'trusted device' (e.g. a mobile phone using the OneSpan [Mobile Security Suite SDKs](http://community.onespan.com/products/mobile-security-suite/sdks) to provide strong multi-factor authentication whenever the risk associated with an action is high.
 OneSpan Adaptive Authentication evaluates the risk related to an end-user request through vast data collected from the devices which is then scored with a sophisticated machine-learning engine. Depending on the risk, OneSpan Adaptive Authentication can dynamically adjust the end-user security requirements by requesting step-up authentication for higher risk transactions using various configurations of device-based, PIN-based, fingerprint-based, or face recognition-based authentication as needed to fully secure transactions.
 
-![ScreenShot](./doc/images/Adaptive Authentication Overview.png)
+![ScreenShot](/doc/images/Adaptive Authentication Overview.png)
 
 **Installation**
 
@@ -33,7 +33,7 @@ Download the current release [here](https://github.com/ForgeRock/OneSpan-Auth-Tr
 
 Copy the jar file to the "../web-container/webapps/openam/WEB-INF/lib" folder where AM is deployed, then restart the AM. The nodes will be available in the tree designer.
 
-You'll find the complete guide [here](./doc/OneSpan IAA Auth Tree Nodes Guide.pdf).  
+You'll find the complete guide [here](/doc/OneSpan IAA Auth Tree Nodes Guide.pdf).  
 
 **Before You Begin**
 
