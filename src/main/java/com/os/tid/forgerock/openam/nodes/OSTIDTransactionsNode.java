@@ -1,6 +1,7 @@
 package com.os.tid.forgerock.openam.nodes;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
@@ -25,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  *
@@ -263,10 +265,11 @@ public class OSTIDTransactionsNode implements Node {
             );
             try {
                 HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName,environment) + Constants.OSTID_API_TRANSACTION, transactionJSON);
-                JSONObject eventValidationResponseJSON = httpEntity.getResponseJSON();
-                if(httpEntity.isSuccess()) {
-                    EventValidationOutput eventValidationOutput = JSON.toJavaObject(eventValidationResponseJSON, EventValidationOutput.class);
-
+                JSONObject responseJSON = httpEntity.getResponseJSON();
+                if(httpEntity.isSuccess() &&
+                        responseJSON.getString("retcode") != null && "0".equals(responseJSON.getString("retcode"))
+                ) {
+                    EventValidationOutput eventValidationOutput = JSON.toJavaObject(responseJSON, EventValidationOutput.class);
                     sharedState.put(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.transactionExpiry()));
                     sharedState.put(Constants.OSTID_SESSIONID,sessionID);
                     sharedState.put(Constants.OSTID_REQUEST_ID,eventValidationOutput.getRequestID());
@@ -301,11 +304,18 @@ public class OSTIDTransactionsNode implements Node {
                             .replaceSharedState(sharedState)
                             .build();
                 }else{
-                    String message = eventValidationResponseJSON.getString("message");
-                    if(message == null){
-                        throw new NodeProcessException("Fail to parse response: " + JSON.toJSONString(eventValidationResponseJSON));
+                    String message = responseJSON.getString("message");
+                    String retCode = responseJSON.getString("retcode");
+                    String log_correction_id = httpEntity.getLog_correlation_id();
+                    if(Stream.of(message, retCode, log_correction_id).anyMatch(Objects::isNull)){
+                        throw new NodeProcessException("Fail to parse response: " + JSON.toJSONString(responseJSON));
                     }else{
-                        sharedState.put(Constants.OSTID_ERROR_MESSAGE,message);
+                        JSONArray validationErrors = responseJSON.getJSONArray("validationErrors");
+                        if(validationErrors != null && validationErrors.size() > 0 && validationErrors.getJSONObject(0).getString("message") != null){
+                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgWithValidation(message,retCode,log_correction_id,validationErrors.getJSONObject(0).getString("message")));         //error return from IAA server
+                        }else{
+                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgWithoutValidation(message,retCode,log_correction_id));         //error return from IAA server
+                        }
                         return goTo(TransactionOutcome.Error)
                                 .replaceSharedState(sharedState)
                                 .build();
@@ -313,7 +323,7 @@ public class OSTIDTransactionsNode implements Node {
                 }
             } catch (IOException | NodeProcessException e) {
                 logger.debug("OSTIDTransactionsNode exception: " + e.getMessage());
-                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan TID Event Validation process: Fail to invoke Event Validation!");
+                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan TID Event Validation process: Fail to validate transaction!");         //general error msg
                 return goTo(TransactionOutcome.Error)
                         .replaceSharedState(sharedState)
                         .build();

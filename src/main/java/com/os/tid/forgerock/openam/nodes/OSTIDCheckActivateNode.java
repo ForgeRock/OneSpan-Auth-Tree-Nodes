@@ -115,7 +115,7 @@ public class OSTIDCheckActivateNode implements Node {
             } catch (Exception e) {
                 logger.debug("OSTIDCheckActivateNode exception: " + e.getMessage());
                 activationStatusEnum = ActivationStatusOutcome.error;
-                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan TID check activation process: Fail to check user activation status!");
+                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan TID check activation process: Fail to check user's activation status!");
             }
         }
 

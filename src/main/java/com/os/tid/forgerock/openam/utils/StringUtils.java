@@ -31,4 +31,18 @@ public class StringUtils {
     public static String getAPIEndpoint(String ostid_tenant_name, String ostid_environment){
         return String.format("https://%1$s.%2$s.tid.onespan.cloud",ostid_tenant_name,ostid_environment);
     }
+
+
+    public static String getErrorMsgWithoutValidation(String message, String retCode, String log_correlation_id){
+        return String.format("Error Message: %1$s;<br />RetCode: %2$s;<br />Log Correction ID: %3$s;",
+                message,retCode,log_correlation_id
+                );
+    }
+
+    public static String getErrorMsgWithValidation(String message, String retCode, String log_correlation_id, String validationMsg){
+        return String.format("Error Message: %1$s;<br />Validation Message: %4$s;<br />RetCode: %2$s;<br />Log Correction ID: %3$s;",
+                message,retCode,log_correlation_id,validationMsg
+        );
+    }
+
 }

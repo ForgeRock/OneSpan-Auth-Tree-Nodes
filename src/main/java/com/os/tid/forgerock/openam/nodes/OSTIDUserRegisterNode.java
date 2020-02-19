@@ -16,6 +16,7 @@
 package com.os.tid.forgerock.openam.nodes;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.assistedinject.Assisted;
@@ -40,6 +41,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * This node invokes the User Register/Unregister Service API, in order to validate and process the registration/unregistration of a user.
@@ -178,10 +180,11 @@ public class OSTIDUserRegisterNode implements Node {
 
             try {
                 HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, userRegisterJSON);
-                JSONObject userRegisterResponseJSON = httpEntity.getResponseJSON();
-                if (httpEntity.isSuccess()) {
-                    UserRegisterOutput userRegisterResponse = JSON.toJavaObject(userRegisterResponseJSON, UserRegisterOutput.class);
+                JSONObject responseJSON = httpEntity.getResponseJSON();
 
+                if (httpEntity.isSuccess() &&
+                        responseJSON.getString("retcode") != null && "0".equals(responseJSON.getString("retcode"))) {
+                    UserRegisterOutput userRegisterResponse = JSON.toJavaObject(responseJSON, UserRegisterOutput.class);
                     if (config.nodeFunction() == NodeFunction.UserRegister) {
                         //"02;user01211;111;duoliang11071-mailin;3zE6RNH5;duoliang11071-mailin"
                         String activationCode = userRegisterResponse.getActivationPassword();
@@ -208,11 +211,19 @@ public class OSTIDUserRegisterNode implements Node {
                             .replaceTransientState(transientState)
                             .build();
                 } else {
-                    String message = userRegisterResponseJSON.getString("message");
-                    if (message == null) {
-                        throw new NodeProcessException("Fail to parse response: " + JSON.toJSONString(userRegisterResponseJSON));
+                    String log_correction_id = httpEntity.getLog_correlation_id();
+                    String retCode = responseJSON.getString("retcode");
+                    String message = responseJSON.getString("message");
+
+                    if (Stream.of(log_correction_id, retCode, message).anyMatch(Objects::isNull)) {
+                        throw new NodeProcessException("Fail to parse response: " + JSON.toJSONString(responseJSON));
                     } else {
-                        sharedState.put(Constants.OSTID_ERROR_MESSAGE, message);
+                        JSONArray validationErrors = responseJSON.getJSONArray("validationErrors");
+                        if(validationErrors != null && validationErrors.size() > 0 && validationErrors.getJSONObject(0).getString("message") != null){
+                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgWithValidation(message,retCode,log_correction_id,validationErrors.getJSONObject(0).getString("message")));         //error return from IAA server
+                        }else{
+                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgWithoutValidation(message,retCode,log_correction_id));         //error return from IAA server
+                        }
                         return goTo(UserRegisterOutcome.Error)
                                 .replaceSharedState(sharedState)
                                 .build();
@@ -220,7 +231,7 @@ public class OSTIDUserRegisterNode implements Node {
                 }
             } catch (Exception e) {
                 logger.debug("OSTIDUserRegisterNode exception: " + e.getMessage());
-                sharedState.put(Constants.OSTID_ERROR_MESSAGE, "Fail to Register User to OneSpan TID!");
+                sharedState.put(Constants.OSTID_ERROR_MESSAGE, "Fail to Register User to OneSpan TID!");                            //general error msg
                 return goTo(UserRegisterOutcome.Error)
                         .replaceSharedState(sharedState)
                         .build();

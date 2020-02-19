@@ -113,7 +113,7 @@ public class OSTIDCheckSessionStatusNode implements Node {
             } catch (Exception e) {
                 logger.debug("OSTIDCheckSessionStatusNode exception: " + e.getMessage());
                 checkSessionStatusEnum = CheckSessionStatusOutcome.error;
-                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan TID check session status process: Fail to check session status!");
+                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan TID check session status process: Fail to check user's session status!");
             }
         }
 

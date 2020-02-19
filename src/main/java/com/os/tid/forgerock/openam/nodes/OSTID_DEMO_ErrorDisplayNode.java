@@ -22,6 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.security.auth.callback.TextOutputCallback;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -45,9 +47,15 @@ public class OSTID_DEMO_ErrorDisplayNode extends SingleOutcomeNode {
         JsonValue sharedState = context.sharedState;
         JsonValue ostid_error_msg = sharedState.get(Constants.OSTID_ERROR_MESSAGE);
         if(ostid_error_msg.isString()){
-            TextOutputCallback errorTextOutputCallback = new TextOutputCallback(2,ostid_error_msg.asString());
+            String[] split = ostid_error_msg.asString().split("<br />");
+            List<TextOutputCallback> outputCallbackList = new ArrayList<>();
+            for (String errorMsg: split) {
+                TextOutputCallback errorTextOutputCallback = new TextOutputCallback(2,errorMsg);
+                outputCallbackList.add(errorTextOutputCallback);
+            }
+
             sharedState.remove(Constants.OSTID_ERROR_MESSAGE);
-            return Action.send(errorTextOutputCallback)
+            return Action.send(outputCallbackList)
                     .replaceSharedState(sharedState)
                     .build();
         }else{
