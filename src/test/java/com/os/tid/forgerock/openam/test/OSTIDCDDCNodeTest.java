@@ -48,12 +48,13 @@ public class OSTIDCDDCNodeTest {
         // Then
         assertThat(result.outcome).isEqualTo(null);
         assertThat(result.callbacks).hasSize(6);
-        assertThat(result.callbacks.get(0)).isInstanceOf(ScriptTextOutputCallback.class);
-        assertThat(result.callbacks.get(1)).isInstanceOf(ScriptTextOutputCallback.class);
+        assertThat(result.callbacks.get(0)).isInstanceOf(HiddenValueCallback.class);
+        assertThat(result.callbacks.get(1)).isInstanceOf(HiddenValueCallback.class);
         assertThat(result.callbacks.get(2)).isInstanceOf(ScriptTextOutputCallback.class);
         assertThat(result.callbacks.get(3)).isInstanceOf(ScriptTextOutputCallback.class);
-        assertThat(result.callbacks.get(4)).isInstanceOf(HiddenValueCallback.class);
-        assertThat(result.callbacks.get(5)).isInstanceOf(HiddenValueCallback.class);
+        assertThat(result.callbacks.get(4)).isInstanceOf(ScriptTextOutputCallback.class);
+        assertThat(result.callbacks.get(5)).isInstanceOf(ScriptTextOutputCallback.class);
+
     }
 
     @Test

@@ -87,6 +87,7 @@ public class OSTIDCDDCNode extends SingleOutcomeNode {
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
         logger.debug("OSTIDCDDCNode started");
+        JsonValue sharedState = context.sharedState.copy();
 
         Map<String, String> attrValueMap = new HashMap<>();
         ImmutableSet<String> attrNameSet = ImmutableSet.of(getCDDCJsonInHiddenValue(), getCDDCHashInHiddenValue());
@@ -106,7 +107,6 @@ public class OSTIDCDDCNode extends SingleOutcomeNode {
             String CDDCHash = attrValueMap.get(getCDDCHashInHiddenValue());
             String CDDCIp = context.request.clientIp;
 
-            JsonValue sharedState = context.sharedState.copy();
             sharedState.put(Constants.OSTID_CDDC_JSON,CDDCJson);
             sharedState.put(Constants.OSTID_CDDC_HASH,CDDCHash);
             sharedState.put(Constants.OSTID_CDDC_IP,CDDCIp);
@@ -114,52 +114,43 @@ public class OSTIDCDDCNode extends SingleOutcomeNode {
             return goToNext()
                     .replaceSharedState(sharedState)
                     .build();
-        }else if(config.pushCDDCJsAsCallback()){                                //2. the first time, without collected data
-                return collectCDDC(context);
-        }else{                                                                  //3. missing data
-            return goToNext().build();
+        }else {                                                                 //2. the first time, without collected data
+            List<Callback> returnCallback = new ArrayList<>();
+            HiddenValueCallback hiddenValueCDDCJson = new HiddenValueCallback(Constants.OSTID_CDDC_JSON,"");
+            HiddenValueCallback hiddenValueCDDCHash = new HiddenValueCallback(Constants.OSTID_CDDC_HASH,"");
+            returnCallback.add(hiddenValueCDDCJson);
+            returnCallback.add(hiddenValueCDDCHash);
+            if(config.pushCDDCJsAsCallback()){
+                //only push CDDC JS once
+                JsonValue hasPushedJSJsonValue = sharedState.get(Constants.OSTID_CDDC_HAS_PUSHED_JS);
+                if(hasPushedJSJsonValue.isNull()) {
+                    String jqueryScript = ScriptUtils.getScriptFromFile("/js/jquery-1.11.3.min.js");
+                    ScriptTextOutputCallback jqueryScriptCallback = new ScriptTextOutputCallback(jqueryScript);
+
+                    String JsonScript = ScriptUtils.getScriptFromFile("/js/Json2.js");
+                    ScriptTextOutputCallback JsonScriptScriptCallback = new ScriptTextOutputCallback(JsonScript);
+
+                    String CDDCScript = ScriptUtils.getScriptFromFile("/js/Vasco.IdKey.RM.CDDC.min.js");
+                    ScriptTextOutputCallback CDDCScriptCallback = new ScriptTextOutputCallback(CDDCScript);
+
+                    returnCallback.add(jqueryScriptCallback);
+                    returnCallback.add(JsonScriptScriptCallback);
+                    returnCallback.add(CDDCScriptCallback);
+                    sharedState.put(Constants.OSTID_CDDC_HAS_PUSHED_JS, true);
+                }
+
+                String customCDDCScriptBase =   "document.getElementById('%1$s').value = $.Vasco.getJSON(true);\n" +
+                        "document.getElementById('%2$s').value = $.Vasco.getHASH(true);\n" +
+                        "//document.getElementById('loginButton_0').click();";
+                String customCDDCScript = String.format(customCDDCScriptBase, Constants.OSTID_CDDC_JSON,Constants.OSTID_CDDC_HASH);
+                ScriptTextOutputCallback customCDDCScriptCallback = new ScriptTextOutputCallback(customCDDCScript);
+                returnCallback.add(customCDDCScriptCallback);
+
+            }
+            return Action.send(returnCallback)
+                    .replaceSharedState(sharedState)
+                    .build();
         }
-    }
-
-    private Action collectCDDC(TreeContext context) throws NodeProcessException {
-        logger.debug("collecting OneSpan TID CDDC info!");
-        JsonValue sharedState = context.sharedState;
-
-        List<Callback> returnCallback = new ArrayList<>();
-
-        //only push CDDC JS once
-        JsonValue hasPushedJSJsonValue = sharedState.get(Constants.OSTID_CDDC_HAS_PUSHED_JS);
-        if(hasPushedJSJsonValue.isNull()) {
-            String jqueryScript = ScriptUtils.getScriptFromFile("/js/jquery-1.11.3.min.js");
-            ScriptTextOutputCallback jqueryScriptCallback = new ScriptTextOutputCallback(jqueryScript);
-
-            String JsonScript = ScriptUtils.getScriptFromFile("/js/Json2.js");
-            ScriptTextOutputCallback JsonScriptScriptCallback = new ScriptTextOutputCallback(JsonScript);
-
-            String CDDCScript = ScriptUtils.getScriptFromFile("/js/Vasco.IdKey.RM.CDDC.min.js");
-            ScriptTextOutputCallback CDDCScriptCallback = new ScriptTextOutputCallback(CDDCScript);
-
-            returnCallback.add(jqueryScriptCallback);
-            returnCallback.add(JsonScriptScriptCallback);
-            returnCallback.add(CDDCScriptCallback);
-            sharedState.put(Constants.OSTID_CDDC_HAS_PUSHED_JS, true);
-        }
-
-        String customCDDCScriptBase =   "document.getElementById('%1$s').value = $.Vasco.getJSON(true);\n" +
-                                        "document.getElementById('%2$s').value = $.Vasco.getHASH(true);\n" +
-                                        "//document.getElementById('loginButton_0').click();";
-        String customCDDCScript = String.format(customCDDCScriptBase, Constants.OSTID_CDDC_JSON,Constants.OSTID_CDDC_HASH);
-        ScriptTextOutputCallback customCDDCScriptCallback = new ScriptTextOutputCallback(customCDDCScript);
-        returnCallback.add(customCDDCScriptCallback);
-
-        HiddenValueCallback hiddenValueCDDCJson = new HiddenValueCallback(Constants.OSTID_CDDC_JSON,"");
-        HiddenValueCallback hiddenValueCDDCHash = new HiddenValueCallback(Constants.OSTID_CDDC_HASH,"");
-        returnCallback.add(hiddenValueCDDCJson);
-        returnCallback.add(hiddenValueCDDCHash);
-
-        return Action.send(returnCallback)
-                .replaceSharedState(sharedState)
-                .build();
     }
 
     private String getCDDCJsonInHiddenValue(){return config.pushCDDCJsAsCallback() ? Constants.OSTID_CDDC_JSON : config.CDDCJsonHiddenValueId();}

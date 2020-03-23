@@ -64,7 +64,7 @@ import org.forgerock.openam.plugins.PluginException;
  * @since AM 5.5.0
  */
 public class OSTIDAuthNodePlugin extends AbstractNodeAmPlugin {
-	static private String currentVersion = "1.0.23";
+	static private String currentVersion = "1.0.30";
 
 	private final List<Class<? extends Node>> nodeList = ImmutableList.of(
 			OSTIDVisualCodeNode.class,
@@ -77,7 +77,8 @@ public class OSTIDAuthNodePlugin extends AbstractNodeAmPlugin {
 			OSTIDLoginNode.class,
 			OSTID_DEMO_ErrorDisplayNode.class,
 			OSTID_DEMO_TransactionCollector.class,
-			OSTID_DEMO_BackCommandsNode.class
+			OSTID_DEMO_BackCommandsNode.class,
+			OSTID_DEMO_InsertJavaScriptNode.class
 	);
 
 	private final Class serviceClass = OSTIDConfigurationsService.class;
