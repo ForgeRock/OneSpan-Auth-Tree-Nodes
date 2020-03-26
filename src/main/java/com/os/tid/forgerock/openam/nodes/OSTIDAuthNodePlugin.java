@@ -30,6 +30,7 @@ import com.sun.identity.sm.ServiceManager;
 import org.forgerock.openam.auth.node.api.AbstractNodeAmPlugin;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.plugins.PluginException;
+import org.forgerock.openam.plugins.StartupType;
 
 
 /**
@@ -64,7 +65,7 @@ import org.forgerock.openam.plugins.PluginException;
  * @since AM 5.5.0
  */
 public class OSTIDAuthNodePlugin extends AbstractNodeAmPlugin {
-	static private String currentVersion = "1.0.30";
+	static private String currentVersion = "1.0.31";
 
 	private final List<Class<? extends Node>> nodeList = ImmutableList.of(
 			OSTIDVisualCodeNode.class,
@@ -105,6 +106,23 @@ public class OSTIDAuthNodePlugin extends AbstractNodeAmPlugin {
 		pluginTools.installService(serviceClass);
 		super.onInstall();
 	}
+
+	/**
+	 * Handle plugin startup. This method will be called every time AM starts, after
+	 * {@link #onInstall()}, {@link #onAmUpgrade(String, String)} and
+	 * {@link #upgrade(String)} have been called (if relevant).
+	 *
+	 * No need to implement this unless your AuthNode has specific requirements on
+	 * startup.
+	 *
+	 * @param startupType The type of startup that is taking place.
+	 */
+	@Override
+	public void onStartup(StartupType startupType) throws PluginException {
+		pluginTools.startService(serviceClass);
+		super.onStartup(startupType);
+	}
+
 
 
 	/**
