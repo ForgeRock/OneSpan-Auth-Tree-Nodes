@@ -65,7 +65,7 @@ import org.forgerock.openam.plugins.StartupType;
  * @since AM 5.5.0
  */
 public class OSTIDAuthNodePlugin extends AbstractNodeAmPlugin {
-	static private String currentVersion = "1.0.31";
+	static private String currentVersion = "1.0.33";
 
 	private final List<Class<? extends Node>> nodeList = ImmutableList.of(
 			OSTIDVisualCodeNode.class,

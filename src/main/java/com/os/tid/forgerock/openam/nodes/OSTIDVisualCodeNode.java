@@ -174,18 +174,23 @@ public class OSTIDVisualCodeNode extends SingleOutcomeNode {
         String environment = serviceConfig.environment().name();
 
         JsonValue crontoMsgJsonValue = config.visualCodeMessageOption() == VisualCodeMessageOptions.CustomCrontoMessage ? sharedState.get(config.customMessageInSharedState()) : sharedState.get(Constants.OSTID_CRONTO_MSG);
+        boolean hasConsumed = false;
+        if(context.getCallbacks(HiddenValueCallback.class) != null && context.getCallbacks(HiddenValueCallback.class).size() >= 1){
+            for (HiddenValueCallback hiddenValueCallback : context.getCallbacks(HiddenValueCallback.class)) {
+                if (Constants.OSTID_CRONTO_HAS_RENDERED.contains(hiddenValueCallback.getId())) {
+                    hasConsumed = hiddenValueCallback.getValue().equalsIgnoreCase("true");
+                }
+            }
+        }
 
         //1. throw exception, if user input is not intact
-        if(sharedState.get(Constants.OSTID_CRONTO_HAS_RENDERED).isNull() &&
-            !crontoMsgJsonValue.isString() ){
-            logger.error("OSTIDVisualCodeNode exception: Can't find actiavtion code or username!");
+        if(!crontoMsgJsonValue.isString() ){
             logger.debug("OSTIDVisualCodeNode crontoMsgJsonValue is null: " + crontoMsgJsonValue.isNull());
-            throw new NodeProcessException("Can't find actiavtion code or username!");
+            throw new NodeProcessException("Can't find Cronto Message in shared state!");
         }
         //2. go to next
-        else if(sharedState.get(Constants.OSTID_CRONTO_HAS_RENDERED).isBoolean() && sharedState.get(Constants.OSTID_CRONTO_HAS_RENDERED).asBoolean()) {
+        else if(hasConsumed) {
             sharedState.remove(config.visualCodeHiddenValueId());
-            sharedState.remove(Constants.OSTID_CRONTO_HAS_RENDERED);
             return goToNext().replaceSharedState(sharedState).build();
         }
         //3. send to page
@@ -203,7 +208,11 @@ public class OSTIDVisualCodeNode extends SingleOutcomeNode {
                 crontURL = sharedState.get(config.visualCodeHiddenValueId()).asString();
             }
             HiddenValueCallback hiddenValueCDDCJson = new HiddenValueCallback(config.visualCodeHiddenValueId(), crontURL);
+            HiddenValueCallback expiryDateCallback = new HiddenValueCallback(Constants.OSTID_EVENT_EXPIRY_DATE, getExpiryString(sharedState));
+            HiddenValueCallback hasConsumedCallback = new HiddenValueCallback(Constants.OSTID_CRONTO_HAS_RENDERED, Constants.OSTID_CRONTO_HAS_RENDERED);
             returnCallback.add(hiddenValueCDDCJson);
+            returnCallback.add(expiryDateCallback);
+            returnCallback.add(hasConsumedCallback);
 
             //return Visual Code Script if required
             if (config.renderVisualCodeInCallback() ) {
@@ -211,11 +220,8 @@ public class OSTIDVisualCodeNode extends SingleOutcomeNode {
                     addCrontoScript(returnCallback);
                     sharedState.put(Constants.OSTID_CRONTO_PUSH_JS, true);
                 }
-                if(sharedState.get(Constants.OSTID_CRONTO_HAS_RENDERED).isNull()){
-                    addStartScript(sharedState, crontURL, returnCallback);
-                }
+                addStartScript(sharedState, crontURL, returnCallback);
             }
-            sharedState.put(Constants.OSTID_CRONTO_HAS_RENDERED, true);
 
             return Action.send(returnCallback)
                     .replaceSharedState(sharedState)
@@ -269,15 +275,15 @@ public class OSTIDVisualCodeNode extends SingleOutcomeNode {
     }
 
     private void addStartScript(JsonValue sharedState, String crontURL, List<Callback> returnCallback ){
-        JsonValue activationTokenExpiryDateJsonValue = sharedState.get(Constants.OSTID_EVENT_EXPIRY_DATE);
-        String expiryDateInMilli =  activationTokenExpiryDateJsonValue.isNull() ? DateUtils.getMilliStringAfterCertainSecs(Constants.OSTID_DEFAULT_EVENT_EXPIRY) :
-                activationTokenExpiryDateJsonValue.asString();
+        String expiryDateInMilli = getExpiryString(sharedState);
 
         String displayScriptBase =
+                //extra code to inject hidden callback value
                 "document.getElementById('loginButton_0').style.display = 'none';"+
                 "if (CDDC_start && typeof CDDC_start === 'function') { " +
                 "   CDDC_start(%1$s,'%2$s','%3$s','%4$s','%5$s',%6$d,'%7$s','%8$s','%9$s');" +
                 "}" +
+                "document.getElementById('%10$s').value = 'true';" +
                 "document.getElementById('loginButton_0').click();";
 
         // function start(seconds,countdownText,expiryText,imageSrc,imageAlt,imageHeight,imageLocDomID)
@@ -290,7 +296,8 @@ public class OSTIDVisualCodeNode extends SingleOutcomeNode {
                 config.sizeOfVisualCode(),          //param6
                 config.domIdRenderVisualCode(),     //param7
                 config.cssForPleaseScan(),          //param8
-                config.cssForExpired()              //param9
+                config.cssForExpired(),             //param9
+                Constants.OSTID_CRONTO_HAS_RENDERED //param10
         );
 
         ScriptTextOutputCallback displayScriptCallback = new ScriptTextOutputCallback(displayScript);
@@ -303,5 +310,12 @@ public class OSTIDVisualCodeNode extends SingleOutcomeNode {
 
     public enum VisualCodeMessageOptions {
         DemoMobileApp, CustomCrontoMessage
+    }
+
+    private String getExpiryString(JsonValue sharedState){
+        JsonValue activationTokenExpiryDateJsonValue = sharedState.get(Constants.OSTID_EVENT_EXPIRY_DATE);
+        String expiryDateInMilli =  activationTokenExpiryDateJsonValue.isNull() ? DateUtils.getMilliStringAfterCertainSecs(Constants.OSTID_DEFAULT_EVENT_EXPIRY) :
+                activationTokenExpiryDateJsonValue.asString();
+        return expiryDateInMilli;
     }
 }

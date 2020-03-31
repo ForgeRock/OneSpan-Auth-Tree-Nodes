@@ -137,7 +137,7 @@ public class OSTIDCheckActivateNode implements Node {
                     return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
                 }
             case timeout:
-                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan TID check Activation status process: Fail to check Activation status!");
+                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan TID check Activation status process: Timeout!");
                 if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()){
                     return goTo(ActivationStatusOutcome.timeout).replaceSharedState(sharedState).build();
                 }else {
@@ -145,7 +145,7 @@ public class OSTIDCheckActivateNode implements Node {
                     return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
                 }
             case unknown:
-                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan TID check Activation status process: status unknown!");
+                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan TID check Activation status process: Status Unknown!");
                 if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()){
                     return goTo(ActivationStatusOutcome.unknown).replaceSharedState(sharedState).build();
                 }else {

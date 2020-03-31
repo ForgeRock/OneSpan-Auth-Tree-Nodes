@@ -128,7 +128,7 @@ public class OSTIDCheckSessionStatusNode implements Node {
                     return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
                 }
             case refused:
-                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan TID check session status process: You have refused to validate the event!");
+                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan TID check session status process: End user refused to validate the event!");
                 if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()){
                     return goTo(CheckSessionStatusOutcome.refused).replaceSharedState(sharedState).build();
                 }else {
@@ -136,7 +136,7 @@ public class OSTIDCheckSessionStatusNode implements Node {
                     return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
                 }
             case failure:
-                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan TID check session status process: You failed to validate the event!");
+                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan TID check session status process: End user failed to validate the event!");
                 if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()){
                     return goTo(CheckSessionStatusOutcome.failure).replaceSharedState(sharedState).build();
                 }else {
@@ -144,7 +144,7 @@ public class OSTIDCheckSessionStatusNode implements Node {
                     return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
                 }
             case timeout:
-                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan TID check session status process: your session has been expired!");
+                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan TID check session status process: The session has been expired!");
                 if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()){
                     return goTo(CheckSessionStatusOutcome.timeout).replaceSharedState(sharedState).build();
                 }else {
@@ -152,7 +152,7 @@ public class OSTIDCheckSessionStatusNode implements Node {
                     return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
                 }
             case unknown:
-                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan TID check session status process: your event validation status is known!");
+                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan TID check session status process: The event validation status is unknown!");
                 if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()){
                     return goTo(CheckSessionStatusOutcome.unknown).replaceSharedState(sharedState).build();
                 }else {

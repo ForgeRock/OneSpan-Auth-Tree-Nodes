@@ -73,8 +73,10 @@ public class OSTIDVisualCodeNodeTest {
 
         // Then
         assertThat(result.outcome).isEqualTo(null);
-        assertThat(result.callbacks).hasSize(1);
+        assertThat(result.callbacks).hasSize(3);
         assertThat(result.callbacks.get(0)).isInstanceOf(HiddenValueCallback.class);
+        assertThat(result.callbacks.get(1)).isInstanceOf(HiddenValueCallback.class);
+        assertThat(result.callbacks.get(2)).isInstanceOf(HiddenValueCallback.class);
     }
 
     @Test
@@ -98,8 +100,10 @@ public class OSTIDVisualCodeNodeTest {
 
         // Then
         assertThat(result.outcome).isEqualTo(null);
-        assertThat(result.callbacks).hasSize(1);
+        assertThat(result.callbacks).hasSize(3);
         assertThat(result.callbacks.get(0)).isInstanceOf(HiddenValueCallback.class);
+        assertThat(result.callbacks.get(1)).isInstanceOf(HiddenValueCallback.class);
+        assertThat(result.callbacks.get(2)).isInstanceOf(HiddenValueCallback.class);
     }
 
     @Test
@@ -129,10 +133,12 @@ public class OSTIDVisualCodeNodeTest {
 
         // Then
         assertThat(result.outcome).isEqualTo(null);
-        assertThat(result.callbacks).hasSize(3);
+        assertThat(result.callbacks).hasSize(5);
         assertThat(result.callbacks.get(0)).isInstanceOf(HiddenValueCallback.class);
-        assertThat(result.callbacks.get(1)).isInstanceOf(ScriptTextOutputCallback.class);
-        assertThat(result.callbacks.get(2)).isInstanceOf(ScriptTextOutputCallback.class);
+        assertThat(result.callbacks.get(1)).isInstanceOf(HiddenValueCallback.class);
+        assertThat(result.callbacks.get(2)).isInstanceOf(HiddenValueCallback.class);
+        assertThat(result.callbacks.get(3)).isInstanceOf(ScriptTextOutputCallback.class);
+        assertThat(result.callbacks.get(4)).isInstanceOf(ScriptTextOutputCallback.class);
     }
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState, List<Callback> callbackList) {
