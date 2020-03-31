@@ -68,7 +68,6 @@ public class OSTIDCheckSessionStatusNode implements Node {
     }
 
 
-    //todo, set exception message to display
     @Override
     public Action process(TreeContext context) {
         logger.debug("OSTIDCheckSessionStatusNode started");
