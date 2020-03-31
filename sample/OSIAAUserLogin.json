@@ -1,0 +1,200 @@
+
+{
+  "origin": "99b81451787bfc2c871827b904ce7c24",
+  "innernodes": {
+    "02cfffff-4b6e-4643-b021-e401f4c9699b": {
+      "_id": "02cfffff-4b6e-4643-b021-e401f4c9699b",
+      "_type": {
+        "_id": "UsernameCollectorNode",
+        "name": "Username Collector",
+        "collection": true
+      }
+    },
+    "e9a783ec-16bf-46c9-a2dd-5e893190b9b8": {
+      "_id": "e9a783ec-16bf-46c9-a2dd-5e893190b9b8",
+      "CDDCJsonHiddenValueId": "osstid_cddc_json",
+      "pushCDDCJsAsCallback": true,
+      "CDDCHashHiddenValueId": "osstid_cddc_hash",
+      "_type": {
+        "_id": "OSTIDCDDCNode",
+        "name": "OneSpan TID CDDC",
+        "collection": true
+      }
+    }
+  },
+  "nodes": {
+    "47acd2ab-8055-4ae5-b257-bbf639b9439f": {
+      "_id": "47acd2ab-8055-4ae5-b257-bbf639b9439f",
+      "nodes": [
+        {
+          "_id": "02cfffff-4b6e-4643-b021-e401f4c9699b",
+          "nodeType": "UsernameCollectorNode",
+          "displayName": "Username Collector"
+        },
+        {
+          "_id": "e9a783ec-16bf-46c9-a2dd-5e893190b9b8",
+          "nodeType": "OSTIDCDDCNode",
+          "displayName": "OneSpan TID CDDC"
+        }
+      ],
+      "_type": {
+        "_id": "PageNode",
+        "name": "Page Node",
+        "collection": true
+      }
+    },
+    "575f4ae2-25d0-4424-a73f-f823e28ba118": {
+      "_id": "575f4ae2-25d0-4424-a73f-f823e28ba118",
+      "_type": {
+        "_id": "OSTID_DEMO_BackCommandsNode",
+        "name": "OneSpan IAA - DEMO - Commands Store",
+        "collection": true
+      }
+    },
+    "714f5164-5194-4a79-8f46-833f346ac591": {
+      "_id": "714f5164-5194-4a79-8f46-833f346ac591",
+      "_type": {
+        "_id": "OSTID_DEMO_ErrorDisplayNode",
+        "name": "OneSpan IAA - DEMO - Error Display",
+        "collection": true
+      }
+    },
+    "a624989b-237a-4b72-a99f-1a879a9097db": {
+      "_id": "a624989b-237a-4b72-a99f-1a879a9097db",
+      "spamDetectionTolerance": 3,
+      "spamDetectionEnabled": false,
+      "exitMessage": {},
+      "waitingMessage": {},
+      "secondsToWait": 1,
+      "exitable": false,
+      "_type": {
+        "_id": "PollingWaitNode",
+        "name": "Polling Wait Node",
+        "collection": true
+      }
+    },
+    "c7366097-6cf3-4a2e-ad7b-742a40f0175e": {
+      "_id": "c7366097-6cf3-4a2e-ad7b-742a40f0175e",
+      "visualCodeMessageOption": "DemoMobileApp",
+      "domIdRenderVisualCode": "dialog",
+      "textForExpired": "Your Activation Code has been expired!",
+      "sizeOfVisualCode": 210,
+      "renderVisualCodeInCallback": true,
+      "altTextOfVisualCode": "OneSpan TID Cronto Image",
+      "visualCodeHiddenValueId": "osstid_cronto",
+      "textForPleaseScan": "Please Scan the Visual Code within:",
+      "visualCodeType": "Cronto",
+      "_type": {
+        "_id": "OSTIDVisualCodeNode",
+        "name": "OneSpan TID Visual Code",
+        "collection": true
+      }
+    },
+    "c8d3aa20-b1bb-4a55-87de-64b7aa9cf1d2": {
+      "_id": "c8d3aa20-b1bb-4a55-87de-64b7aa9cf1d2",
+      "retryLimit": 3,
+      "_type": {
+        "_id": "RetryLimitDecisionNode",
+        "name": "Retry Limit Decision",
+        "collection": true
+      }
+    },
+    "cf5fe16d-519a-429b-807d-6c6f199b0798": {
+      "_id": "cf5fe16d-519a-429b-807d-6c6f199b0798",
+      "_type": {
+        "_id": "OSTIDCheckSessionStatusNode",
+        "name": "OneSpan IAA Auth Check",
+        "collection": true
+      }
+    },
+    "f73c0fca-7c78-468c-b730-9b8502c739a4": {
+      "_id": "f73c0fca-7c78-468c-b730-9b8502c739a4",
+      "passKeyRequired": false,
+      "visualCodeMessageOptions": "SessionId",
+      "notificationsActivated": "Default",
+      "passwordInTransientState": "password",
+      "userNameInSharedData": "username",
+      "optionalAttributes": {},
+      "loginExpiry": 60,
+      "_type": {
+        "_id": "OSTIDLoginNode",
+        "name": "OneSpan RA Login Event",
+        "collection": true
+      }
+    }
+  },
+  "scripts": {},
+  "tree": {
+    "_id": "OSIAAUserLogin",
+    "nodes": {
+      "47acd2ab-8055-4ae5-b257-bbf639b9439f": {
+        "displayName": "Page Node",
+        "nodeType": "PageNode",
+        "connections": {
+          "outcome": "f73c0fca-7c78-468c-b730-9b8502c739a4"
+        }
+      },
+      "f73c0fca-7c78-468c-b730-9b8502c739a4": {
+        "displayName": "OneSpan RA Login Event",
+        "nodeType": "OSTIDLoginNode",
+        "connections": {
+          "Accept": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0",
+          "Decline": "714f5164-5194-4a79-8f46-833f346ac591",
+          "Error": "714f5164-5194-4a79-8f46-833f346ac591",
+          "StepUp": "575f4ae2-25d0-4424-a73f-f823e28ba118"
+        }
+      },
+      "714f5164-5194-4a79-8f46-833f346ac591": {
+        "displayName": "OneSpan IAA - DEMO - Error Display",
+        "nodeType": "OSTID_DEMO_ErrorDisplayNode",
+        "connections": {
+          "outcome": "c8d3aa20-b1bb-4a55-87de-64b7aa9cf1d2"
+        }
+      },
+      "c8d3aa20-b1bb-4a55-87de-64b7aa9cf1d2": {
+        "displayName": "Retry Limit Decision",
+        "nodeType": "RetryLimitDecisionNode",
+        "connections": {
+          "Retry": "47acd2ab-8055-4ae5-b257-bbf639b9439f",
+          "Reject": "e301438c-0bd0-429c-ab0c-66126501069a"
+        }
+      },
+      "575f4ae2-25d0-4424-a73f-f823e28ba118": {
+        "displayName": "OneSpan IAA - DEMO - Commands Store",
+        "nodeType": "OSTID_DEMO_BackCommandsNode",
+        "connections": {
+          "Error": "714f5164-5194-4a79-8f46-833f346ac591",
+          "Success": "c7366097-6cf3-4a2e-ad7b-742a40f0175e"
+        }
+      },
+      "c7366097-6cf3-4a2e-ad7b-742a40f0175e": {
+        "displayName": "OneSpan TID Visual Code",
+        "nodeType": "OSTIDVisualCodeNode",
+        "connections": {
+          "outcome": "cf5fe16d-519a-429b-807d-6c6f199b0798"
+        }
+      },
+      "cf5fe16d-519a-429b-807d-6c6f199b0798": {
+        "displayName": "OneSpan IAA Auth Check",
+        "nodeType": "OSTIDCheckSessionStatusNode",
+        "connections": {
+          "accepted": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0",
+          "pending": "a624989b-237a-4b72-a99f-1a879a9097db",
+          "refused": "714f5164-5194-4a79-8f46-833f346ac591",
+          "failure": "714f5164-5194-4a79-8f46-833f346ac591",
+          "timeout": "714f5164-5194-4a79-8f46-833f346ac591",
+          "unknown": "714f5164-5194-4a79-8f46-833f346ac591",
+          "error": "714f5164-5194-4a79-8f46-833f346ac591"
+        }
+      },
+      "a624989b-237a-4b72-a99f-1a879a9097db": {
+        "displayName": "Polling Wait Node",
+        "nodeType": "PollingWaitNode",
+        "connections": {
+          "DONE": "cf5fe16d-519a-429b-807d-6c6f199b0798"
+        }
+      }
+    },
+    "entryNodeId": "47acd2ab-8055-4ae5-b257-bbf639b9439f"
+  }
+}

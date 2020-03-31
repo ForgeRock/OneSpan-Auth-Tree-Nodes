@@ -1,0 +1,4 @@
+.idea/*
+target/
+src/main/java/com/os/tid/forgerock/openam/backup/*
+dependency-reduced-pom.xml
