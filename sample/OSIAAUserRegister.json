@@ -2,6 +2,17 @@
 {
   "origin": "99b81451787bfc2c871827b904ce7c24",
   "innernodes": {
+    "72148071-19fb-4fdf-a0f5-36796dcf48e0": {
+      "_id": "72148071-19fb-4fdf-a0f5-36796dcf48e0",
+      "CDDCJsonHiddenValueId": "osstid_cddc_json",
+      "pushCDDCJsAsCallback": true,
+      "CDDCHashHiddenValueId": "osstid_cddc_hash",
+      "_type": {
+        "_id": "OSTIDCDDCNode",
+        "name": "OneSpan TID CDDC",
+        "collection": true
+      }
+    },
     "50ba6d37-fce0-48db-8f3f-7b364e0ba719": {
       "_id": "50ba6d37-fce0-48db-8f3f-7b364e0ba719",
       "_type": {
@@ -17,23 +28,17 @@
         "name": "Password Collector",
         "collection": true
       }
-    },
-    "72148071-19fb-4fdf-a0f5-36796dcf48e0": {
-      "_id": "72148071-19fb-4fdf-a0f5-36796dcf48e0",
-      "CDDCJsonHiddenValueId": "osstid_cddc_json",
-      "pushCDDCJsAsCallback": true,
-      "CDDCHashHiddenValueId": "osstid_cddc_hash",
-      "_type": {
-        "_id": "OSTIDCDDCNode",
-        "name": "OneSpan TID CDDC",
-        "collection": true
-      }
     }
   },
   "nodes": {
     "10279f2d-68b8-437f-b369-ebdaf28ab562": {
       "_id": "10279f2d-68b8-437f-b369-ebdaf28ab562",
       "nodes": [
+        {
+          "_id": "72148071-19fb-4fdf-a0f5-36796dcf48e0",
+          "nodeType": "OSTIDCDDCNode",
+          "displayName": "OneSpan TID CDDC"
+        },
         {
           "_id": "50ba6d37-fce0-48db-8f3f-7b364e0ba719",
           "nodeType": "UsernameCollectorNode",
@@ -43,11 +48,6 @@
           "_id": "fcbc05fe-7d10-4e8b-8306-f056aa949a7b",
           "nodeType": "PasswordCollectorNode",
           "displayName": "Password Collector"
-        },
-        {
-          "_id": "72148071-19fb-4fdf-a0f5-36796dcf48e0",
-          "nodeType": "OSTIDCDDCNode",
-          "displayName": "OneSpan TID CDDC"
         }
       ],
       "_type": {

@@ -2,14 +2,6 @@
 {
   "origin": "99b81451787bfc2c871827b904ce7c24",
   "innernodes": {
-    "02cfffff-4b6e-4643-b021-e401f4c9699b": {
-      "_id": "02cfffff-4b6e-4643-b021-e401f4c9699b",
-      "_type": {
-        "_id": "UsernameCollectorNode",
-        "name": "Username Collector",
-        "collection": true
-      }
-    },
     "e9a783ec-16bf-46c9-a2dd-5e893190b9b8": {
       "_id": "e9a783ec-16bf-46c9-a2dd-5e893190b9b8",
       "CDDCJsonHiddenValueId": "osstid_cddc_json",
@@ -20,6 +12,14 @@
         "name": "OneSpan TID CDDC",
         "collection": true
       }
+    },
+    "02cfffff-4b6e-4643-b021-e401f4c9699b": {
+      "_id": "02cfffff-4b6e-4643-b021-e401f4c9699b",
+      "_type": {
+        "_id": "UsernameCollectorNode",
+        "name": "Username Collector",
+        "collection": true
+      }
     }
   },
   "nodes": {
@@ -27,14 +27,14 @@
       "_id": "47acd2ab-8055-4ae5-b257-bbf639b9439f",
       "nodes": [
         {
-          "_id": "02cfffff-4b6e-4643-b021-e401f4c9699b",
-          "nodeType": "UsernameCollectorNode",
-          "displayName": "Username Collector"
-        },
-        {
           "_id": "e9a783ec-16bf-46c9-a2dd-5e893190b9b8",
           "nodeType": "OSTIDCDDCNode",
           "displayName": "OneSpan TID CDDC"
+        },
+        {
+          "_id": "02cfffff-4b6e-4643-b021-e401f4c9699b",
+          "nodeType": "UsernameCollectorNode",
+          "displayName": "Username Collector"
         }
       ],
       "_type": {
