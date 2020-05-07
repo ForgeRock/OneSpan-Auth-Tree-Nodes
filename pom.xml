@@ -23,7 +23,7 @@
     <artifactId>OSIAA-AuthNode</artifactId>
 
     <groupId>com.os.tid</groupId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <name>OneSpan IAA Auth Tree Node</name>
     <description>An Authentication Tree Node for ForgeRock's Identity Platform</description>
 
