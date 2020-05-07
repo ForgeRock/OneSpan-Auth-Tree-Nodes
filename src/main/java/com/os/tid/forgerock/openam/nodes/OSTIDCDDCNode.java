@@ -103,6 +103,8 @@ public class OSTIDCDDCNode extends SingleOutcomeNode {
         }
 
         if(!CollectionsUtils.hasAnyNullValues(attrValueMap)) {                  //1. the second time, with intact data
+            logger.debug("OSTIDCDDCNode with CDDC JSON and Hash!");
+
             String CDDCJson = attrValueMap.get(getCDDCJsonInHiddenValue());
             String CDDCHash = attrValueMap.get(getCDDCHashInHiddenValue());
             String CDDCIp = context.request.clientIp;
@@ -115,6 +117,8 @@ public class OSTIDCDDCNode extends SingleOutcomeNode {
                     .replaceSharedState(sharedState)
                     .build();
         }else {                                                                 //2. the first time, without collected data
+            logger.debug("OSTIDCDDCNode without CDDC JSON and Hash!");
+
             List<Callback> returnCallback = new ArrayList<>();
             HiddenValueCallback hiddenValueCDDCJson = new HiddenValueCallback(Constants.OSTID_CDDC_JSON,"");
             HiddenValueCallback hiddenValueCDDCHash = new HiddenValueCallback(Constants.OSTID_CDDC_HASH,"");
@@ -124,7 +128,7 @@ public class OSTIDCDDCNode extends SingleOutcomeNode {
                 //only push CDDC JS once
                 JsonValue hasPushedJSJsonValue = sharedState.get(Constants.OSTID_CDDC_HAS_PUSHED_JS);
                 if(hasPushedJSJsonValue.isNull()) {
-                    String jqueryScript = ScriptUtils.getScriptFromFile("/js/jquery-1.11.3.min.js");
+                    String jqueryScript = ScriptUtils.getScriptFromFile("/js/jquery-3.5.1.min.js");
                     ScriptTextOutputCallback jqueryScriptCallback = new ScriptTextOutputCallback(jqueryScript);
 
                     String JsonScript = ScriptUtils.getScriptFromFile("/js/Json2.js");
