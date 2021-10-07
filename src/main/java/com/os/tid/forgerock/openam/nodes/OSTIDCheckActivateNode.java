@@ -35,7 +35,6 @@ import org.forgerock.openam.sm.AnnotatedServiceRegistry;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.forgerock.openam.auth.node.api.OutcomeProvider;
 
 import javax.security.auth.callback.Callback;
 import java.util.List;
@@ -45,8 +44,9 @@ import java.util.ResourceBundle;
  * This node invokes the Check Activation Status Service API, in order to checks the status of a pending activation of a device.
  *
  */
-@Node.Metadata(outcomeProvider = OSTIDCheckActivateNode.OSTIDCheckActivateOutcomeProvider.class,
-            configClass = OSTIDCheckActivateNode.Config.class)
+@Node.Metadata( outcomeProvider = OSTIDCheckActivateNode.OSTIDCheckActivateOutcomeProvider.class,
+                configClass = OSTIDCheckActivateNode.Config.class,
+                tags = {"OneSpan", "mfa"})
 public class OSTIDCheckActivateNode implements Node {
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OSTIDCheckActivateNode";
@@ -95,7 +95,7 @@ public class OSTIDCheckActivateNode implements Node {
             activationStatusEnum = ActivationStatusOutcome.timeout;
         } else {
             String checkActivationJSON = String.format(Constants.OSTID_JSON_CHECK_ACTIVATION,
-                    usernameJsonValue.asString().toLowerCase(),              //param1
+                    usernameJsonValue.asString(),                            //param1
                     Constants.OSTID_DEFAULT_CHECK_ACTIVATION_TIMEOUT         //param2
             );
             try {

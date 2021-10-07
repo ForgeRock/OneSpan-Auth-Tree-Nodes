@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import com.iplanet.sso.SSOException;
+import com.os.tid.forgerock.openam.deprecated.OSTIDCheckActivateNode3;
 import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.models.HttpEntity;
 import com.os.tid.forgerock.openam.utils.DateUtils;
@@ -44,8 +45,9 @@ import java.util.ResourceBundle;
  * This node invokes the Check Session Status Service API, in order to checks the status of a request.
  *
  */
-@Node.Metadata(outcomeProvider = OSTIDCheckSessionStatusNode.OSTIDCheckSessionStatusOutcomeProvider.class,
-            configClass = OSTIDCheckSessionStatusNode.Config.class)
+@Node.Metadata( outcomeProvider = OSTIDCheckSessionStatusNode.OSTIDCheckSessionStatusOutcomeProvider.class,
+                configClass = OSTIDCheckSessionStatusNode.Config.class,
+                tags = {"OneSpan", "mfa"})
 public class OSTIDCheckSessionStatusNode implements Node {
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OSTIDCheckSessionStatusNode";
@@ -131,7 +133,7 @@ public class OSTIDCheckSessionStatusNode implements Node {
                 if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()){
                     return goTo(CheckSessionStatusOutcome.refused).replaceSharedState(sharedState).build();
                 }else {
-                    sharedState.put(Constants.OSTID_CRONTO_STATUS, OSTIDCheckActivateNode.ActivationStatusOutcome.error.name());
+                    sharedState.put(Constants.OSTID_CRONTO_STATUS, OSTIDCheckActivateNode3.ActivationStatusOutcome.error.name());
                     return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
                 }
             case failure:

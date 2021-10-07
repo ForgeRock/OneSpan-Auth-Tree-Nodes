@@ -41,8 +41,9 @@ import java.util.List;
  *
  * This node reads the visual code message from the sharedState and renders it as a visual code, which allows the device integrated with the Mobile Security Suite SDKs to scan with.
  */
-@Node.Metadata(outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
-            configClass = OSTIDVisualCodeNode.Config.class)
+@Node.Metadata( outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
+                configClass = OSTIDVisualCodeNode.Config.class,
+                tags = {"OneSpan", "mfa"})
 public class OSTIDVisualCodeNode extends SingleOutcomeNode {
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private final OSTIDVisualCodeNode.Config config;
@@ -200,7 +201,7 @@ public class OSTIDVisualCodeNode extends SingleOutcomeNode {
             //return visual code URL as hiddenValueCallback
             String crontURL = "";
             if (sharedState.get(config.visualCodeHiddenValueId()).isNull()) {
-                crontURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_CRTONTO_RENDER,
+                crontURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_ADAPTIVE_CRTONTO_RENDER,
                         config.visualCodeType().name().toUpperCase(),
                         crontoMsgJsonValue.asString());
                 sharedState.put(config.visualCodeHiddenValueId(), crontURL);
@@ -242,6 +243,7 @@ public class OSTIDVisualCodeNode extends SingleOutcomeNode {
                         "       document.getElementById('ostid_cronto_countdown').innerHTML = '<p style=\"' + countdownCSS + '\">' + countdownText + \" \" + seconds + ' s</p>';" +
                         "       if (seconds < 0) {" +
                         "            document.getElementById('ostid_cronto_countdown').innerHTML = '<p style=\"' + expiryCSS + '\">' + expiryText + '</p>';" +
+                        "            clearTimeout(this.CDDC_timer); " +
                         "       }" +
                         "    }, 1000);" +
                         "  }" +
@@ -254,7 +256,16 @@ public class OSTIDVisualCodeNode extends SingleOutcomeNode {
                         "                           <img style='display:block;margin:auto;'  src='\"+imageSrc+\"' alt='\"+imageAlt+\"' height='\"+imageHeight+\"' width='\"+imageHeight+\"'></img><br/>" +
                         "                           <p id='ostid_cronto_countdown' style='text-align:center'></p>" +
                         "                         </div>\";" +
-                        "       document.getElementById(imageLocDomID).innerHTML += crontoDiv;" +
+                        "       if(document.getElementById('ostid_cronto')){" +
+                        "           document.getElementById('ostid_cronto').innerHTML = crontoDiv;" +
+                        "       }else{" +
+                        "           var helper = document.createElement('div');" +
+                        "           helper.innerHTML = crontoDiv;"+
+                        "           insertAfter(document.getElementById(imageLocDomID),helper);}"+
+
+
+
+//                        "           document.getElementById(imageLocDomID).innerHTML += crontoDiv;}" +
                         "       var style = document.createElement('style');" +
                         "       style.type = 'text/css';" +
                         "       style.id = 'ostid_cronto_style';" +
@@ -265,6 +276,14 @@ public class OSTIDVisualCodeNode extends SingleOutcomeNode {
                         "      document.getElementById('ostid_cronto').remove();  " +
                         "      document.getElementById('ostid_cronto_style').remove();  " +
                         "  }" +
+
+                        " function insertAfter(referenceNode, newNode) {" +
+                        "   if(referenceNode.parentNode){"+
+                        "         referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);" +
+                        "   }else{" +
+                        "        referenceNode.innerHtml += newNode.innerHtml;" +
+                        "   }"+
+                        " }" +
                         " return isStart == true ? start : stop;" +
                         "}" +
                         "var CDDC_start = CDDC_display(true);" +

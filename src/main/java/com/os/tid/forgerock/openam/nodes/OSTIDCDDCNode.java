@@ -40,8 +40,9 @@ import java.util.Map;
  * A node which collects CDDC information through script callback.
  * Places the result in the shared state as 'osstid_cddc_json', 'osstid_cddc_hash' and 'osstid_cddc_ip'.
  */
-@Node.Metadata(outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
-            configClass = OSTIDCDDCNode.Config.class)
+@Node.Metadata( outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
+                configClass = OSTIDCDDCNode.Config.class,
+                tags = {"OneSpan", "mfa"})
 public class OSTIDCDDCNode extends SingleOutcomeNode {
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private final OSTIDCDDCNode.Config config;

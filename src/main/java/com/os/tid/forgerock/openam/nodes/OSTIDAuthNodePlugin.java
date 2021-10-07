@@ -24,6 +24,7 @@ import java.util.Map;
 import com.google.common.collect.ImmutableList;
 import com.iplanet.sso.SSOException;
 import com.iplanet.sso.SSOToken;
+import com.os.tid.forgerock.openam.deprecated.*;
 import com.sun.identity.security.AdminTokenAction;
 import com.sun.identity.sm.SMSException;
 import com.sun.identity.sm.ServiceManager;
@@ -65,21 +66,40 @@ import org.forgerock.openam.plugins.StartupType;
  * @since AM 5.5.0
  */
 public class OSTIDAuthNodePlugin extends AbstractNodeAmPlugin {
-	static private String currentVersion = "1.0.1";
+	static private String currentVersion = "1.1.0.2";
 
 	private final List<Class<? extends Node>> nodeList = ImmutableList.of(
+			//OCA
+			OS_Auth_AddDeviceNode.class,
+			OS_Auth_ActivateDeviceNode.class,
+			OS_Auth_GenerateChallengeNode.class,
+
+			//Adaptive
+			OSTIDCheckActivateNode.class,
+			OSTIDCheckSessionStatusNode.class,
+			OS_Auth_UserRegisterNode.class,
+			OS_Auth_UserLoginNode.class,
+			OS_Auth_SendTransactionNode.class,
+			OS_Auth_EventValidationNode.class,
+
+			//common
 			OSTIDVisualCodeNode.class,
 			OSTIDCDDCNode.class,
-			OSTIDUserRegisterNode.class,
-			OSTIDCheckActivateNode.class,
-			OSTIDEventValidationNode.class,
-			OSTIDCheckSessionStatusNode.class,
-            OSTIDTransactionsNode.class,
-			OSTIDLoginNode.class,
+			OSTIDStopVisualCodeNode.class,
+
+			//deprecated
+//			OSTIDUserRegisterNode.class,
+//			OSTIDEventValidationNode.class,
+//			OSTIDTransactionsNode.class,
+//			OSTIDLoginNode.class,
+//			OSTID_DEMO_BackCommandsNode.class,
+//			OSTID_DEMO_InsertJavaScriptNode.class,
+
+			//demo
 			OSTID_DEMO_ErrorDisplayNode.class,
 			OSTID_DEMO_TransactionCollector.class,
-			OSTID_DEMO_BackCommandsNode.class,
-			OSTID_DEMO_InsertJavaScriptNode.class
+            OSTID_DEMO_StoreCommandNode.class,
+            OSTID_DEMO_AttributesCollector.class
 	);
 
 	private final Class serviceClass = OSTIDConfigurationsService.class;

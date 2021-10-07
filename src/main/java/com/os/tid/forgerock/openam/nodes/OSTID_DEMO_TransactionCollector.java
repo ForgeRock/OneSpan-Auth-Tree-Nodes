@@ -37,8 +37,9 @@ import java.util.*;
  *
  *
  */
-@Node.Metadata(outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
-            configClass = OSTID_DEMO_TransactionCollector.Config.class)
+@Node.Metadata( outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
+                configClass = OSTID_DEMO_TransactionCollector.Config.class,
+                tags = {"OneSpan", "mfa"})
 public class OSTID_DEMO_TransactionCollector extends SingleOutcomeNode {
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private final OSTID_DEMO_TransactionCollector.Config config;

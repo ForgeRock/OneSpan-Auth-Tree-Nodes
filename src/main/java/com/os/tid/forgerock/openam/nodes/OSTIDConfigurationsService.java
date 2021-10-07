@@ -31,6 +31,9 @@ public interface OSTIDConfigurationsService {
     @Attribute(order = 200, validators = RequiredValueValidator.class)
     EnvOptions environment();
 
+    @Attribute(order = 300, validators = RequiredValueValidator.class)
+    String applicationRef();
+
     default String tenantNameToLowerCase() {return tenantName().toLowerCase();}
 
     enum EnvOptions {

@@ -30,8 +30,9 @@ import java.util.List;
  *
  *
  */
-@Node.Metadata(outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
-            configClass = OSTID_DEMO_ErrorDisplayNode.Config.class)
+@Node.Metadata( outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
+                configClass = OSTID_DEMO_ErrorDisplayNode.Config.class,
+                tags = {"OneSpan", "mfa"})
 public class OSTID_DEMO_ErrorDisplayNode extends SingleOutcomeNode {
     private final Logger logger = LoggerFactory.getLogger("amAuth");
 
