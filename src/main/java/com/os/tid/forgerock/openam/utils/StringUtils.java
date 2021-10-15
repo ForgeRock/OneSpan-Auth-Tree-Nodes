@@ -40,40 +40,40 @@ public class StringUtils {
         return String.format("https://%1$s.%2$s.tid.onespan.cloud",ostid_tenant_name,ostid_environment);
     }
 
-    public static String getErrorMsgNoRetCodeWithoutValidation(String message, String log_correlation_id){
-        return String.format("Error Message: %1$s;<br />Log Correction ID: %2$s;",
-                message,log_correlation_id
+    public static String getErrorMsgNoRetCodeWithoutValidation(String message, String log_correlation_id, String requestJSON){
+        return String.format("Error Message: %1$s;<br />Request Payload: %3$s;<br />Log Correction ID: %2$s;",
+                message,log_correlation_id,requestJSON
         );
     }
 
-    public static String getErrorMsgNoRetCodeWithValidation(String message, String log_correlation_id, String validationMsg){
-        return String.format("Error Message: %1$s;<br />Validation Message: %3$s;<br />Log Correction ID: %2$s;",
-                message,log_correlation_id,validationMsg
+    public static String getErrorMsgNoRetCodeWithValidation(String message, String log_correlation_id, String validationMsg, String requestJSON){
+        return String.format("Error Message: %1$s;<br />Request Payload: %4$s;<br />Validation Message: %3$s;<br />Log Correction ID: %2$s;",
+                message,log_correlation_id,validationMsg, requestJSON
         );
     }
 
 
-    public static String getErrorMsgWithoutValidation(String message, String retCode, String log_correlation_id){
-        return String.format("Error Message: %1$s;<br />RetCode: %2$s;<br />Log Correction ID: %3$s;",
-                message,retCode,log_correlation_id
+    public static String getErrorMsgWithoutValidation(String message, String retCode, String log_correlation_id, String requestJSON){
+        return String.format("Error Message: %1$s;<br />Request Payload: %4$s;<br />RetCode: %2$s;<br />Log Correction ID: %3$s;",
+                message,retCode,log_correlation_id,requestJSON
                 );
     }
 
-    public static String getErrorMsgWithValidation(String message, String retCode, String log_correlation_id, String validationMsg){
-        return String.format("Error Message: %1$s;<br />Validation Message: %4$s;<br />RetCode: %2$s;<br />Log Correction ID: %3$s;",
-                message,retCode,log_correlation_id,validationMsg
+    public static String getErrorMsgWithValidation(String message, String retCode, String log_correlation_id, String validationMsg, String requestJSON){
+        return String.format("Error Message: %1$s;<br />Request Payload: %5$s;<br />Validation Message: %4$s;<br />RetCode: %2$s;<br />Log Correction ID: %3$s;",
+                message,retCode,log_correlation_id,validationMsg,requestJSON
         );
     }
 
-    public static String getErrorMsgWithValidation2(String message, String error, String log_correlation_id, String validationMsg){
-        return String.format("Error: %2$s;<br />Error Message: %1$s;<br />Validation Message: %4$s;<br />Log Correction ID: %3$s;",
-                message,error,log_correlation_id,validationMsg
+    public static String getErrorMsgWithValidation2(String message, String error, String log_correlation_id, String validationMsg, String requestJSON){
+        return String.format("Error: %2$s;<br />Error Message: %1$s;<br />Request Payload: %5$s;<br />Validation Message: %4$s;<br />Log Correction ID: %3$s;",
+                message,error,log_correlation_id,validationMsg,requestJSON
         );
     }
 
-    public static String getErrorMsgWithoutValidation2(String message, String error, String log_correlation_id){
-        return String.format("Error: %2$s;<br />Error Message: %1$s;<br />Log Correction ID: %3$s;",
-                message,error,log_correlation_id
+    public static String getErrorMsgWithoutValidation2(String message, String error, String log_correlation_id, String requestJSON){
+        return String.format("Error: %2$s;<br />Error Message: %1$s;<br />Request Payload: %4$s;<br />Log Correction ID: %3$s;",
+                message,error,log_correlation_id,requestJSON
         );
     }
 

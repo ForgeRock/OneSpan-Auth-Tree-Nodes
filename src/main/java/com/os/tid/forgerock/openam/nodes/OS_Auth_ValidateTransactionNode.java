@@ -26,6 +26,7 @@ import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.models.HttpEntity;
 import com.os.tid.forgerock.openam.models.GeneralResponseOutput;
 import com.os.tid.forgerock.openam.utils.CollectionsUtils;
+import com.os.tid.forgerock.openam.utils.DateUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
 import com.sun.identity.sm.RequiredValueValidator;
@@ -46,14 +47,14 @@ import java.util.stream.Stream;
 /**
  * This node invokes the User Register/Unregister Service API, in order to validate and process the registration/unregistration of a user.
  */
-@Node.Metadata( outcomeProvider = OS_Auth_SendTransactionNode.OSTID_Adaptive_SendTransactionNodeOutcomeProvider.class,
-                configClass = OS_Auth_SendTransactionNode.Config.class,
-                tags = {"OneSpan", "mfa"})
-public class OS_Auth_SendTransactionNode implements Node {
-    private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_SendTransactionNode";
+@Node.Metadata( outcomeProvider = OS_Auth_ValidateTransactionNode.OSTID_Adaptive_SendTransactionNodeOutcomeProvider.class,
+                configClass = OS_Auth_ValidateTransactionNode.Config.class,
+                tags = {"OneSpan", "basic authentication", "mfa", "risk"})
+public class OS_Auth_ValidateTransactionNode implements Node {
+    private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_ValidateTransactionNode";
     private final Logger logger = LoggerFactory.getLogger("amAuth");
-    private final OS_Auth_SendTransactionNode.Config config;
-    private final OSTIDConfigurationsService serviceConfig;
+    private final OS_Auth_ValidateTransactionNode.Config config;
+    private final OSConfigurationsService serviceConfig;
 
     /**
      * Configuration for the OneSpan TID Adaptive User Login Node.
@@ -78,7 +79,7 @@ public class OS_Auth_SendTransactionNode implements Node {
          * @return
          */
         @Attribute(order = 300, validators = RequiredValueValidator.class)
-        DataToSign dataToSign();
+        default DataToSign dataToSign() { return DataToSign.transactionMessage; }
 
         /**
          * Configurable attributes in request JSON payload
@@ -153,7 +154,7 @@ public class OS_Auth_SendTransactionNode implements Node {
          */
         @Attribute(order = 1000)
         default OrchestrationDelivery orchestrationDelivery() {
-            return OrchestrationDelivery.pushNotification;
+            return OrchestrationDelivery.both;
         }
 
         /**
@@ -176,10 +177,10 @@ public class OS_Auth_SendTransactionNode implements Node {
     }
 
     @Inject
-    public OS_Auth_SendTransactionNode(@Assisted Config config, @Assisted Realm realm, AnnotatedServiceRegistry serviceRegistry) throws NodeProcessException {
+    public OS_Auth_ValidateTransactionNode(@Assisted Config config, @Assisted Realm realm, AnnotatedServiceRegistry serviceRegistry) throws NodeProcessException {
         this.config = config;
         try {
-            this.serviceConfig = serviceRegistry.getRealmSingleton(OSTIDConfigurationsService.class, realm).get();
+            this.serviceConfig = serviceRegistry.getRealmSingleton(OSConfigurationsService.class, realm).get();
         } catch (SSOException | SMSException e) {
             throw new NodeProcessException(e);
         }
@@ -187,7 +188,7 @@ public class OS_Auth_SendTransactionNode implements Node {
 
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
-        logger.debug("OS_Auth_SendTransactionNode started");
+        logger.debug("OS_Auth_ValidateTransactionNode started");
         JsonValue sharedState = context.sharedState;
         String tenantName = serviceConfig.tenantNameToLowerCase();
         String environment = serviceConfig.environment().name();
@@ -322,7 +323,7 @@ public class OS_Auth_SendTransactionNode implements Node {
         }
 
         if (usernameJsonValue.isNull() || missOptionalAttr || hasNullValue){  //missing data
-            logger.debug("OS_Auth_SendTransactionNode exception: Oopts, there's missing data for OneSpan TID Auth Send Transaction Process!");
+            logger.debug("OS_Auth_ValidateTransactionNode exception: Oopts, there's missing data for OneSpan TID Auth Send Transaction Process!");
             sharedState.put(Constants.OSTID_ERROR_MESSAGE, "Oopts, there's missing data for OneSpan Auth Send Transaction Process!");
             return goTo(SendTransactionOutcome.Error)
                     .replaceSharedState(sharedState)
@@ -364,7 +365,7 @@ public class OS_Auth_SendTransactionNode implements Node {
                     timeout,                                                        //param4
                     IAAJson                                                         //param5
             );
-            logger.debug("OS_Auth_SendTransactionNode JSON:" + sendTransactionJSON);
+            logger.debug("OS_Auth_ValidateTransactionNode JSON:" + sendTransactionJSON);
 
             try {
                 HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, sendTransactionJSON);
@@ -377,6 +378,7 @@ public class OS_Auth_SendTransactionNode implements Node {
                     sharedState.put(Constants.OSTID_SESSIONID,sessionID);
                     sharedState.put(Constants.OSTID_REQUEST_ID, loginOutput.getRequestID());
                     sharedState.put(Constants.OSTID_COMMAND,loginOutput.getRequestMessage());
+                    sharedState.put(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.timeout()));
 
                     SendTransactionOutcome sendTransactionOutcome = SendTransactionOutcome.Error;
 
@@ -419,16 +421,17 @@ public class OS_Auth_SendTransactionNode implements Node {
                             .build();
                 } else {
                     String log_correction_id = httpEntity.getLog_correlation_id();
-                    String message = responseJSON.getString("message") + StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl + " : " + sendTransactionJSON;
+                    String message = responseJSON.getString("message");
+                    String requestJSON = "POST " + StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl + " : " + sendTransactionJSON;
 
                     if (Stream.of(log_correction_id, message).anyMatch(Objects::isNull)) {
                         throw new NodeProcessException("Fail to parse response: " + JSON.toJSONString(responseJSON));
                     } else {
                         JSONArray validationErrors = responseJSON.getJSONArray("validationErrors");
-                        if (validationErrors != null && validationErrors.size() > 0 && validationErrors.getJSONObject(0).getString("message") != null) {
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithValidation(message, log_correction_id, validationErrors.getJSONObject(0).getString("message")));         //error return from IAA server
-                        } else {
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithoutValidation(message, log_correction_id));         //error return from IAA server
+                        if(validationErrors != null && validationErrors.size() > 0 && validationErrors.getJSONObject(0).getString("message") != null){
+                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithValidation(message,log_correction_id,validationErrors.getJSONObject(0).getString("message"),requestJSON));         //error return from IAA server
+                        }else{
+                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithoutValidation(message,log_correction_id,requestJSON));         //error return from IAA server
                         }
                         return goTo(SendTransactionOutcome.Error)
                                 .replaceSharedState(sharedState)
@@ -436,7 +439,7 @@ public class OS_Auth_SendTransactionNode implements Node {
                     }
                 }
             } catch (Exception e) {
-                logger.debug("OS_Auth_SendTransactionNode exception: " + e.getMessage());
+                logger.debug("OS_Auth_ValidateTransactionNode exception: " + e.getMessage());
                 sharedState.put(Constants.OSTID_ERROR_MESSAGE, "Fail to Send Transaction!");                            //general error msg
                 return goTo(SendTransactionOutcome.Error)
                         .replaceSharedState(sharedState)
@@ -479,8 +482,8 @@ public class OS_Auth_SendTransactionNode implements Node {
     public static class OSTID_Adaptive_SendTransactionNodeOutcomeProvider implements OutcomeProvider {
         @Override
         public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes) {
-            ResourceBundle bundle = locales.getBundleInPreferredLocale(OS_Auth_SendTransactionNode.BUNDLE,
-                    OS_Auth_SendTransactionNode.OSTID_Adaptive_SendTransactionNodeOutcomeProvider.class.getClassLoader());
+            ResourceBundle bundle = locales.getBundleInPreferredLocale(OS_Auth_ValidateTransactionNode.BUNDLE,
+                    OS_Auth_ValidateTransactionNode.OSTID_Adaptive_SendTransactionNodeOutcomeProvider.class.getClassLoader());
             return ImmutableList.of(
                     new Outcome(SendTransactionOutcome.Accept.name(), bundle.getString("acceptOutcome")),
                     new Outcome(SendTransactionOutcome.Decline.name(), bundle.getString("declineOutcome")),

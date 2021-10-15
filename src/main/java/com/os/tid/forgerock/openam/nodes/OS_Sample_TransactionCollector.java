@@ -16,7 +16,6 @@
 package com.os.tid.forgerock.openam.nodes;
 
 import com.alibaba.fastjson.JSON;
-import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import com.os.tid.forgerock.openam.config.Constants;
@@ -38,15 +37,15 @@ import java.util.*;
  *
  */
 @Node.Metadata( outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
-                configClass = OSTID_DEMO_TransactionCollector.Config.class,
-                tags = {"OneSpan", "mfa"})
-public class OSTID_DEMO_TransactionCollector extends SingleOutcomeNode {
+                configClass = OS_Sample_TransactionCollector.Config.class,
+                tags = {"OneSpan", "mfa", "utilities"})
+public class OS_Sample_TransactionCollector extends SingleOutcomeNode {
     private final Logger logger = LoggerFactory.getLogger("amAuth");
-    private final OSTID_DEMO_TransactionCollector.Config config;
-    private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OSTID_DEMO_TransactionCollector";
+    private final OS_Sample_TransactionCollector.Config config;
+    private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Sample_TransactionCollector";
 
     /**
-     * Configuration for the OSTID_DEMO_TransactionCollector.
+     * Configuration for the OS_Sample_TransactionCollector.
      */
     public interface Config {
         /**
@@ -67,12 +66,12 @@ public class OSTID_DEMO_TransactionCollector extends SingleOutcomeNode {
     }
 
     @Inject
-    public OSTID_DEMO_TransactionCollector(@Assisted OSTID_DEMO_TransactionCollector.Config config)  {
+    public OS_Sample_TransactionCollector(@Assisted OS_Sample_TransactionCollector.Config config)  {
         this.config = config;
     }
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
-        logger.debug("OSTID_DEMO_TransactionCollector started");
+        logger.debug("OS_Sample_TransactionCollector started");
         JsonValue sharedState = context.sharedState;
         JsonValue transientState = context.transientState;
 
@@ -87,7 +86,11 @@ public class OSTID_DEMO_TransactionCollector extends SingleOutcomeNode {
                 put(bundle.getString("callback.accountRef"),Constants.OSTID_DEFAULT_ACCOUNTREF);
                 put(bundle.getString("callback.creditorName"),Constants.OSTID_DEFAULT_CREDITORNAME);
                 put(bundle.getString("callback.creditorIBAN"),Constants.OSTID_DEFAULT_CREDITORIBAN);
+                put(bundle.getString("callback.creditorBank"),Constants.OSTID_DEFAULT_CREDITORBANK);
+                put(bundle.getString("callback.debtorIBAN"),Constants.OSTID_DEFAULT_DEBTORIBAN);
         }};
+
+
 
         config.optionalAttributes().forEach(attr -> attrMap.putIfAbsent(attr,attr));
         attrMap.values().forEach(attrName -> attrValueMap.putIfAbsent(attrName,null));
@@ -120,8 +123,8 @@ public class OSTID_DEMO_TransactionCollector extends SingleOutcomeNode {
             if(config.passKeyRequired()){
                 transientState.put(Constants.OSTID_DEFAULT_PASSKEY,password);
             }
-            logger.debug("OSTID_DEMO_TransactionCollector shared state: " + JSON.toJSONString(sharedState));
-            logger.debug("OSTID_DEMO_TransactionCollector transient state: " + JSON.toJSONString(transientState));
+            logger.debug("OS_Sample_TransactionCollector shared state: " + JSON.toJSONString(sharedState));
+            logger.debug("OS_Sample_TransactionCollector transient state: " + JSON.toJSONString(transientState));
             return goToNext()
                     .replaceSharedState(sharedState)
                     .replaceTransientState(transientState)

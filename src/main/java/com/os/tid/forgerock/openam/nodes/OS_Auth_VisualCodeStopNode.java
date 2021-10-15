@@ -28,9 +28,9 @@ import javax.security.auth.callback.Callback;
  * This node reads the visual code message from the sharedState and renders it as a visual code, which allows the device integrated with the Mobile Security Suite SDKs to scan with.
  */
 @Node.Metadata( outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
-                configClass = OSTIDStopVisualCodeNode.Config.class,
-                tags = {"OneSpan", "mfa"})
-public class OSTIDStopVisualCodeNode extends SingleOutcomeNode {
+                configClass = OS_Auth_VisualCodeStopNode.Config.class,
+                tags = {"OneSpan", "mfa", "utilities", "basic authentication"})
+public class OS_Auth_VisualCodeStopNode extends SingleOutcomeNode {
     private final Logger logger = LoggerFactory.getLogger("amAuth");
 
     /**
@@ -41,11 +41,10 @@ public class OSTIDStopVisualCodeNode extends SingleOutcomeNode {
 
     @Override
     public Action process(TreeContext context) {
-        logger.debug("OSTIDVisualCodeNode started");
+        logger.debug("OS_Auth_VisualCodeNode started");
         JsonValue sharedState = context.sharedState;
 
         if (sharedState.get("os_tid_visualcodestop").isBoolean()) {
-            sharedState.remove("os_tid_visualcodestop");
             return goToNext().replaceSharedState(sharedState).build();
         } else {
             sharedState.put("os_tid_visualcodestop",true);
@@ -55,7 +54,7 @@ public class OSTIDStopVisualCodeNode extends SingleOutcomeNode {
 
     private Callback getStopCrontoCallback() {
         ScriptTextOutputCallback displayScriptCallback = new ScriptTextOutputCallback(
-                "document.getElementById('loginButton_0').style.display = 'none';" +
+                        "document.getElementById('loginButton_0').style.display = 'none';" +
                         "if (CDDC_stop && typeof CDDC_stop === 'function') { " +
                         "    CDDC_stop();" +
                         "}" +

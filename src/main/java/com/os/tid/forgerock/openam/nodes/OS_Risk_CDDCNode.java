@@ -41,11 +41,11 @@ import java.util.Map;
  * Places the result in the shared state as 'osstid_cddc_json', 'osstid_cddc_hash' and 'osstid_cddc_ip'.
  */
 @Node.Metadata( outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
-                configClass = OSTIDCDDCNode.Config.class,
-                tags = {"OneSpan", "mfa"})
-public class OSTIDCDDCNode extends SingleOutcomeNode {
+                configClass = OS_Risk_CDDCNode.Config.class,
+                tags = {"OneSpan", "mfa", "risk", "contextual"})
+public class OS_Risk_CDDCNode extends SingleOutcomeNode {
     private final Logger logger = LoggerFactory.getLogger("amAuth");
-    private final OSTIDCDDCNode.Config config;
+    private final OS_Risk_CDDCNode.Config config;
 
     /**
      * Configuration for the OS TID CDDC Collector Node.
@@ -81,13 +81,13 @@ public class OSTIDCDDCNode extends SingleOutcomeNode {
     }
 
     @Inject
-    public OSTIDCDDCNode(@Assisted Config config){
+    public OS_Risk_CDDCNode(@Assisted Config config){
         this.config = config;
     }
 
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
-        logger.debug("OSTIDCDDCNode started");
+        logger.debug("OS_Risk_CDDCNode started");
         JsonValue sharedState = context.sharedState.copy();
 
         Map<String, String> attrValueMap = new HashMap<>();
@@ -104,11 +104,14 @@ public class OSTIDCDDCNode extends SingleOutcomeNode {
         }
 
         if(!CollectionsUtils.hasAnyNullValues(attrValueMap)) {                  //1. the second time, with intact data
-            logger.debug("OSTIDCDDCNode with CDDC JSON and Hash!");
+            logger.debug("OS_Risk_CDDCNode with CDDC JSON and Hash!");
 
             String CDDCJson = attrValueMap.get(getCDDCJsonInHiddenValue());
             String CDDCHash = attrValueMap.get(getCDDCHashInHiddenValue());
             String CDDCIp = context.request.clientIp;
+            if("0:0:0:0:0:0:0:1".equals(CDDCIp)){
+                CDDCIp = "127.0.0.1";
+            }
 
             sharedState.put(Constants.OSTID_CDDC_JSON,CDDCJson);
             sharedState.put(Constants.OSTID_CDDC_HASH,CDDCHash);
@@ -118,7 +121,7 @@ public class OSTIDCDDCNode extends SingleOutcomeNode {
                     .replaceSharedState(sharedState)
                     .build();
         }else {                                                                 //2. the first time, without collected data
-            logger.debug("OSTIDCDDCNode without CDDC JSON and Hash!");
+            logger.debug("OS_Risk_CDDCNode without CDDC JSON and Hash!");
 
             List<Callback> returnCallback = new ArrayList<>();
             HiddenValueCallback hiddenValueCDDCJson = new HiddenValueCallback(Constants.OSTID_CDDC_JSON,"");

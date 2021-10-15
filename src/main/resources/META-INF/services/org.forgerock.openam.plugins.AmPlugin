@@ -14,5 +14,5 @@
 # Copyright 2017-2018 ForgeRock AS.
 #
 
-com.os.tid.forgerock.openam.nodes.OSTIDAuthNodePlugin
+com.os.tid.forgerock.openam.nodes.OSAuthNodePlugin
 

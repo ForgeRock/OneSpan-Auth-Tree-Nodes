@@ -50,11 +50,11 @@ import java.util.stream.Stream;
  */
 @Node.Metadata( outcomeProvider = OS_Auth_ActivateDeviceNode.OSTIDActivateDeviceOutcomeProvider.class,
                 configClass = OS_Auth_ActivateDeviceNode.Config.class,
-                tags = {"OneSpan", "mfa"})
+                tags = {"OneSpan", "mfa", "basic authentication"})
 public class OS_Auth_ActivateDeviceNode implements Node {
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_ActivateDeviceNode";
-    private final OSTIDConfigurationsService serviceConfig;
+    private final OSConfigurationsService serviceConfig;
 
     /**
      * Configuration for the OS TID Check Activate Node.
@@ -65,7 +65,7 @@ public class OS_Auth_ActivateDeviceNode implements Node {
     @Inject
     public OS_Auth_ActivateDeviceNode(@Assisted Realm realm, AnnotatedServiceRegistry serviceRegistry) throws NodeProcessException {
         try {
-            this.serviceConfig = serviceRegistry.getRealmSingleton(OSTIDConfigurationsService.class, realm).get();
+            this.serviceConfig = serviceRegistry.getRealmSingleton(OSConfigurationsService.class, realm).get();
         } catch (SSOException | SMSException e) {
             throw new NodeProcessException(e);
         }
@@ -115,7 +115,9 @@ public class OS_Auth_ActivateDeviceNode implements Node {
                     return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
                 }else{
                     String error = responseJSON.getString("error");
-                    String message = responseJSON.getString("message") + StringUtils.getAPIEndpoint(tenantName, environment) + url + " : " + activateDeviceJSON;
+                    String message = responseJSON.getString("message");
+                    String requestJSON = "POST "+ url + " : " + activateDeviceJSON;
+
                     String log_correction_id = httpEntity.getLog_correlation_id();
 
                     if(Stream.of(message, error, log_correction_id).anyMatch(Objects::isNull)){
@@ -123,9 +125,9 @@ public class OS_Auth_ActivateDeviceNode implements Node {
                     }else {
                         JSONArray validationErrors = responseJSON.getJSONArray("validationErrors");
                         if(validationErrors != null && validationErrors.size() > 0 && validationErrors.getJSONObject(0).getString("message") != null){
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgWithValidation2(message,error,log_correction_id,validationErrors.getJSONObject(0).getString("message")));         //error return from IAA server
+                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithValidation(message,log_correction_id,validationErrors.getJSONObject(0).getString("message"),requestJSON));         //error return from IAA server
                         }else{
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgWithoutValidation2(message,error,log_correction_id));         //error return from IAA server
+                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithoutValidation(message,log_correction_id,requestJSON));         //error return from IAA server
                         }
                         return goTo(OSTIDActivateDeviceOutcome.error)
                                 .replaceSharedState(sharedState)

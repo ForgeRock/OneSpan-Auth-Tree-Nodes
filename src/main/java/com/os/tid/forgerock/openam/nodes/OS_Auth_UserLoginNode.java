@@ -25,6 +25,7 @@ import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.models.HttpEntity;
 import com.os.tid.forgerock.openam.models.GeneralResponseOutput;
 import com.os.tid.forgerock.openam.utils.CollectionsUtils;
+import com.os.tid.forgerock.openam.utils.DateUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
 import com.sun.identity.sm.RequiredValueValidator;
@@ -47,12 +48,12 @@ import java.util.stream.Stream;
  */
 @Node.Metadata( outcomeProvider = OS_Auth_UserLoginNode.OSTID_Adaptive_UserLoginNode3OutcomeProvider.class,
                 configClass = OS_Auth_UserLoginNode.Config.class,
-                tags = {"OneSpan", "mfa"})
+                tags = {"OneSpan", "basic authentication", "mfa", "risk"})
 public class OS_Auth_UserLoginNode implements Node {
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_UserLoginNode";
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private final OS_Auth_UserLoginNode.Config config;
-    private final OSTIDConfigurationsService serviceConfig;
+    private final OSConfigurationsService serviceConfig;
 
     /**
      * Configuration for the OneSpan TID Adaptive User Login Node.
@@ -105,7 +106,7 @@ public class OS_Auth_UserLoginNode implements Node {
          */
         @Attribute(order = 600)
         default OrchestrationDelivery orchestrationDelivery() {
-            return OrchestrationDelivery.pushNotification;
+            return OrchestrationDelivery.both;
         }
 
         /**
@@ -131,7 +132,7 @@ public class OS_Auth_UserLoginNode implements Node {
     public OS_Auth_UserLoginNode(@Assisted Config config, @Assisted Realm realm, AnnotatedServiceRegistry serviceRegistry) throws NodeProcessException {
         this.config = config;
         try {
-            this.serviceConfig = serviceRegistry.getRealmSingleton(OSTIDConfigurationsService.class, realm).get();
+            this.serviceConfig = serviceRegistry.getRealmSingleton(OSConfigurationsService.class, realm).get();
         } catch (SSOException | SMSException e) {
             throw new NodeProcessException(e);
         }
@@ -261,6 +262,7 @@ public class OS_Auth_UserLoginNode implements Node {
                     sharedState.put(Constants.OSTID_SESSIONID,sessionID);
                     sharedState.put(Constants.OSTID_REQUEST_ID, org.apache.commons.lang.StringUtils.isEmpty(loginOutput.getRequestID())? requestID : loginOutput.getRequestID());
                     sharedState.put(Constants.OSTID_COMMAND,loginOutput.getRequestMessage());
+                    sharedState.put(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.timeout()));
 
                     UserLoginOutcome userLoginOutcome = UserLoginOutcome.Error;
 
@@ -270,7 +272,7 @@ public class OS_Auth_UserLoginNode implements Node {
                             userLoginOutcome = UserLoginOutcome.Accept;
                         }else if(irmResponse == 1){
                             userLoginOutcome = UserLoginOutcome.Decline;
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan TID Login process: Request been declined!");
+                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth User Login: Request been declined!");
                         }else if(Constants.OSTID_API_CHALLANGE_MAP.containsKey(irmResponse)){
                             userLoginOutcome = UserLoginOutcome.StepUp;
                         }
@@ -290,9 +292,11 @@ public class OS_Auth_UserLoginNode implements Node {
                                 break;
                             case failed:
                                 userLoginOutcome = UserLoginOutcome.Error;
+                                sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth User Login: User failed to authenticate!");
                                 break;
                             case refused:
                                 userLoginOutcome = UserLoginOutcome.Decline;
+                                sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth User Login: User declined to authenticate!");
                                 break;
                         }
                     }
@@ -303,16 +307,17 @@ public class OS_Auth_UserLoginNode implements Node {
                             .build();
                 } else {
                     String log_correction_id = httpEntity.getLog_correlation_id();
-                    String message = responseJSON.getString("message") + StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl + " : " + userLoginJSON;
+                    String message = responseJSON.getString("message");
+                    String requestJSON = "POST " + StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl + " : " + userLoginJSON;
 
                     if (Stream.of(log_correction_id, message).anyMatch(Objects::isNull)) {
                         throw new NodeProcessException("Fail to parse response: " + JSON.toJSONString(responseJSON));
                     } else {
                         JSONArray validationErrors = responseJSON.getJSONArray("validationErrors");
-                        if (validationErrors != null && validationErrors.size() > 0 && validationErrors.getJSONObject(0).getString("message") != null) {
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithValidation(message, log_correction_id, validationErrors.getJSONObject(0).getString("message")));         //error return from IAA server
-                        } else {
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithoutValidation(message, log_correction_id));         //error return from IAA server
+                        if(validationErrors != null && validationErrors.size() > 0 && validationErrors.getJSONObject(0).getString("message") != null){
+                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithValidation(message,log_correction_id,validationErrors.getJSONObject(0).getString("message"),requestJSON));         //error return from IAA server
+                        }else{
+                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithoutValidation(message,log_correction_id,requestJSON));         //error return from IAA server
                         }
 
                         logger.debug("OS_Auth_UserLoginNode user login outcome:" + UserLoginOutcome.Error.name());

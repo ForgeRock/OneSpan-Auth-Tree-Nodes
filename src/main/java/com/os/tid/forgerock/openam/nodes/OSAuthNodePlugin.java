@@ -24,7 +24,6 @@ import java.util.Map;
 import com.google.common.collect.ImmutableList;
 import com.iplanet.sso.SSOException;
 import com.iplanet.sso.SSOToken;
-import com.os.tid.forgerock.openam.deprecated.*;
 import com.sun.identity.security.AdminTokenAction;
 import com.sun.identity.sm.SMSException;
 import com.sun.identity.sm.ServiceManager;
@@ -65,8 +64,8 @@ import org.forgerock.openam.plugins.StartupType;
  * @supported.all.api
  * @since AM 5.5.0
  */
-public class OSTIDAuthNodePlugin extends AbstractNodeAmPlugin {
-	static private String currentVersion = "1.1.0.2";
+public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
+	static private String currentVersion = "1.1.0.16";
 
 	private final List<Class<? extends Node>> nodeList = ImmutableList.of(
 			//OCA
@@ -75,34 +74,29 @@ public class OSTIDAuthNodePlugin extends AbstractNodeAmPlugin {
 			OS_Auth_GenerateChallengeNode.class,
 
 			//Adaptive
-			OSTIDCheckActivateNode.class,
-			OSTIDCheckSessionStatusNode.class,
+			OS_Auth_CheckActivationNode.class,
+			OS_Auth_CheckSessionStatusNode.class,
 			OS_Auth_UserRegisterNode.class,
 			OS_Auth_UserLoginNode.class,
-			OS_Auth_SendTransactionNode.class,
-			OS_Auth_EventValidationNode.class,
+			OS_Auth_ValidateTransactionNode.class,
+			OS_Auth_ValidateEventNode.class,
 
-			//common
-			OSTIDVisualCodeNode.class,
-			OSTIDCDDCNode.class,
-			OSTIDStopVisualCodeNode.class,
+			//Risk
+			OS_Risk_CDDCNode.class,
+			OS_Risk_InsertTransactionNode.class,
 
-			//deprecated
-//			OSTIDUserRegisterNode.class,
-//			OSTIDEventValidationNode.class,
-//			OSTIDTransactionsNode.class,
-//			OSTIDLoginNode.class,
-//			OSTID_DEMO_BackCommandsNode.class,
-//			OSTID_DEMO_InsertJavaScriptNode.class,
+			//Util
+			OS_Auth_VisualCodeNode.class,
+			OS_Auth_VisualCodeStopNode.class,
 
-			//demo
-			OSTID_DEMO_ErrorDisplayNode.class,
-			OSTID_DEMO_TransactionCollector.class,
-            OSTID_DEMO_StoreCommandNode.class,
-            OSTID_DEMO_AttributesCollector.class
+			//Sample
+			OS_Sample_ErrorDisplayNode.class,
+			OS_Sample_TransactionCollector.class,
+            OS_Sample_StoreCommandNode.class,
+            OS_Sample_AttributesCollector.class
 	);
 
-	private final Class serviceClass = OSTIDConfigurationsService.class;
+	private final Class serviceClass = OSConfigurationsService.class;
 
     /** 
      * Specify the Map of list of node classes that the plugin is providing. These will then be installed and
@@ -112,7 +106,7 @@ public class OSTIDAuthNodePlugin extends AbstractNodeAmPlugin {
      */
 	@Override
 	protected Map<String, Iterable<? extends Class<? extends Node>>> getNodesByVersion() {
-		return Collections.singletonMap(OSTIDAuthNodePlugin.currentVersion, nodeList);
+		return Collections.singletonMap(OSAuthNodePlugin.currentVersion, nodeList);
 	}
 
     /** 
@@ -178,6 +172,6 @@ public class OSTIDAuthNodePlugin extends AbstractNodeAmPlugin {
      */
 	@Override
 	public String getPluginVersion() {
-		return OSTIDAuthNodePlugin.currentVersion;
+		return OSAuthNodePlugin.currentVersion;
 	}
 }

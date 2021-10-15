@@ -49,11 +49,11 @@ import java.util.stream.Stream;
  */
 @Node.Metadata( outcomeProvider = OS_Auth_AddDeviceNode.OSTIDAddDeviceOutcomeProvider.class,
                 configClass = OS_Auth_AddDeviceNode.Config.class,
-                tags = {"OneSpan", "mfa"})
+                tags = {"OneSpan", "mfa", "basic authentication"})
 public class OS_Auth_AddDeviceNode implements Node {
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_AddDeviceNode";
-    private final OSTIDConfigurationsService serviceConfig;
+    private final OSConfigurationsService serviceConfig;
 
     /**
      * Configuration for the OS TID Check Activate Node.
@@ -64,7 +64,7 @@ public class OS_Auth_AddDeviceNode implements Node {
     @Inject
     public OS_Auth_AddDeviceNode(@Assisted Realm realm, AnnotatedServiceRegistry serviceRegistry) throws NodeProcessException {
         try {
-            this.serviceConfig = serviceRegistry.getRealmSingleton(OSTIDConfigurationsService.class, realm).get();
+            this.serviceConfig = serviceRegistry.getRealmSingleton(OSConfigurationsService.class, realm).get();
         } catch (SSOException | SMSException e) {
             throw new NodeProcessException(e);
         }
@@ -85,7 +85,7 @@ public class OS_Auth_AddDeviceNode implements Node {
                 device_code
         ))){
             logger.debug("OS_Auth_AddDeviceNode has missing data!");
-            sharedState.put(Constants.OSTID_ERROR_MESSAGE,"Oopts, there's missing data for OneSpan OCA Add Device call!");
+            sharedState.put(Constants.OSTID_ERROR_MESSAGE,"Oopts, there are missing data for OneSpan OCA Add Device call!");
             return goTo(OS_Auth_AddDeviceNode.AddDeviceOutcome.error)
                     .replaceSharedState(sharedState)
                     .build();
@@ -101,13 +101,15 @@ public class OS_Auth_AddDeviceNode implements Node {
                 if(httpEntity.isSuccess()) {
                     AddDeviceOutput addDeviceOutput = JSON.toJavaObject(responseJSON, AddDeviceOutput.class);
                     sharedState.put(Constants.OSTID_CRONTO_MSG, addDeviceOutput.getActivationMessage2());
+                    sharedState.put(Constants.OSTID_ACTIVATION_MESSAGE2, addDeviceOutput.getActivationMessage2());
 
                     return goTo(AddDeviceOutcome.success)
                             .replaceSharedState(sharedState)
                             .build();
                 }else{
                     String error = responseJSON.getString("error");
-                    String message = responseJSON.getString("message") + StringUtils.getAPIEndpoint(tenantName, environment) + url + " : " + deviceCodeJSON;
+                    String message = responseJSON.getString("message");
+                    String requestJSON = "POST "+ url + " : " + deviceCodeJSON;
 
                     String log_correction_id = httpEntity.getLog_correlation_id();
 
@@ -116,9 +118,9 @@ public class OS_Auth_AddDeviceNode implements Node {
                     }else {
                         JSONArray validationErrors = responseJSON.getJSONArray("validationErrors");
                         if(validationErrors != null && validationErrors.size() > 0 && validationErrors.getJSONObject(0).getString("message") != null){
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgWithValidation2(message,error,log_correction_id,validationErrors.getJSONObject(0).getString("message")));         //error return from IAA server
+                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithValidation(message,log_correction_id,validationErrors.getJSONObject(0).getString("message"),requestJSON));         //error return from IAA server
                         }else{
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgWithoutValidation2(message,error,log_correction_id));         //error return from IAA server
+                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithoutValidation(message,log_correction_id,requestJSON));         //error return from IAA server
                         }
                         return goTo(AddDeviceOutcome.error)
                                 .replaceSharedState(sharedState)

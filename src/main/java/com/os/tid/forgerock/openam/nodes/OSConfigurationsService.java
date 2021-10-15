@@ -23,7 +23,7 @@ import org.forgerock.openam.annotations.sm.Config;
  * Common Configurations for the OneSpan IAA Auth Nodes.
  */
 @Config(scope = Config.Scope.REALM)
-public interface OSTIDConfigurationsService {
+public interface OSConfigurationsService {
 
     @Attribute(order = 100, validators = RequiredValueValidator.class)
     String tenantName();

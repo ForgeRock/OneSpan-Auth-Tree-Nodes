@@ -21,7 +21,6 @@ import com.google.inject.assistedinject.Assisted;
 import com.iplanet.sso.SSOException;
 import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.models.HttpEntity;
-import com.os.tid.forgerock.openam.utils.CollectionsUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
 import com.sun.identity.sm.SMSException;
@@ -43,17 +42,17 @@ import java.util.*;
  *
  *
  */
-@Node.Metadata( outcomeProvider = OSTID_DEMO_StoreCommandNode.OSTID_DEMO_StoreCommandNode_OutcomeProvider.class,
-                configClass = OSTID_DEMO_StoreCommandNode.Config.class,
-                tags = {"OneSpan", "mfa"})
-public class OSTID_DEMO_StoreCommandNode implements Node {
-    private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OSTID_DEMO_StoreCommandNode";
+@Node.Metadata( outcomeProvider = OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_OutcomeProvider.class,
+                configClass = OS_Sample_StoreCommandNode.Config.class,
+                tags = {"OneSpan", "mfa", "utilities"})
+public class OS_Sample_StoreCommandNode implements Node {
+    private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Sample_StoreCommandNode";
     private final Logger logger = LoggerFactory.getLogger("amAuth");
-    private final OSTID_DEMO_StoreCommandNode.Config config;
-    private final OSTIDConfigurationsService serviceConfig;
+    private final OS_Sample_StoreCommandNode.Config config;
+    private final OSConfigurationsService serviceConfig;
 
     /**
-     * Configuration for the OSTID_DEMO_ErrorDisplayNode.
+     * Configuration for the OS_Sample_ErrorDisplayNode.
      */
     public interface Config {
 
@@ -78,10 +77,10 @@ public class OSTID_DEMO_StoreCommandNode implements Node {
 
 
     @Inject
-    public OSTID_DEMO_StoreCommandNode(@Assisted OSTID_DEMO_StoreCommandNode.Config config, @Assisted Realm realm, AnnotatedServiceRegistry serviceRegistry) throws NodeProcessException {
+    public OS_Sample_StoreCommandNode(@Assisted OS_Sample_StoreCommandNode.Config config, @Assisted Realm realm, AnnotatedServiceRegistry serviceRegistry) throws NodeProcessException {
         this.config = config;
         try {
-            this.serviceConfig = serviceRegistry.getRealmSingleton(OSTIDConfigurationsService.class, realm).get();
+            this.serviceConfig = serviceRegistry.getRealmSingleton(OSConfigurationsService.class, realm).get();
         } catch (SSOException | SMSException e) {
             throw new NodeProcessException(e);
         }
@@ -105,7 +104,7 @@ public class OSTID_DEMO_StoreCommandNode implements Node {
 //        ) {  //collected data is not intact
 //            logger.debug("OSTID_DEMO_BackCommandsNode exception: Oopts, there's missing data for OneSpan TID Back Command Store Process!");
 //            sharedState.put(Constants.OSTID_ERROR_MESSAGE, "Oopts, there's missing data for OneSpan TID Back Command Store Process!");
-//            return goTo(OSTID_DEMO_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome.Error)
+//            return goTo(OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome.Error)
 //                    .replaceSharedState(sharedState)
 //                    .build();
 //        } else {
@@ -134,7 +133,7 @@ public class OSTID_DEMO_StoreCommandNode implements Node {
                 HttpEntity httpEntity = RestUtils.doPostJSONWithoutResponse(commandURLFinal, demo_cmd_payload);
 
                 if (httpEntity.isSuccess()) {
-                    return goTo(OSTID_DEMO_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome.Success)
+                    return goTo(OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome.Success)
                             .replaceSharedState(sharedState)
                             .build();
                 } else {
@@ -143,7 +142,7 @@ public class OSTID_DEMO_StoreCommandNode implements Node {
             } catch (Exception e) {
                 logger.debug("OSTID_DEMO_BackCommandsNode exception: " + ExceptionUtils.getStackTrace(e));
                 sharedState.put(Constants.OSTID_ERROR_MESSAGE, "Fail to Store Command in backoffice!");
-                return goTo(OSTID_DEMO_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome.Error)
+                return goTo(OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome.Error)
                         .replaceSharedState(sharedState)
                         .build();
             }
@@ -151,7 +150,7 @@ public class OSTID_DEMO_StoreCommandNode implements Node {
 
     }
 
-    private Action.ActionBuilder goTo(OSTID_DEMO_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome outcome) {
+    private Action.ActionBuilder goTo(OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome outcome) {
         return Action.goTo(outcome.name());
     }
     public enum OSTID_DEMO_StoreCommandNode_Outcome {
@@ -163,11 +162,11 @@ public class OSTID_DEMO_StoreCommandNode implements Node {
     public static class OSTID_DEMO_StoreCommandNode_OutcomeProvider implements OutcomeProvider {
         @Override
         public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes) {
-            ResourceBundle bundle = locales.getBundleInPreferredLocale(OSTID_DEMO_StoreCommandNode.BUNDLE,
-                    OSTID_DEMO_StoreCommandNode.OSTID_DEMO_StoreCommandNode_OutcomeProvider.class.getClassLoader());
+            ResourceBundle bundle = locales.getBundleInPreferredLocale(OS_Sample_StoreCommandNode.BUNDLE,
+                    OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_OutcomeProvider.class.getClassLoader());
             return ImmutableList.of(
-                    new Outcome(OSTID_DEMO_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome.Success.name(), bundle.getString("successOutcome")),
-                    new Outcome(OSTID_DEMO_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome.Error.name(), bundle.getString("errorOutcome"))
+                    new Outcome(OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome.Success.name(), bundle.getString("successOutcome")),
+                    new Outcome(OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome.Error.name(), bundle.getString("errorOutcome"))
             );
         }
     }

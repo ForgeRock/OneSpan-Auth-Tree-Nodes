@@ -16,6 +16,7 @@
 package com.os.tid.forgerock.openam.nodes;
 
 import com.os.tid.forgerock.openam.config.Constants;
+import com.os.tid.forgerock.openam.utils.StringUtils;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.*;
 import org.slf4j.Logger;
@@ -31,28 +32,31 @@ import java.util.List;
  *
  */
 @Node.Metadata( outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
-                configClass = OSTID_DEMO_ErrorDisplayNode.Config.class,
-                tags = {"OneSpan", "mfa"})
-public class OSTID_DEMO_ErrorDisplayNode extends SingleOutcomeNode {
+                configClass = OS_Sample_ErrorDisplayNode.Config.class,
+                tags = {"OneSpan", "mfa", "utilities"})
+public class OS_Sample_ErrorDisplayNode extends SingleOutcomeNode {
     private final Logger logger = LoggerFactory.getLogger("amAuth");
 
     /**
-     * Configuration for the OSTID_DEMO_ErrorDisplayNode.
+     * Configuration for the OS_Sample_ErrorDisplayNode.
      */
     public interface Config {
     }
 
     @Override
     public Action process(TreeContext context){
-        logger.debug("OSTID_DEMO_ErrorDisplayNode started");
+        logger.debug("OS_Sample_ErrorDisplayNode started");
         JsonValue sharedState = context.sharedState;
         JsonValue ostid_error_msg = sharedState.get(Constants.OSTID_ERROR_MESSAGE);
         if(ostid_error_msg.isString()){
             String[] split = ostid_error_msg.asString().split("<br />");
             List<TextOutputCallback> outputCallbackList = new ArrayList<>();
             for (String errorMsg: split) {
-                TextOutputCallback errorTextOutputCallback = new TextOutputCallback(2,errorMsg);
-                outputCallbackList.add(errorTextOutputCallback);
+                if(!StringUtils.isEmpty(errorMsg)) {
+                    TextOutputCallback errorTextOutputCallback;
+                    errorTextOutputCallback = new TextOutputCallback(2, errorMsg);
+                    outputCallbackList.add(errorTextOutputCallback);
+                }
             }
 
             sharedState.remove(Constants.OSTID_ERROR_MESSAGE);

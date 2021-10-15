@@ -25,6 +25,7 @@ import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.models.GeneralResponseOutput;
 import com.os.tid.forgerock.openam.models.HttpEntity;
 import com.os.tid.forgerock.openam.utils.CollectionsUtils;
+import com.os.tid.forgerock.openam.utils.DateUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
 import com.sun.identity.sm.RequiredValueValidator;
@@ -45,14 +46,14 @@ import java.util.stream.Stream;
 /**
  * This node invokes the User Register/Unregister Service API, in order to validate and process the registration/unregistration of a user.
  */
-@Node.Metadata( outcomeProvider = OS_Auth_EventValidationNode.OS_Auth_EventValidationNodeOutcomeProvider.class,
-                configClass = OS_Auth_EventValidationNode.Config.class,
-                tags = {"OneSpan", "mfa"})
-public class OS_Auth_EventValidationNode implements Node {
-    private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_EventValidationNode";
+@Node.Metadata( outcomeProvider = OS_Auth_ValidateEventNode.OS_Auth_EventValidationNodeOutcomeProvider.class,
+                configClass = OS_Auth_ValidateEventNode.Config.class,
+                tags = {"OneSpan", "basic authentication", "mfa", "risk"})
+public class OS_Auth_ValidateEventNode implements Node {
+    private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_ValidateEventNode";
     private final Logger logger = LoggerFactory.getLogger("amAuth");
-    private final OS_Auth_EventValidationNode.Config config;
-    private final OSTIDConfigurationsService serviceConfig;
+    private final OS_Auth_ValidateEventNode.Config config;
+    private final OSConfigurationsService serviceConfig;
 
     /**
      * Configuration for the OneSpan TID Adaptive User Login Node.
@@ -63,8 +64,8 @@ public class OS_Auth_EventValidationNode implements Node {
          * @return
          */
         @Attribute(order = 100, validators = RequiredValueValidator.class)
-        default OS_Auth_EventValidationNode.EventType eventType() {
-            return OS_Auth_EventValidationNode.EventType.SpecifyBelow;
+        default OS_Auth_ValidateEventNode.EventType eventType() {
+            return OS_Auth_ValidateEventNode.EventType.SpecifyBelow;
         }
 
         /**
@@ -123,7 +124,7 @@ public class OS_Auth_EventValidationNode implements Node {
          */
         @Attribute(order = 800)
         default OrchestrationDelivery orchestrationDelivery() {
-            return OrchestrationDelivery.pushNotification;
+            return OrchestrationDelivery.both;
         }
 
         /**
@@ -146,10 +147,10 @@ public class OS_Auth_EventValidationNode implements Node {
     }
 
     @Inject
-    public OS_Auth_EventValidationNode(@Assisted Config config, @Assisted Realm realm, AnnotatedServiceRegistry serviceRegistry) throws NodeProcessException {
+    public OS_Auth_ValidateEventNode(@Assisted Config config, @Assisted Realm realm, AnnotatedServiceRegistry serviceRegistry) throws NodeProcessException {
         this.config = config;
         try {
-            this.serviceConfig = serviceRegistry.getRealmSingleton(OSTIDConfigurationsService.class, realm).get();
+            this.serviceConfig = serviceRegistry.getRealmSingleton(OSConfigurationsService.class, realm).get();
         } catch (SSOException | SMSException e) {
             throw new NodeProcessException(e);
         }
@@ -157,7 +158,7 @@ public class OS_Auth_EventValidationNode implements Node {
 
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
-        logger.debug("OS_Auth_EventValidationNode started");
+        logger.debug("OS_Auth_ValidateEventNode started");
         JsonValue sharedState = context.sharedState;
         JsonValue transientState = context.transientState;
         String tenantName = serviceConfig.tenantNameToLowerCase();
@@ -187,7 +188,7 @@ public class OS_Auth_EventValidationNode implements Node {
                 cddcIpJsonValue
         ))
         ) {  //missing data
-            logger.debug("OS_Auth_EventValidationNode exception: Oopts, there are missing data for OneSpan TID Adaptive Event Validation Process!");
+            logger.debug("OS_Auth_ValidateEventNode exception: Oopts, there are missing data for OneSpan TID Adaptive Event Validation Process!");
             sharedState.put(Constants.OSTID_ERROR_MESSAGE, "Oopts, there are missing data for OneSpan TID Adaptive Event Validation Process!");
             return goTo(EventValidationOutcome.Error)
                     .replaceSharedState(sharedState)
@@ -275,7 +276,7 @@ public class OS_Auth_EventValidationNode implements Node {
                     optionalAttributesStringBuilder.toString(),                     //param7
                     fido                                                            //param8
             );
-            logger.debug("OS_Auth_EventValidationNode request JSON:" + eventValidationJSON);
+            logger.debug("OS_Auth_ValidateEventNode request JSON:" + eventValidationJSON);
 
             try {
                 HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, eventValidationJSON);
@@ -288,6 +289,7 @@ public class OS_Auth_EventValidationNode implements Node {
                     sharedState.put(Constants.OSTID_SESSIONID,sessionID);
                     sharedState.put(Constants.OSTID_REQUEST_ID, StringUtils.isEmpty(responseOutput.getRequestID())? requestID : responseOutput.getRequestID());
                     sharedState.put(Constants.OSTID_COMMAND,responseOutput.getRequestMessage());
+                    sharedState.put(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.timeout()));
 
                     EventValidationOutcome eventValidationOutcome = EventValidationOutcome.Error;
 
@@ -324,25 +326,26 @@ public class OS_Auth_EventValidationNode implements Node {
                         }
                     }
 
-                    logger.debug("OS_Auth_EventValidationNode user login outcome:" + eventValidationOutcome.name());
+                    logger.debug("OS_Auth_ValidateEventNode user login outcome:" + eventValidationOutcome.name());
                     return goTo(eventValidationOutcome)
                             .replaceSharedState(sharedState)
                             .build();
                 } else {
                     String log_correction_id = httpEntity.getLog_correlation_id();
-                    String message = responseJSON.getString("message") + StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl + " : " + eventValidationJSON;
+                    String message = responseJSON.getString("message");
+                    String requestJSON = "POST " + StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl + " : " + eventValidationJSON;
 
                     if (Stream.of(log_correction_id, message).anyMatch(Objects::isNull)) {
                         throw new NodeProcessException("Fail to parse response: " + JSON.toJSONString(responseJSON));
                     } else {
                         JSONArray validationErrors = responseJSON.getJSONArray("validationErrors");
-                        if (validationErrors != null && validationErrors.size() > 0 && validationErrors.getJSONObject(0).getString("message") != null) {
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithValidation(message, log_correction_id, validationErrors.getJSONObject(0).getString("message")));         //error return from IAA server
-                        } else {
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithoutValidation(message, log_correction_id));         //error return from IAA server
+                        if(validationErrors != null && validationErrors.size() > 0 && validationErrors.getJSONObject(0).getString("message") != null){
+                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithValidation(message,log_correction_id,validationErrors.getJSONObject(0).getString("message"),requestJSON));         //error return from IAA server
+                        }else{
+                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithoutValidation(message,log_correction_id,requestJSON));         //error return from IAA server
                         }
 
-                        logger.debug("OS_Auth_EventValidationNode outcome:" + EventValidationOutcome.Error.name());
+                        logger.debug("OS_Auth_ValidateEventNode outcome:" + EventValidationOutcome.Error.name());
 
                         return goTo(EventValidationOutcome.Error)
                                 .replaceSharedState(sharedState)
@@ -350,7 +353,7 @@ public class OS_Auth_EventValidationNode implements Node {
                     }
                 }
             } catch (Exception e) {
-                logger.debug("OS_Auth_EventValidationNode exception: " + e.getMessage());
+                logger.debug("OS_Auth_ValidateEventNode exception: " + e.getMessage());
                 sharedState.put(Constants.OSTID_ERROR_MESSAGE, "Fail to validate event!");                            //general error msg
                 return goTo(EventValidationOutcome.Error)
                         .replaceSharedState(sharedState)
@@ -394,8 +397,8 @@ public class OS_Auth_EventValidationNode implements Node {
     public static class OS_Auth_EventValidationNodeOutcomeProvider implements OutcomeProvider {
         @Override
         public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes) {
-            ResourceBundle bundle = locales.getBundleInPreferredLocale(OS_Auth_EventValidationNode.BUNDLE,
-                    OS_Auth_EventValidationNode.OS_Auth_EventValidationNodeOutcomeProvider.class.getClassLoader());
+            ResourceBundle bundle = locales.getBundleInPreferredLocale(OS_Auth_ValidateEventNode.BUNDLE,
+                    OS_Auth_ValidateEventNode.OS_Auth_EventValidationNodeOutcomeProvider.class.getClassLoader());
             return ImmutableList.of(
                     new Outcome(EventValidationOutcome.Accept.name(), bundle.getString("acceptOutcome")),
                     new Outcome(EventValidationOutcome.Decline.name(), bundle.getString("declineOutcome")),

@@ -44,13 +44,13 @@ import java.util.ResourceBundle;
  * This node invokes the Check Activation Status Service API, in order to checks the status of a pending activation of a device.
  *
  */
-@Node.Metadata( outcomeProvider = OSTIDCheckActivateNode.OSTIDCheckActivateOutcomeProvider.class,
-                configClass = OSTIDCheckActivateNode.Config.class,
-                tags = {"OneSpan", "mfa"})
-public class OSTIDCheckActivateNode implements Node {
+@Node.Metadata( outcomeProvider = OS_Auth_CheckActivationNode.OSTIDCheckActivateOutcomeProvider.class,
+                configClass = OS_Auth_CheckActivationNode.Config.class,
+                tags = {"OneSpan", "basic authentication", "mfa", "risk"})
+public class OS_Auth_CheckActivationNode implements Node {
     private final Logger logger = LoggerFactory.getLogger("amAuth");
-    private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OSTIDCheckActivateNode";
-    private final OSTIDConfigurationsService serviceConfig;
+    private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_CheckActivationNode";
+    private final OSConfigurationsService serviceConfig;
 
     /**
      * Configuration for the OS TID Check Activate Node.
@@ -59,9 +59,9 @@ public class OSTIDCheckActivateNode implements Node {
     }
 
     @Inject
-    public OSTIDCheckActivateNode(@Assisted Realm realm, AnnotatedServiceRegistry serviceRegistry) throws NodeProcessException {
+    public OS_Auth_CheckActivationNode(@Assisted Realm realm, AnnotatedServiceRegistry serviceRegistry) throws NodeProcessException {
         try {
-            this.serviceConfig = serviceRegistry.getRealmSingleton(OSTIDConfigurationsService.class, realm).get();
+            this.serviceConfig = serviceRegistry.getRealmSingleton(OSConfigurationsService.class, realm).get();
         } catch (SSOException | SMSException e) {
             throw new NodeProcessException(e);
         }
@@ -69,7 +69,7 @@ public class OSTIDCheckActivateNode implements Node {
 
     @Override
     public Action process(TreeContext context) {
-        logger.debug("OSTIDCheckActivateNode started");
+        logger.debug("OS_Auth_CheckActivationNode started");
         JsonValue sharedState = context.sharedState;
         String tenantName = serviceConfig.tenantNameToLowerCase();
         String environment = serviceConfig.environment().name();
@@ -90,9 +90,10 @@ public class OSTIDCheckActivateNode implements Node {
         ActivationStatusOutcome activationStatusEnum;
         if (!usernameJsonValue.isString() || usernameJsonValue.asString().isEmpty()) {
             activationStatusEnum = ActivationStatusOutcome.error;
-            sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan TID check activation process: username is missing!");
+            sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Activation: username is missing!");
         } else if(DateUtils.hasExpired(eventExpiryJsonValue.asString())){
             activationStatusEnum = ActivationStatusOutcome.timeout;
+            sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Activation: Your session has timed out!");
         } else {
             String checkActivationJSON = String.format(Constants.OSTID_JSON_CHECK_ACTIVATION,
                     usernameJsonValue.asString(),                            //param1
@@ -113,9 +114,9 @@ public class OSTIDCheckActivateNode implements Node {
                     sharedState.put(Constants.OSTID_ERROR_MESSAGE,message);
                 }
             } catch (Exception e) {
-                logger.debug("OSTIDCheckActivateNode exception: " + e.getMessage());
+                logger.debug("OS_Auth_CheckActivationNode exception: " + e.getMessage());
                 activationStatusEnum = ActivationStatusOutcome.error;
-                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan TID check activation process: Fail to check user's activation status!");
+                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Activation: Fail to check user's activation status!");
             }
         }
 
@@ -123,49 +124,53 @@ public class OSTIDCheckActivateNode implements Node {
             case pending:
                 return goTo(ActivationStatusOutcome.pending).build();
             case activated:
-                if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()){
-                    return goTo(ActivationStatusOutcome.activated).build();
-                }else {
-                    sharedState.put(Constants.OSTID_CRONTO_STATUS, ActivationStatusOutcome.activated.name());
-                    return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
-                }
+                return goTo(ActivationStatusOutcome.activated).build();
+//                if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()){
+//
+//                }else {
+//                    sharedState.put(Constants.OSTID_CRONTO_STATUS, ActivationStatusOutcome.activated.name());
+//                    return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
+//                }
             case error:
-                if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()){
-                    return goTo(ActivationStatusOutcome.error).replaceSharedState(sharedState).build();
-                }else {
-                    sharedState.put(Constants.OSTID_CRONTO_STATUS, ActivationStatusOutcome.error.name());
-                    return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
-                }
+                return goTo(ActivationStatusOutcome.error).replaceSharedState(sharedState).build();
+//                if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()){
+//                    return goTo(ActivationStatusOutcome.error).replaceSharedState(sharedState).build();
+//                }else {
+//                    sharedState.put(Constants.OSTID_CRONTO_STATUS, ActivationStatusOutcome.error.name());
+//                    return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
+//                }
             case timeout:
-                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan TID check Activation status process: Timeout!");
-                if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()){
-                    return goTo(ActivationStatusOutcome.timeout).replaceSharedState(sharedState).build();
-                }else {
-                    sharedState.put(Constants.OSTID_CRONTO_STATUS, ActivationStatusOutcome.timeout.name());
-                    return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
-                }
+                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Activation: Your session has timed out!");
+                return goTo(ActivationStatusOutcome.timeout).replaceSharedState(sharedState).build();
+//                if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()){
+//                    return goTo(ActivationStatusOutcome.timeout).replaceSharedState(sharedState).build();
+//                }else {
+//                    sharedState.put(Constants.OSTID_CRONTO_STATUS, ActivationStatusOutcome.timeout.name());
+//                    return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
+//                }
             case unknown:
-                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan TID check Activation status process: Status Unknown!");
-                if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()){
-                    return goTo(ActivationStatusOutcome.unknown).replaceSharedState(sharedState).build();
-                }else {
-                    sharedState.put(Constants.OSTID_CRONTO_STATUS, ActivationStatusOutcome.unknown.name());
-                    return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
-                }
+                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Activation: Status Unknown!");
+                return goTo(ActivationStatusOutcome.unknown).replaceSharedState(sharedState).build();
+//                if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()){
+//                    return goTo(ActivationStatusOutcome.unknown).replaceSharedState(sharedState).build();
+//                }else {
+//                    sharedState.put(Constants.OSTID_CRONTO_STATUS, ActivationStatusOutcome.unknown.name());
+//                    return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
+//                }
             default:
                 return goTo(ActivationStatusOutcome.pending).build();
         }
     }
 
-    private Callback getStopCrontoCallback() {
-        ScriptTextOutputCallback displayScriptCallback = new ScriptTextOutputCallback(
-                "document.getElementById('loginButton_0').style.display = 'none';" +
-                "if (CDDC_stop && typeof CDDC_stop === 'function') { " +
-                "    CDDC_stop();" +
-                "}" +
-                "document.getElementById('loginButton_0').click();");
-       return displayScriptCallback;
-    }
+//    private Callback getStopCrontoCallback() {
+//        ScriptTextOutputCallback displayScriptCallback = new ScriptTextOutputCallback(
+//                "document.getElementById('loginButton_0').style.display = 'none';" +
+//                "if (CDDC_stop && typeof CDDC_stop === 'function') { " +
+//                "    CDDC_stop();" +
+//                "}" +
+//                "document.getElementById('loginButton_0').click();");
+//       return displayScriptCallback;
+//    }
 
     private Action.ActionBuilder goTo(ActivationStatusOutcome outcome) {
         return Action.goTo(outcome.name());
@@ -185,7 +190,7 @@ public class OSTIDCheckActivateNode implements Node {
     public static class OSTIDCheckActivateOutcomeProvider implements OutcomeProvider {
         @Override
         public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes) {
-            ResourceBundle bundle = locales.getBundleInPreferredLocale(OSTIDCheckActivateNode.BUNDLE,
+            ResourceBundle bundle = locales.getBundleInPreferredLocale(OS_Auth_CheckActivationNode.BUNDLE,
                     OSTIDCheckActivateOutcomeProvider.class.getClassLoader());
             return ImmutableList.of(
                     new Outcome(ActivationStatusOutcome.pending.name(), bundle.getString("pendingOutcome")),

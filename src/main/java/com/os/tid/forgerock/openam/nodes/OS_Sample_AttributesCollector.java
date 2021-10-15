@@ -37,14 +37,14 @@ import java.util.*;
  *
  */
 @Node.Metadata( outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
-                configClass = OSTID_DEMO_AttributesCollector.Config.class,
-                tags = {"OneSpan", "mfa"})
-public class OSTID_DEMO_AttributesCollector extends SingleOutcomeNode {
+                configClass = OS_Sample_AttributesCollector.Config.class,
+                tags = {"OneSpan", "mfa", "utilities"})
+public class OS_Sample_AttributesCollector extends SingleOutcomeNode {
     private final Logger logger = LoggerFactory.getLogger("amAuth");
-    private final OSTID_DEMO_AttributesCollector.Config config;
+    private final OS_Sample_AttributesCollector.Config config;
 
     /**
-     * Configuration for the OSTID_DEMO_AttributesCollector.
+     * Configuration for the OS_Sample_AttributesCollector.
      */
     public interface Config {
         /**
@@ -57,13 +57,13 @@ public class OSTID_DEMO_AttributesCollector extends SingleOutcomeNode {
     }
 
     @Inject
-    public OSTID_DEMO_AttributesCollector(@Assisted OSTID_DEMO_AttributesCollector.Config config) {
+    public OS_Sample_AttributesCollector(@Assisted OS_Sample_AttributesCollector.Config config) {
         this.config = config;
     }
 
     @Override
     public Action process(TreeContext context){
-        logger.debug("OSTID_DEMO_AttributesCollector started");
+        logger.debug("OS_Sample_AttributesCollector started");
         JsonValue sharedState = context.sharedState;
 
         //1. if all attributes have value

@@ -11,6 +11,7 @@ import java.util.Map;
 
 public class Constants {
 
+
     private Constants() {
     }
 
@@ -30,6 +31,10 @@ public class Constants {
     public static final String OSTID_API_CHECK_ACTIVATION = "/v1/registrations/check-status";
     public static final String OSTID_API_CHECK_SESSION_STATUS = "/v1/sessions/%1$s";
     public static final String OSTID_API_ADAPTIVE_CRTONTO_RENDER = "/v1/visualcodes/render?format=%1$s&message=%2$s";
+    public static final String OSTID_API_RISK_SEND_TRANSACTION = "/v1/transactions";
+
+
+
 
     //previous API
     public static final String OSTID_API_USER_REGISTER = "/userregister/v1/";
@@ -65,7 +70,7 @@ public class Constants {
     public static final String OSTID_JSON_ADAPTIVE_DATATOSIGN_SECURECHANNEL = "\"data\":{\"secureChannel\":{\"requestID\":\"%1$s\",\"signature\":\"%2$s\"}},";
     public static final String OSTID_JSON_ADAPTIVE_DATATOSIGN_TRANSACTIONMESSAGE = "\"data\":{\"transactionMessage\":{\"dataFields\":[%1$s]}},";
     public static final String OSTID_JSON_ADAPTIVE_DATATOSIGN_TRANSACTIONMESSAGE_DATAFIELDS = "{\"key\":{\"text\":\"%1$s\"},\"value\":{\"text\":\"%2$s\"}}";
-
+    public static final String OSTID_JSON_RISK_SEND_TRANSACTION =  "{%1$s\"clientIP\":\"%2$s\",\"cddc\":{\"browserCDDC\":{\"fingerprintHash\":\"%3$s\",\"fingerprintRaw\":%4$s}},\"relationshipRef\":\"%7$s\",\"sessionID\":\"%5$s\",\"applicationRef\":\"%6$s\"}";
 
     //previous JSON
     public static final String OSTID_JSON_USER_REGISTER = "{%7$s%6$s\"login\":\"%1$s\",\"clientIP\":\"%2$s\",\"browserCDDC\":{\"fingerprintHash\":\"%3$s\",\"fingerprintRaw\":%4$s},\"sessionIdentifier\":\"%5$s\",\"applicationRef\":\"%8$s\"}";
@@ -111,11 +116,15 @@ public class Constants {
     public static final String OSTID_DIGI_SERIAL = "osstid_digi_serial";
     public static final String OSTID_REGISTRATION_ID = "osstid_registration_id";
     public static final String OSTID_CRONTO = "osstid_cronto";
-    public static final String OSTID_ACTIVATION_CODE = "ostid_activation_code";
+    public static final String OSTID_ACTIVATION_CODE = "ostid";
+    public static final String OSTID_ACTIVATION_CODE2 = "activationPassword";
     public static final String OSTID_IRM_RESPONSE = "ostid_irm_response";
     public static final String OSTID_COMMAND = "ostid_command";
     public static final String OSTID_CRONTO_STATUS = "ostid_cronto_status";   //true:display, false:hide
     public static final String OSTID_CRONTO_HAS_RENDERED = "ostid_cronto_has_rendered";   //true:display, false:hide
+    public static final String OSTID_RISK_RESPONSE_CODE = "ostid_risk_response_code";
+    public static final String OSTID_RISK_RESPONSE_CODE2 = "riskResponseCode";
+    public static final String OSTID_ACTIVATION_MESSAGE2 = "activationMessage2";
 
     public static final String OSTID_SESSIONID = "osstid_session_id";
     public static final String OSTID_DEVICE_CODE = "deviceCode";
@@ -141,6 +150,8 @@ public class Constants {
     public static final String OSTID_DEFAULT_TRANSACTIONTYPE = "transactionType";
     public static final String OSTID_DEFAULT_CREDITORIBAN = "creditorIBAN";
     public static final String OSTID_DEFAULT_CREDITORNAME = "creditorName";
+    public static final String OSTID_DEFAULT_CREDITORBANK = "creditorBank";
+    public static final String OSTID_DEFAULT_DEBTORIBAN = "debtorIBAN";
 
     public static final int OSTID_DEFAULT_CHECK_ACTIVATION_TIMEOUT = 0;
     public static final int OSTID_DEFAULT_EVENT_EXPIRY = 60;

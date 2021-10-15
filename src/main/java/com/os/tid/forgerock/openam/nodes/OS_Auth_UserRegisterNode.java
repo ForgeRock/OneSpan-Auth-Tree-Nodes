@@ -48,12 +48,12 @@ import java.util.stream.Stream;
  */
 @Node.Metadata( outcomeProvider = OS_Auth_UserRegisterNode.OSTIDUserRegisterOutcomeProvider.class,
                 configClass = OS_Auth_UserRegisterNode.Config.class,
-                tags = {"OneSpan", "mfa"})
+                tags = {"OneSpan", "basic authentication", "mfa", "risk"})
 public class OS_Auth_UserRegisterNode implements Node {
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_UserRegisterNode";
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private final OS_Auth_UserRegisterNode.Config config;
-    private final OSTIDConfigurationsService serviceConfig;
+    private final OSConfigurationsService serviceConfig;
 
     /**
      * Configuration for the OneSpan TID User Register Node.
@@ -120,7 +120,7 @@ public class OS_Auth_UserRegisterNode implements Node {
     public OS_Auth_UserRegisterNode(@Assisted Config config, @Assisted Realm realm, AnnotatedServiceRegistry serviceRegistry) throws NodeProcessException {
         this.config = config;
         try {
-            this.serviceConfig = serviceRegistry.getRealmSingleton(OSTIDConfigurationsService.class, realm).get();
+            this.serviceConfig = serviceRegistry.getRealmSingleton(OSConfigurationsService.class, realm).get();
         } catch (SSOException | SMSException e) {
             throw new NodeProcessException(e);
         }
@@ -238,6 +238,7 @@ public class OS_Auth_UserRegisterNode implements Node {
 
                         sharedState.put(Constants.OSTID_SESSIONID, sessionId);
                         sharedState.put(Constants.OSTID_ACTIVATION_CODE, activationCode);
+                        sharedState.put(Constants.OSTID_ACTIVATION_CODE2, activationCode);
                         sharedState.put(Constants.OSTID_CRONTO_MSG, crontoValueHex);
                         sharedState.put(Constants.OSTID_DIGI_SERIAL, userRegisterOutputEx.getSerialNumber());
                         sharedState.put(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.activationTokenExpiry()));
@@ -258,16 +259,18 @@ public class OS_Auth_UserRegisterNode implements Node {
                             .build();
                 } else {
                     String log_correction_id = httpEntity.getLog_correlation_id();
-                    String message = responseJSON.getString("message") + StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl + " : " + userRegisterJSON;
+                    String message = responseJSON.getString("message");
+                    String requestJSON = "POST " + StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl + " : " + userRegisterJSON;
+
 
                     if (Stream.of(log_correction_id, message).anyMatch(Objects::isNull)) {
                         throw new NodeProcessException("Fail to parse response: " + JSON.toJSONString(responseJSON));
                     } else {
                         JSONArray validationErrors = responseJSON.getJSONArray("validationErrors");
                         if(validationErrors != null && validationErrors.size() > 0 && validationErrors.getJSONObject(0).getString("message") != null){
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithValidation(message,log_correction_id,validationErrors.getJSONObject(0).getString("message")));         //error return from IAA server
+                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithValidation(message,log_correction_id,validationErrors.getJSONObject(0).getString("message"),requestJSON));         //error return from IAA server
                         }else{
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithoutValidation(message,log_correction_id));         //error return from IAA server
+                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithoutValidation(message,log_correction_id,requestJSON));         //error return from IAA server
                         }
                         return goTo(UserRegisterOutcome.Error)
                                 .replaceSharedState(sharedState)

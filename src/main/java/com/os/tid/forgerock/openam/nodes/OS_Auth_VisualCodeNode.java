@@ -42,12 +42,12 @@ import java.util.List;
  * This node reads the visual code message from the sharedState and renders it as a visual code, which allows the device integrated with the Mobile Security Suite SDKs to scan with.
  */
 @Node.Metadata( outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
-                configClass = OSTIDVisualCodeNode.Config.class,
-                tags = {"OneSpan", "mfa"})
-public class OSTIDVisualCodeNode extends SingleOutcomeNode {
+                configClass = OS_Auth_VisualCodeNode.Config.class,
+                tags = {"OneSpan", "mfa", "utilities", "basic authentication"})
+public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
     private final Logger logger = LoggerFactory.getLogger("amAuth");
-    private final OSTIDVisualCodeNode.Config config;
-    private final OSTIDConfigurationsService serviceConfig;
+    private final OS_Auth_VisualCodeNode.Config config;
+    private final OSConfigurationsService serviceConfig;
 
     /**
      * Configuration for the OneSpan TID Visual Code Node.
@@ -158,10 +158,10 @@ public class OSTIDVisualCodeNode extends SingleOutcomeNode {
     }
 
     @Inject
-    public OSTIDVisualCodeNode(@Assisted OSTIDVisualCodeNode.Config config, @Assisted Realm realm, AnnotatedServiceRegistry serviceRegistry) throws NodeProcessException {
+    public OS_Auth_VisualCodeNode(@Assisted OS_Auth_VisualCodeNode.Config config, @Assisted Realm realm, AnnotatedServiceRegistry serviceRegistry) throws NodeProcessException {
         this.config = config;
         try {
-            this.serviceConfig = serviceRegistry.getRealmSingleton(OSTIDConfigurationsService.class, realm).get();
+            this.serviceConfig = serviceRegistry.getRealmSingleton(OSConfigurationsService.class, realm).get();
         } catch (SSOException | SMSException e) {
             throw new NodeProcessException(e);
         }
@@ -169,7 +169,7 @@ public class OSTIDVisualCodeNode extends SingleOutcomeNode {
 
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
-        logger.debug("OSTIDVisualCodeNode started");
+        logger.debug("OS_Auth_VisualCodeNode started");
         JsonValue sharedState = context.sharedState;
         String tenantName = serviceConfig.tenantNameToLowerCase();
         String environment = serviceConfig.environment().name();
@@ -186,7 +186,7 @@ public class OSTIDVisualCodeNode extends SingleOutcomeNode {
 
         //1. throw exception, if user input is not intact
         if(!crontoMsgJsonValue.isString() ){
-            logger.debug("OSTIDVisualCodeNode crontoMsgJsonValue is null: " + crontoMsgJsonValue.isNull());
+            logger.debug("OS_Auth_VisualCodeNode crontoMsgJsonValue is null: " + crontoMsgJsonValue.isNull());
             throw new NodeProcessException("Can't find Cronto Message in shared state!");
         }
         //2. go to next
@@ -273,8 +273,8 @@ public class OSTIDVisualCodeNode extends SingleOutcomeNode {
                         "       document.getElementsByTagName('head')[0].appendChild(style);" +
                         "  }" +
                         " function removeCrontoUI() { " +
-                        "      document.getElementById('ostid_cronto').remove();  " +
-                        "      document.getElementById('ostid_cronto_style').remove();  " +
+                        "      if(document.getElementById('ostid_cronto')) document.getElementById('ostid_cronto').remove();  " +
+                        "      if(document.getElementById('ostid_cronto_style')) document.getElementById('ostid_cronto_style').remove();  " +
                         "  }" +
 
                         " function insertAfter(referenceNode, newNode) {" +
