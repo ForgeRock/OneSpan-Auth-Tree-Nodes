@@ -1,0 +1,247 @@
+
+{
+  "origin": "4188da2c4ac583f1fea3a6ff4eb25a45 -",
+  "innernodes": {
+    "97d8634b-30a5-4320-bfb2-7b69f25b6498": {
+      "_id": "97d8634b-30a5-4320-bfb2-7b69f25b6498",
+      "pushCDDCJsAsCallback": true,
+      "CDDCJsonHiddenValueId": "osstid_cddc_json",
+      "CDDCHashHiddenValueId": "osstid_cddc_hash",
+      "_type": {
+        "_id": "OS_Risk_CDDCNode",
+        "name": "OneSpan Risk CDDC",
+        "collection": true
+      },
+      "_outcomes": [
+        {
+          "id": "outcome",
+          "displayName": "Outcome"
+        }
+      ]
+    },
+    "efbc530d-96a9-4e31-af46-32da4c27f9cd": {
+      "_id": "efbc530d-96a9-4e31-af46-32da4c27f9cd",
+      "_type": {
+        "_id": "UsernameCollectorNode",
+        "name": "Username Collector",
+        "collection": true
+      },
+      "_outcomes": [
+        {
+          "id": "outcome",
+          "displayName": "Outcome"
+        }
+      ]
+    },
+    "ec9bb8d9-c619-4fc6-8dda-94f277af621c": {
+      "_id": "ec9bb8d9-c619-4fc6-8dda-94f277af621c",
+      "attributes": [
+        "amount",
+        "transactionType",
+        "creditorName",
+        "accountRef",
+        "currency",
+        "debtorIBAN",
+        "creditorBank",
+        "creditorIBAN"
+      ],
+      "_type": {
+        "_id": "OS_Sample_AttributesCollector",
+        "name": "OneSpan Sample Attributes Collector",
+        "collection": true
+      },
+      "_outcomes": [
+        {
+          "id": "outcome",
+          "displayName": "Outcome"
+        }
+      ]
+    }
+  },
+  "nodes": {
+    "3a4794e5-2caf-4adb-b98e-82494e20f0b4": {
+      "_id": "3a4794e5-2caf-4adb-b98e-82494e20f0b4",
+      "adaptiveAttributes": {
+        "creditorName": "creditorName",
+        "transactionType": "transactionType",
+        "currency": "currency",
+        "accountRef": "accountRef",
+        "debtorIBAN": "debtorIBAN",
+        "creditorIBAN": "creditorIBAN",
+        "amount": "amount",
+        "creditorBank": "creditorBank"
+      },
+      "userNameInSharedData": "username",
+      "_type": {
+        "_id": "OS_Risk_InsertTransactionNode",
+        "name": "OneSpan Risk Analytics Send Transaction",
+        "collection": true
+      },
+      "_outcomes": [
+        {
+          "id": "Accept",
+          "displayName": "Accept"
+        },
+        {
+          "id": "Decline",
+          "displayName": "Decline"
+        },
+        {
+          "id": "Challenge",
+          "displayName": "Challenge"
+        },
+        {
+          "id": "Error",
+          "displayName": "Error"
+        }
+      ]
+    },
+    "71d1596a-6c8a-413a-9097-6509027de069": {
+      "_id": "71d1596a-6c8a-413a-9097-6509027de069",
+      "script": "197bcecf-28c1-44e3-a4cb-3985fe1a3675",
+      "outcomes": [
+        "21"
+      ],
+      "outputs": [
+        "*"
+      ],
+      "inputs": [
+        "*"
+      ],
+      "_type": {
+        "_id": "ScriptedDecisionNode",
+        "name": "Scripted Decision",
+        "collection": true
+      },
+      "_outcomes": [
+        {
+          "id": "21",
+          "displayName": "21"
+        }
+      ]
+    },
+    "8e834a87-0c1c-41fc-9987-bd2643b2bc18": {
+      "_id": "8e834a87-0c1c-41fc-9987-bd2643b2bc18",
+      "pageHeader": {},
+      "pageDescription": {},
+      "nodes": [
+        {
+          "_id": "97d8634b-30a5-4320-bfb2-7b69f25b6498",
+          "nodeType": "OS_Risk_CDDCNode",
+          "displayName": "OneSpan Risk CDDC"
+        },
+        {
+          "_id": "efbc530d-96a9-4e31-af46-32da4c27f9cd",
+          "nodeType": "UsernameCollectorNode",
+          "displayName": "Username Collector"
+        },
+        {
+          "_id": "ec9bb8d9-c619-4fc6-8dda-94f277af621c",
+          "nodeType": "OS_Sample_AttributesCollector",
+          "displayName": "OneSpan Sample Attributes Collector"
+        }
+      ],
+      "_type": {
+        "_id": "PageNode",
+        "name": "Page Node",
+        "collection": true
+      },
+      "_outcomes": [
+        {
+          "id": "outcome",
+          "displayName": "Outcome"
+        }
+      ]
+    },
+    "a511f26f-8de5-49e7-a0ff-93070670297d": {
+      "_id": "a511f26f-8de5-49e7-a0ff-93070670297d",
+      "_type": {
+        "_id": "OS_Sample_ErrorDisplayNode",
+        "name": "OneSpan Sample Error Display",
+        "collection": true
+      },
+      "_outcomes": [
+        {
+          "id": "outcome",
+          "displayName": "Outcome"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "197bcecf-28c1-44e3-a4cb-3985fe1a3675": {
+      "_id": "197bcecf-28c1-44e3-a4cb-3985fe1a3675",
+      "name": "OneSpan Risk Send Transaction Script",
+      "description": null,
+      "script": "LyoKICAtIERhdGEgbWFkZSBhdmFpbGFibGUgYnkgbm9kZXMgdGhhdCBoYXZlIGFscmVhZHkgZXhlY3V0ZWQgYXJlIGF2YWlsYWJsZSBpbiB0aGUgc2hhcmVkU3RhdGUgdmFyaWFibGUuCiAgLSBUaGUgc2NyaXB0IHNob3VsZCBzZXQgb3V0Y29tZSB0byBlaXRoZXIgInRydWUiIG9yICJmYWxzZSIuCiAqLwoKCnZhciByaXNrUmVzcG9uc2VDb2RlID0gc2hhcmVkU3RhdGUuZ2V0KCJyaXNrUmVzcG9uc2VDb2RlIikKc3dpdGNoKHJpc2tSZXNwb25zZUNvZGUpIHsKICBjYXNlIDA6CiAgIG91dGNvbWUgPSAiMCI7CiAgICBicmVhazsKICBjYXNlIDE6CiAgICBvdXRjb21lID0gIjEiOwogICAgYnJlYWs7CiAgY2FzZSAyMToKICAgIG91dGNvbWUgPSAiMjEiOwogICAgYnJlYWs7CiAgZGVmYXVsdDoKICAgIAp9",
+      "default": false,
+      "language": "JAVASCRIPT",
+      "context": "AUTHENTICATION_TREE_DECISION_NODE",
+      "createdBy": "null",
+      "creationDate": 0,
+      "lastModifiedBy": "null",
+      "lastModifiedDate": 0
+    }
+  },
+  "emailTemplates": {},
+  "tree": {
+    "_id": "OneSpan-XUI-Risk-Analytics-Send-Transaction-Sample-Tree",
+    "staticNodes": {
+      "startNode": {
+        "x": 65,
+        "y": 62
+      },
+      "70e691a5-1e33-4ac3-a356-e7b6d60d92e0": {
+        "x": 1258,
+        "y": 93
+      },
+      "e301438c-0bd0-429c-ab0c-66126501069a": {
+        "x": 1268,
+        "y": 459
+      }
+    },
+    "uiConfig": {},
+    "entryNodeId": "8e834a87-0c1c-41fc-9987-bd2643b2bc18",
+    "nodes": {
+      "3a4794e5-2caf-4adb-b98e-82494e20f0b4": {
+        "displayName": "OneSpan Risk Analytics Send Transaction",
+        "nodeType": "OS_Risk_InsertTransactionNode",
+        "x": 534,
+        "y": 83,
+        "connections": {
+          "Accept": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0",
+          "Decline": "e301438c-0bd0-429c-ab0c-66126501069a",
+          "Error": "a511f26f-8de5-49e7-a0ff-93070670297d",
+          "Challenge": "71d1596a-6c8a-413a-9097-6509027de069"
+        }
+      },
+      "8e834a87-0c1c-41fc-9987-bd2643b2bc18": {
+        "displayName": "Page Node",
+        "nodeType": "PageNode",
+        "x": 192,
+        "y": 82,
+        "connections": {
+          "outcome": "3a4794e5-2caf-4adb-b98e-82494e20f0b4"
+        }
+      },
+      "a511f26f-8de5-49e7-a0ff-93070670297d": {
+        "displayName": "OneSpan Sample Error Display",
+        "nodeType": "OS_Sample_ErrorDisplayNode",
+        "x": 686,
+        "y": 456,
+        "connections": {
+          "outcome": "e301438c-0bd0-429c-ab0c-66126501069a"
+        }
+      },
+      "71d1596a-6c8a-413a-9097-6509027de069": {
+        "displayName": "Scripted Decision",
+        "nodeType": "ScriptedDecisionNode",
+        "x": 980,
+        "y": 154,
+        "connections": {
+          "21": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0"
+        }
+      }
+    }
+  }
+}

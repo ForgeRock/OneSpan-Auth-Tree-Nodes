@@ -1,0 +1,212 @@
+
+{
+  "origin": "4188da2c4ac583f1fea3a6ff4eb25a45 -",
+  "innernodes": {
+    "730a93c5-7207-4ca3-bd85-072833e24273": {
+      "_id": "730a93c5-7207-4ca3-bd85-072833e24273",
+      "pushCDDCJsAsCallback": true,
+      "CDDCJsonHiddenValueId": "osstid_cddc_json",
+      "CDDCHashHiddenValueId": "osstid_cddc_hash",
+      "_type": {
+        "_id": "OS_Risk_CDDCNode",
+        "name": "OneSpan Risk CDDC",
+        "collection": true
+      },
+      "_outcomes": [
+        {
+          "id": "outcome",
+          "displayName": "Outcome"
+        }
+      ]
+    },
+    "7549a13e-d2b1-4b2b-95d9-687444bed252": {
+      "_id": "7549a13e-d2b1-4b2b-95d9-687444bed252",
+      "_type": {
+        "_id": "UsernameCollectorNode",
+        "name": "Username Collector",
+        "collection": true
+      },
+      "_outcomes": [
+        {
+          "id": "outcome",
+          "displayName": "Outcome"
+        }
+      ]
+    },
+    "3aafce1e-12dc-498f-a5fb-e7a6d10bc10c": {
+      "_id": "3aafce1e-12dc-498f-a5fb-e7a6d10bc10c",
+      "attributes": [
+        "sourceAccount",
+        "signature",
+        "amountToTransfer",
+        "destinationAccount"
+      ],
+      "_type": {
+        "_id": "OS_Sample_AttributesCollector",
+        "name": "OneSpan Sample Attributes Collector",
+        "collection": true
+      },
+      "_outcomes": [
+        {
+          "id": "outcome",
+          "displayName": "Outcome"
+        }
+      ]
+    }
+  },
+  "nodes": {
+    "0ea997c6-4d8b-4b35-89ae-c1157e21caa6": {
+      "_id": "0ea997c6-4d8b-4b35-89ae-c1157e21caa6",
+      "visualCodeMessageOptions": "sessionID",
+      "adaptiveAttributes": {
+        "transactionType": "transactionType",
+        "accountRef": "accountRef",
+        "debtorIBAN": "debtorIBAN",
+        "creditorName": "creditorName",
+        "currency": "currency",
+        "creditorIBAN": "creditorIBAN",
+        "amount": "amount",
+        "creditorBank": "creditorBank"
+      },
+      "standardDataToSign": [
+        "sourceAccount",
+        "destinationAccount",
+        "amountToTransfer"
+      ],
+      "timeout": 60,
+      "signatureInSharedData": "signature",
+      "dataToSign": "standard",
+      "fidoDataToSign": {
+        "authenticationResponse": "authenticationResponse",
+        "fidoProtocol": "fidoProtocol"
+      },
+      "objectType": "TransactionValidationInput",
+      "userNameInSharedData": "username",
+      "adaptiveDataToSign": {},
+      "optionalAttributes": {},
+      "orchestrationDelivery": "none",
+      "_type": {
+        "_id": "OS_Auth_ValidateTransactionNode",
+        "name": "OneSpan Auth Validate Transaction",
+        "collection": true
+      },
+      "_outcomes": [
+        {
+          "id": "Accept",
+          "displayName": "Accept"
+        },
+        {
+          "id": "Decline",
+          "displayName": "Decline"
+        },
+        {
+          "id": "StepUp",
+          "displayName": "Step Up"
+        },
+        {
+          "id": "Error",
+          "displayName": "Error"
+        }
+      ]
+    },
+    "2760b11d-f358-4749-b030-6b3143dc09c7": {
+      "_id": "2760b11d-f358-4749-b030-6b3143dc09c7",
+      "_type": {
+        "_id": "OS_Sample_ErrorDisplayNode",
+        "name": "OneSpan Sample Error Display",
+        "collection": true
+      },
+      "_outcomes": [
+        {
+          "id": "outcome",
+          "displayName": "Outcome"
+        }
+      ]
+    },
+    "e5c30ccf-2c91-45f7-8ad9-f18d02f0146c": {
+      "_id": "e5c30ccf-2c91-45f7-8ad9-f18d02f0146c",
+      "pageHeader": {},
+      "pageDescription": {},
+      "nodes": [
+        {
+          "_id": "730a93c5-7207-4ca3-bd85-072833e24273",
+          "nodeType": "OS_Risk_CDDCNode",
+          "displayName": "OneSpan Risk CDDC"
+        },
+        {
+          "_id": "7549a13e-d2b1-4b2b-95d9-687444bed252",
+          "nodeType": "UsernameCollectorNode",
+          "displayName": "Username Collector"
+        },
+        {
+          "_id": "3aafce1e-12dc-498f-a5fb-e7a6d10bc10c",
+          "nodeType": "OS_Sample_AttributesCollector",
+          "displayName": "OneSpan Sample Attributes Collector"
+        }
+      ],
+      "_type": {
+        "_id": "PageNode",
+        "name": "Page Node",
+        "collection": true
+      },
+      "_outcomes": [
+        {
+          "id": "outcome",
+          "displayName": "Outcome"
+        }
+      ]
+    }
+  },
+  "scripts": {},
+  "emailTemplates": {},
+  "tree": {
+    "_id": "OneSpan-XUI-Cloud-Authentication-Validate-Transaction-Sample-Tree",
+    "staticNodes": {
+      "startNode": {
+        "x": 50,
+        "y": 25
+      },
+      "70e691a5-1e33-4ac3-a356-e7b6d60d92e0": {
+        "x": 1173,
+        "y": 178
+      },
+      "e301438c-0bd0-429c-ab0c-66126501069a": {
+        "x": 1194,
+        "y": 442
+      }
+    },
+    "nodes": {
+      "0ea997c6-4d8b-4b35-89ae-c1157e21caa6": {
+        "displayName": "OneSpan Auth Validate Transaction",
+        "nodeType": "OS_Auth_ValidateTransactionNode",
+        "x": 541,
+        "y": 169,
+        "connections": {
+          "Accept": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0",
+          "Decline": "2760b11d-f358-4749-b030-6b3143dc09c7",
+          "Error": "2760b11d-f358-4749-b030-6b3143dc09c7"
+        }
+      },
+      "e5c30ccf-2c91-45f7-8ad9-f18d02f0146c": {
+        "displayName": "Page Node",
+        "nodeType": "PageNode",
+        "x": 178,
+        "y": 158,
+        "connections": {
+          "outcome": "0ea997c6-4d8b-4b35-89ae-c1157e21caa6"
+        }
+      },
+      "2760b11d-f358-4749-b030-6b3143dc09c7": {
+        "displayName": "OneSpan Sample Error Display",
+        "nodeType": "OS_Sample_ErrorDisplayNode",
+        "x": 695,
+        "y": 435,
+        "connections": {
+          "outcome": "e301438c-0bd0-429c-ab0c-66126501069a"
+        }
+      }
+    },
+    "entryNodeId": "e5c30ccf-2c91-45f7-8ad9-f18d02f0146c",
+    "uiConfig": {}
+  }
+}
