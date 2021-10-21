@@ -37,14 +37,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-
-/**
- *
- *
- */
-@Node.Metadata( outcomeProvider = OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_OutcomeProvider.class,
-                configClass = OS_Sample_StoreCommandNode.Config.class,
-                tags = {"OneSpan", "mfa", "utilities"})
+@Node.Metadata(outcomeProvider = OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_OutcomeProvider.class,
+        configClass = OS_Sample_StoreCommandNode.Config.class,
+        tags = {"OneSpan", "mfa", "utilities"})
 public class OS_Sample_StoreCommandNode implements Node {
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Sample_StoreCommandNode";
     private final Logger logger = LoggerFactory.getLogger("amAuth");
@@ -52,13 +47,11 @@ public class OS_Sample_StoreCommandNode implements Node {
     private final OSConfigurationsService serviceConfig;
 
     /**
-     * Configuration for the OS_Sample_ErrorDisplayNode.
+     * Configuration for the OS_Sample_StoreCommandNode.
      */
     public interface Config {
-
         /**
          *
-         * @return
          */
         @Attribute(order = 100)
         default String javascript() {
@@ -67,14 +60,12 @@ public class OS_Sample_StoreCommandNode implements Node {
 
         /**
          *
-         * @return
          */
         @Attribute(order = 200)
-        default Map<String, String> placeholderMap() {return Collections.emptyMap(); }
-
+        default Map<String, String> placeholderMap() {
+            return Collections.emptyMap();
+        }
     }
-
-
 
     @Inject
     public OS_Sample_StoreCommandNode(@Assisted OS_Sample_StoreCommandNode.Config config, @Assisted Realm realm, AnnotatedServiceRegistry serviceRegistry) throws NodeProcessException {
@@ -85,8 +76,9 @@ public class OS_Sample_StoreCommandNode implements Node {
             throw new NodeProcessException(e);
         }
     }
+
     @Override
-    public Action process(TreeContext context){
+    public Action process(TreeContext context) {
         logger.debug("OSTID_DEMO_BackCommandsNode started");
         JsonValue sharedState = context.sharedState;
         String tenantName = serviceConfig.tenantNameToLowerCase();
@@ -95,67 +87,54 @@ public class OS_Sample_StoreCommandNode implements Node {
         JsonValue ostid_irm_response = sharedState.get(Constants.OSTID_IRM_RESPONSE);
         JsonValue ostid_command = sharedState.get(Constants.OSTID_COMMAND);
         String requestId = sharedState.get(Constants.OSTID_REQUEST_ID).isString() ? sharedState.get(Constants.OSTID_REQUEST_ID).asString() : ""; //temporary, the request ID is not mandatory
+        try {
+            //build payload
+            String demo_cmd_payload = String.format(Constants.OSTID_JSON_DEMO_COMMANDS, ostid_command.asString(), ostid_irm_response.asInteger() + "", ostid_sessionid.asString());
 
-//        if (CollectionsUtils.hasAnyNullValues(ImmutableList.of(
-//                ostid_sessionid,
-//                ostid_irm_response,
-//                ostid_command
-//        ))
-//        ) {  //collected data is not intact
-//            logger.debug("OSTID_DEMO_BackCommandsNode exception: Oopts, there's missing data for OneSpan TID Back Command Store Process!");
-//            sharedState.put(Constants.OSTID_ERROR_MESSAGE, "Oopts, there's missing data for OneSpan TID Back Command Store Process!");
-//            return goTo(OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome.Error)
-//                    .replaceSharedState(sharedState)
-//                    .build();
-//        } else {
-            try {
-                //build payload
-                String demo_cmd_payload = String.format(Constants.OSTID_JSON_DEMO_COMMANDS, ostid_command.asString(), ostid_irm_response.asInteger()+"", ostid_sessionid.asString());
+            //build back command API URL
+            Map<String, String> placeholders = new HashMap<String, String>() {{
+                put("tenantName", tenantName);
+                put("sessionIdentifier", StringUtils.hexToString(ostid_sessionid.asString()));
+                put("sessionID", ostid_sessionid.asString());
+                put("requestID", requestId);
+                put("username", sharedState.get(Constants.OSTID_DEFAULT_USERNAME).isString() ? sharedState.get(Constants.OSTID_DEFAULT_USERNAME).asString() : "username");
+                put("hexRequestID", StringUtils.stringToHex(requestId));
+            }};
 
-                //build back command API URL
-                Map<String, String> placeholders = new HashMap<String, String>() {{
-                    put("tenantName", tenantName);
-                    put("sessionIdentifier", StringUtils.hexToString(ostid_sessionid.asString()));
-                    put("sessionID", ostid_sessionid.asString());
-                    put("requestID", requestId);
-                    put("username", sharedState.get(Constants.OSTID_DEFAULT_USERNAME).isString() ? sharedState.get(Constants.OSTID_DEFAULT_USERNAME).asString() : "username");
-                    put("hexRequestID", StringUtils.stringToHex(requestId));
-                }};
+            for (Map.Entry<String, String> entry : config.placeholderMap().entrySet()) {
+                placeholders.put(entry.getKey(), sharedState.get(entry.getValue()).isString() ? sharedState.get(entry.getValue()).asString() : entry.getValue());
+            }
 
-                for (Map.Entry<String, String> entry : config.placeholderMap().entrySet()) {
-                    placeholders.put(entry.getKey(),sharedState.get(entry.getValue()).isString() ? sharedState.get(entry.getValue()).asString() : entry.getValue());
-                }
+            String commandURL = config.javascript();
+            StrSubstitutor sub = new StrSubstitutor(placeholders, "{", "}");
+            String commandURLFinal = sub.replace(commandURL);
 
-                String commandURL = config.javascript();
-                StrSubstitutor sub = new StrSubstitutor(placeholders, "{", "}");
-                String commandURLFinal = sub.replace(commandURL);
+            HttpEntity httpEntity = RestUtils.doPostJSONWithoutResponse(commandURLFinal, demo_cmd_payload);
 
-                HttpEntity httpEntity = RestUtils.doPostJSONWithoutResponse(commandURLFinal, demo_cmd_payload);
-
-                if (httpEntity.isSuccess()) {
-                    return goTo(OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome.Success)
-                            .replaceSharedState(sharedState)
-                            .build();
-                } else {
-                    throw new NodeProcessException(httpEntity.getResponseJSON().toJSONString());
-                }
-            } catch (Exception e) {
-                logger.debug("OSTID_DEMO_BackCommandsNode exception: " + ExceptionUtils.getStackTrace(e));
-                sharedState.put(Constants.OSTID_ERROR_MESSAGE, "Fail to Store Command in backoffice!");
-                return goTo(OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome.Error)
+            if (httpEntity.isSuccess()) {
+                return goTo(OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome.Success)
                         .replaceSharedState(sharedState)
                         .build();
+            } else {
+                throw new NodeProcessException(httpEntity.getResponseJSON().toJSONString());
             }
-//        }
-
+        } catch (Exception e) {
+            logger.debug("OSTID_DEMO_BackCommandsNode exception: " + ExceptionUtils.getStackTrace(e));
+            sharedState.put(Constants.OSTID_ERROR_MESSAGE, "Fail to Store Command in backoffice!");
+            return goTo(OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome.Error)
+                    .replaceSharedState(sharedState)
+                    .build();
+        }
     }
 
     private Action.ActionBuilder goTo(OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome outcome) {
         return Action.goTo(outcome.name());
     }
+
     public enum OSTID_DEMO_StoreCommandNode_Outcome {
         Success, Error
     }
+
     /**
      * Defines the possible outcomes.
      */
@@ -170,5 +149,4 @@ public class OS_Sample_StoreCommandNode implements Node {
             );
         }
     }
-
 }

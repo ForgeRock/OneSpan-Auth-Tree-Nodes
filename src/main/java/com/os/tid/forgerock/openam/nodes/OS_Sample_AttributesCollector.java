@@ -32,10 +32,6 @@ import javax.security.auth.callback.NameCallback;
 import java.util.*;
 
 
-/**
- *
- *
- */
 @Node.Metadata( outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
                 configClass = OS_Sample_AttributesCollector.Config.class,
                 tags = {"OneSpan", "mfa", "utilities"})
@@ -48,7 +44,7 @@ public class OS_Sample_AttributesCollector extends SingleOutcomeNode {
      */
     public interface Config {
         /**
-         * callback name / attribute name in shared state
+         * The key name in shared state
          */
         @Attribute(order = 100)
         default Set<String> attributes() {
@@ -87,6 +83,4 @@ public class OS_Sample_AttributesCollector extends SingleOutcomeNode {
             return Action.send(callbackList).build();
         }
     }
-
-
 }

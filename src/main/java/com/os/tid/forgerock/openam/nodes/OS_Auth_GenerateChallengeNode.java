@@ -43,7 +43,7 @@ import java.util.*;
 import java.util.stream.Stream;
 
 /**
- * This node invokes the Check Activation Status Service API, in order to checks the status of a pending activation of a device.
+ * This node invokes the Generate Challenge API, which generates a random challenge.
  */
 @Node.Metadata( outcomeProvider = OS_Auth_GenerateChallengeNode.OSTIDGenerateChallengeOutcomeProvider.class,
                 configClass = OS_Auth_GenerateChallengeNode.Config.class,
@@ -55,11 +55,11 @@ public class OS_Auth_GenerateChallengeNode implements Node {
     private final OS_Auth_GenerateChallengeNode.Config config;
 
     /**
-     * Configuration for the OS TID Check Activate Node.
+     * Configuration for the OS Auth Generate Challenge Node.
      */
     public interface Config {
         /**
-         *
+         * Length of the challenge excluding the optional check digit.
          */
         @Attribute(order = 100, validators = RequiredValueValidator.class)
         default int length() {
@@ -67,20 +67,19 @@ public class OS_Auth_GenerateChallengeNode implements Node {
         }
 
         /**
-         *
+         * Signifies if a check digit must be appended to the challenge.
          */
         @Attribute(order = 200, validators = RequiredValueValidator.class)
         default boolean checkDigit() {
             return false;
         }
         /**
-         * @return
+         * The key name in Shared State which represents the OCA username
          */
         @Attribute(order = 300, validators = RequiredValueValidator.class)
         default String userNameInSharedData() {
             return Constants.OSTID_DEFAULT_USERNAME;
         }
-
     }
 
     @Inject
@@ -145,9 +144,7 @@ public class OS_Auth_GenerateChallengeNode implements Node {
                     .replaceSharedState(sharedState)
                     .build();
         }
-
     }
-
 
     private Action.ActionBuilder goTo(OS_Auth_GenerateChallengeNode.GenerateChallengeOutcome outcome) {
         return Action.goTo(outcome.name());

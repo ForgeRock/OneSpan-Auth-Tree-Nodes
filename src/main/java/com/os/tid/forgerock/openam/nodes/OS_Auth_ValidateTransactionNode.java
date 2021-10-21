@@ -45,7 +45,7 @@ import java.util.*;
 import java.util.stream.Stream;
 
 /**
- * This node invokes the User Register/Unregister Service API, in order to validate and process the registration/unregistration of a user.
+ * This node invokes the Validate Transaction API, which validates and processes the authentication for a transaction request.
  */
 @Node.Metadata( outcomeProvider = OS_Auth_ValidateTransactionNode.OSTID_Adaptive_SendTransactionNodeOutcomeProvider.class,
                 configClass = OS_Auth_ValidateTransactionNode.Config.class,
@@ -57,18 +57,19 @@ public class OS_Auth_ValidateTransactionNode implements Node {
     private final OSConfigurationsService serviceConfig;
 
     /**
-     * Configuration for the OneSpan TID Adaptive User Login Node.
+     * Configuration for the OneSpan Auth Validate Transaction Node.
      */
     public interface Config {
         /**
-         * @return
+         * Input payload object type.
          */
         @Attribute(order = 100, validators = RequiredValueValidator.class)
         default ObjectType objectType() {
             return ObjectType.AdaptiveTransactionValidationInput;
         }
+
         /**
-         * @return
+         * The key name in Shared State which represents the IAA/OCA username
          */
         @Attribute(order = 200, validators = RequiredValueValidator.class)
         default String userNameInSharedData() {
@@ -76,15 +77,13 @@ public class OS_Auth_ValidateTransactionNode implements Node {
         }
 
         /**
-         * @return
+         * Which signature validation data to use
          */
         @Attribute(order = 300, validators = RequiredValueValidator.class)
         default DataToSign dataToSign() { return DataToSign.transactionMessage; }
 
         /**
          * Configurable attributes in request JSON payload
-         *
-         * @return
          */
         @Attribute(order = 400)
         default List<String> standardDataToSign() {
@@ -92,16 +91,15 @@ public class OS_Auth_ValidateTransactionNode implements Node {
         }
 
         /**
-         * @return
+         * Signature for the transaction data.
          */
         @Attribute(order = 500, validators = RequiredValueValidator.class)
         default String signatureInSharedData() {
             return "signature";
         }
+
         /**
-         * Configurable attributes in request JSON payload
-         *
-         * @return
+         * Object used to transfer FIDO AuthenticationResponse.
          */
         @Attribute(order = 600)
         default Map<String, String> fidoDataToSign() {
@@ -112,18 +110,15 @@ public class OS_Auth_ValidateTransactionNode implements Node {
         }
 
         /**
-         * Configurable attributes in request JSON payload
-         *
-         * @return
+         * Array of key/value pairs representing the data fields of the transaction context.
          */
         @Attribute(order = 700)
         default Map<String, String> adaptiveDataToSign() {
             return Collections.emptyMap();
         }
+
         /**
-         * Configurable attributes in request JSON payload
-         *
-         * @return
+         * Orchestration transaction data signing input. Delivery method for this transaction message is specified in the orchestrationDelivery field.
          */
         @Attribute(order = 800)
         default Map<String, String> adaptiveAttributes() {
@@ -141,8 +136,6 @@ public class OS_Auth_ValidateTransactionNode implements Node {
 
         /**
          * Configurable attributes in request JSON payload
-         *
-         * @return
          */
         @Attribute(order = 900)
         default Map<String, String> optionalAttributes() {
@@ -150,7 +143,7 @@ public class OS_Auth_ValidateTransactionNode implements Node {
         }
 
         /**
-         * @return
+         * Indicates whether a push notification should be sent, and/or if the orchestration command should be included in the response requestMessage.
          */
         @Attribute(order = 1000)
         default OrchestrationDelivery orchestrationDelivery() {
@@ -158,22 +151,20 @@ public class OS_Auth_ValidateTransactionNode implements Node {
         }
 
         /**
-         * @return Hidden Value Callback Id contains the Visual Code URL
+         * Timeout in seconds.
          */
         @Attribute(order = 1100)
         default int timeout() {
             return Constants.OSTID_DEFAULT_EVENT_EXPIRY;
         }
 
-
         /**
-         * @return Hidden Value Callback Id contains the Visual Code URL
+         * How to build and store visual code message in SharedState
          */
         @Attribute(order = 1200)
         default VisualCodeMessageOptions visualCodeMessageOptions() {
             return VisualCodeMessageOptions.sessionID;
         }
-
     }
 
     @Inject
@@ -187,7 +178,7 @@ public class OS_Auth_ValidateTransactionNode implements Node {
     }
 
     @Override
-    public Action process(TreeContext context) throws NodeProcessException {
+    public Action process(TreeContext context) {
         logger.debug("OS_Auth_ValidateTransactionNode started");
         JsonValue sharedState = context.sharedState;
         String tenantName = serviceConfig.tenantNameToLowerCase();
@@ -273,8 +264,7 @@ public class OS_Auth_ValidateTransactionNode implements Node {
                     }
                 }
 
-                //config.adaptiveAttributes().get("")
-                //override transaction date to make sure the transaction date hasn't be tempered
+                //override transaction date to make sure the transaction date doesn't get tempered
                 Map<String, String> dataToSignMap = config.adaptiveDataToSign();
                 dataToSignMap.put("login",config.userNameInSharedData());
                 dataToSignMap.put("beneficiary",config.adaptiveAttributes().get("creditorName"));
@@ -296,7 +286,6 @@ public class OS_Auth_ValidateTransactionNode implements Node {
                                 sharedState.get(value).asString()));
                     }
                 }
-
 
                 if(config.objectType() == ObjectType.AdaptiveTransactionValidationInput) {
                     hasNullValue |= CollectionsUtils.hasAnyNullValues(ImmutableList.of(
@@ -337,7 +326,6 @@ public class OS_Auth_ValidateTransactionNode implements Node {
              * 4.timeout
              * 5.IAA
              **/
-
             //param 1
             String objectType = config.objectType().name();
             //param3
@@ -445,7 +433,6 @@ public class OS_Auth_ValidateTransactionNode implements Node {
                         .replaceSharedState(sharedState)
                         .build();
             }
-
         }
     }
 

@@ -26,11 +26,6 @@ import javax.security.auth.callback.TextOutputCallback;
 import java.util.ArrayList;
 import java.util.List;
 
-
-/**
- *
- *
- */
 @Node.Metadata( outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
                 configClass = OS_Sample_ErrorDisplayNode.Config.class,
                 tags = {"OneSpan", "mfa", "utilities"})
@@ -58,7 +53,6 @@ public class OS_Sample_ErrorDisplayNode extends SingleOutcomeNode {
                     outputCallbackList.add(errorTextOutputCallback);
                 }
             }
-
             sharedState.remove(Constants.OSTID_ERROR_MESSAGE);
             return Action.send(outputCallbackList)
                     .replaceSharedState(sharedState)
@@ -66,8 +60,5 @@ public class OS_Sample_ErrorDisplayNode extends SingleOutcomeNode {
         }else{
             return goToNext().build();
         }
-
-
     }
-
 }

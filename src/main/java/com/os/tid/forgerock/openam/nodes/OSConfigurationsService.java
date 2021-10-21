@@ -20,7 +20,7 @@ import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.annotations.sm.Config;
 
 /**
- * Common Configurations for the OneSpan IAA Auth Nodes.
+ * Common Configurations for the OneSpan Auth Tree Nodes.
  */
 @Config(scope = Config.Scope.REALM)
 public interface OSConfigurationsService {
@@ -39,6 +39,5 @@ public interface OSConfigurationsService {
     enum EnvOptions {
         sdb, prod
     }
-
 }
 

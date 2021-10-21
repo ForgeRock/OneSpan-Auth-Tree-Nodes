@@ -48,13 +48,11 @@ public class OS_Risk_CDDCNode extends SingleOutcomeNode {
     private final OS_Risk_CDDCNode.Config config;
 
     /**
-     * Configuration for the OS TID CDDC Collector Node.
+     * Configuration for the OS Risk CDDC Collector Node.
      */
     public interface Config {
         /**
          * If false, allows user to make POST API to invoke this node
-         *
-         * @return
          */
         @Attribute(order = 100)
         default boolean pushCDDCJsAsCallback() {
@@ -62,8 +60,7 @@ public class OS_Risk_CDDCNode extends SingleOutcomeNode {
         }
 
         /**
-         *
-         * @return
+         * The hidden callback ID for the CDDC Json collector
          */
         @Attribute(order = 200)
         default String CDDCJsonHiddenValueId() {
@@ -71,8 +68,7 @@ public class OS_Risk_CDDCNode extends SingleOutcomeNode {
         }
 
         /**
-         *
-         * @return
+         * The hidden callback ID for the CDDC Hash collector
          */
         @Attribute(order = 300)
         default String CDDCHashHiddenValueId() {

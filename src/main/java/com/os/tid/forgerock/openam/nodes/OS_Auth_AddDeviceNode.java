@@ -44,7 +44,7 @@ import java.util.ResourceBundle;
 import java.util.stream.Stream;
 
 /**
- * This node invokes the Check Activation Status Service API, in order to checks the status of a pending activation of a device.
+ * This node invokes the Add Device API, which continues and proceeds the OCA provisioning process.
  *
  */
 @Node.Metadata( outcomeProvider = OS_Auth_AddDeviceNode.OSTIDAddDeviceOutcomeProvider.class,
@@ -56,7 +56,7 @@ public class OS_Auth_AddDeviceNode implements Node {
     private final OSConfigurationsService serviceConfig;
 
     /**
-     * Configuration for the OS TID Check Activate Node.
+     * Configuration for the OS Auth Add Device Node.
      */
     public interface Config {
     }
@@ -137,8 +137,6 @@ public class OS_Auth_AddDeviceNode implements Node {
 
         }
     }
-
-
 
     private Action.ActionBuilder goTo(AddDeviceOutcome outcome) {
         return Action.goTo(outcome.name());

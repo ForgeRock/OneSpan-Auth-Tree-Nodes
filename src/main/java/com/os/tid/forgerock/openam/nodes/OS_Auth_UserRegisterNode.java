@@ -44,7 +44,7 @@ import java.util.*;
 import java.util.stream.Stream;
 
 /**
- * This node invokes the User Register/Unregister Service API, in order to validate and process the registration/unregistration of a user.
+ * This node invokes the User Register/Unregister API, which validates and processes the registration/unregistration of a user.
  */
 @Node.Metadata( outcomeProvider = OS_Auth_UserRegisterNode.OSTIDUserRegisterOutcomeProvider.class,
                 configClass = OS_Auth_UserRegisterNode.Config.class,
@@ -56,17 +56,17 @@ public class OS_Auth_UserRegisterNode implements Node {
     private final OSConfigurationsService serviceConfig;
 
     /**
-     * Configuration for the OneSpan TID User Register Node.
+     * Configuration for the OneSpan Auth User Register Node.
      */
     public interface Config {
         /**
-         * @return
+         * Input payload object type.
          */
         @Attribute(order = 100, validators = RequiredValueValidator.class)
         default ObjectType objectType() { return ObjectType.IAA; }
 
         /**
-         * @return
+         * If the node functions as user registration or unregistration.
          */
         @Attribute(order = 200, validators = RequiredValueValidator.class)
         default NodeFunction nodeFunction() {
@@ -74,7 +74,7 @@ public class OS_Auth_UserRegisterNode implements Node {
         }
 
         /**
-         * @return
+         * The key name in Shared State which represents the IAA/OCA username
          */
         @Attribute(order = 300, validators = RequiredValueValidator.class)
         default String userNameInSharedData() {
@@ -82,7 +82,7 @@ public class OS_Auth_UserRegisterNode implements Node {
         }
 
         /**
-         * @return
+         * The key name in Shared State which represents the IAA/OCA password. Static password for the user or keyword to trigger out-of-band authentication.
          */
         @Attribute(order = 400, validators = RequiredValueValidator.class)
         default String passwordInTransientState() {
@@ -90,7 +90,7 @@ public class OS_Auth_UserRegisterNode implements Node {
         }
 
         /**
-         * @return
+         * Indicates if the authenticator assigned to the user must be activated using online or offline multi-device licensing (MDL) activation.
          */
         @Attribute(order = 500, validators = RequiredValueValidator.class)
         default ActivationType activationType() {
@@ -99,8 +99,6 @@ public class OS_Auth_UserRegisterNode implements Node {
 
         /**
          * Configurable attributes in request JSON payload
-         *
-         * @return
          */
         @Attribute(order = 600)
         default Map<String, String> optionalAttributes() {
@@ -108,7 +106,7 @@ public class OS_Auth_UserRegisterNode implements Node {
         }
 
         /**
-         * @return Hidden Value Callback Id contains the Visual Code URL
+         * Timeout in seconds.
          */
         @Attribute(order = 700, validators = RequiredValueValidator.class)
         default int activationTokenExpiry() {
@@ -172,8 +170,8 @@ public class OS_Auth_UserRegisterNode implements Node {
                         cddcIpJsonValue
                 ))
         ) {  //missing data
-            logger.debug("OS_Auth_UserRegisterNode exception: Oopts, there's missing data for OneSpan TID User Register Process!");
-            sharedState.put(Constants.OSTID_ERROR_MESSAGE, "Oopts, there's missing data for OneSpan TID User Register Process!");
+            logger.debug("OS_Auth_UserRegisterNode exception: Oopts, there are missing data for OneSpan Auth User Register Process!");
+            sharedState.put(Constants.OSTID_ERROR_MESSAGE, "Oopts, there are missing data for OneSpan Auth User Register Process!");
             return goTo(UserRegisterOutcome.Error)
                     .replaceSharedState(sharedState)
                     .build();
@@ -242,7 +240,6 @@ public class OS_Auth_UserRegisterNode implements Node {
                         sharedState.put(Constants.OSTID_CRONTO_MSG, crontoValueHex);
                         sharedState.put(Constants.OSTID_DIGI_SERIAL, userRegisterOutputEx.getSerialNumber());
                         sharedState.put(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.activationTokenExpiry()));
-
                     } else if (config.nodeFunction() == NodeFunction.UserRegister && config.objectType() == ObjectType.OCA) {
                         sharedState.put(Constants.OSTID_SESSIONID, sessionId);
                         sharedState.put(Constants.OSTID_ACTIVATION_CODE, activationCode);
@@ -262,7 +259,6 @@ public class OS_Auth_UserRegisterNode implements Node {
                     String log_correction_id = httpEntity.getLog_correlation_id();
                     String message = responseJSON.getString("message");
                     String requestJSON = "POST " + StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl + " : " + userRegisterJSON;
-
 
                     if (Stream.of(log_correction_id, message).anyMatch(Objects::isNull)) {
                         throw new NodeProcessException("Fail to parse response: " + JSON.toJSONString(responseJSON));

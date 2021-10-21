@@ -43,7 +43,7 @@ import java.util.*;
 import java.util.stream.Stream;
 
 /**
- * This node invokes the User Register/Unregister Service API, in order to validate and process the registration/unregistration of a user.
+ * This node invokes the Risk Analytics Insert Transaction API, which validates and returns the result of a send transaction request.
  */
 @Node.Metadata( outcomeProvider = OS_Risk_InsertTransactionNode.OSTID_Risk_InsertTransactionNodeOutcomeProvider.class,
                 configClass = OS_Risk_InsertTransactionNode.Config.class,
@@ -55,11 +55,11 @@ public class OS_Risk_InsertTransactionNode implements Node {
     private final OSConfigurationsService serviceConfig;
 
     /**
-     * Configuration for the OneSpan TID Adaptive User Login Node.
+     * Configuration for the OS Risk Insert Transaction Node.
      */
     public interface Config {
         /**
-         * @return
+         * The key name in Shared State which represents the IAA/OCA username
          */
         @Attribute(order = 100, validators = RequiredValueValidator.class)
         default String userNameInSharedData() {
@@ -67,9 +67,7 @@ public class OS_Risk_InsertTransactionNode implements Node {
         }
 
         /**
-         * Configurable attributes in request JSON payload
-         *
-         * @return
+         * Orchestration transaction data signing input. Delivery method for this transaction message is specified in the orchestrationDelivery field.
          */
         @Attribute(order = 200)
         default Map<String, String> adaptiveAttributes() {
@@ -97,7 +95,7 @@ public class OS_Risk_InsertTransactionNode implements Node {
     }
 
     @Override
-    public Action process(TreeContext context) throws NodeProcessException {
+    public Action process(TreeContext context) {
         logger.debug("OS_Risk_InsertTransactionNode started");
         JsonValue sharedState = context.sharedState;
         String tenantName = serviceConfig.tenantNameToLowerCase();
@@ -127,7 +125,6 @@ public class OS_Risk_InsertTransactionNode implements Node {
                 sharedState.get(Constants.OSTID_CDDC_IP)
         ));
         String applicationRef = serviceConfig.applicationRef() != null ? serviceConfig.applicationRef() : "";
-
 
         /**
          * 1.attributes
@@ -209,7 +206,6 @@ public class OS_Risk_InsertTransactionNode implements Node {
     public enum RiskTransactionOutcome {
         Accept, Decline, Challenge, Error
     }
-
 
     private Action.ActionBuilder goTo(RiskTransactionOutcome outcome) {
         return Action.goTo(outcome.name());

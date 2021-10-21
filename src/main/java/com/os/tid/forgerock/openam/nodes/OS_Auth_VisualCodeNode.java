@@ -39,7 +39,7 @@ import java.util.List;
 
 /**
  *
- * This node reads the visual code message from the sharedState and renders it as a visual code, which allows the device integrated with the Mobile Security Suite SDKs to scan with.
+ * This node reads the visual code message from the sharedState and renders it as a visual code, which allows the device integrated with the Mobile Security Suite SDKs, or DIGIPASS Authenticator with Cronto support to scan with.
  */
 @Node.Metadata( outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
                 configClass = OS_Auth_VisualCodeNode.Config.class,
@@ -50,12 +50,11 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
     private final OSConfigurationsService serviceConfig;
 
     /**
-     * Configuration for the OneSpan TID Visual Code Node.
+     * Configuration for the OneSpan Auth Visual Code Node.
      */
     public interface Config {
         /**
-         *
-         * @return
+         * How to build and store visual code message in SharedState
          */
         @Attribute(order = 100)
         default VisualCodeMessageOptions visualCodeMessageOption() {
@@ -63,8 +62,7 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
         }
 
         /**
-         *
-         * @return
+         * The key name in Shared State which represents the visual code message.
          */
         @Attribute(order = 200)
         default String customMessageInSharedState() {
@@ -72,8 +70,7 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
         }
 
         /**
-         *
-         * @return Hidden Value Callback Id contains the Visual Code URL
+         * @return The hidden value callback ID which contains the Visual Code URL
          */
         @Attribute(order = 300)
         default String visualCodeHiddenValueId() {
@@ -83,8 +80,6 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
         /**
          * Whether to push script (render <img> tag to front end)
          * If false, only put Visual Code URL as a hiddenValueCallback
-         *
-         * @return
          */
         @Attribute(order = 400)
         default boolean renderVisualCodeInCallback() {
@@ -92,8 +87,7 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
         }
 
         /**
-         *
-         * @return
+         * The parent dom ID where to add the <img> tag
          */
         @Attribute(order = 500)
         default String domIdRenderVisualCode() {
@@ -101,7 +95,7 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
         }
 
         /**
-         * cronto or qr code, enum
+         * Cronto or QR code
          */
         @Attribute(order = 600)
         default VisualCodeType visualCodeType() {
@@ -109,7 +103,7 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
         }
 
         /**
-         * size of image
+         * Size of image
          */
         @Attribute(order = 700)
         default int sizeOfVisualCode() {
@@ -117,7 +111,7 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
         }
 
         /**
-         * alt text for cronto image
+         * Alternative text for Cronto image
          */
         @Attribute(order = 800)
         default String altTextOfVisualCode() {
@@ -125,7 +119,7 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
         }
 
         /**
-         * please scan
+         * Text for "please scan"
          */
         @Attribute(order = 900)
         default String textForPleaseScan() {
@@ -133,7 +127,7 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
         }
 
         /**
-         * please scan
+         * CSS for "please scan"
          */
         @Attribute(order = 1000)
         default String cssForPleaseScan() {
@@ -141,7 +135,7 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
         }
 
         /**
-         * has been expired
+         * Text for "activation code has expired"
          */
         @Attribute(order = 1100)
         default String textForExpired() {
@@ -149,7 +143,7 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
         }
 
         /**
-         * has been expired
+         * CSS for "activation code has expired"
          */
         @Attribute(order = 1200)
         default String cssForExpired() {
@@ -262,10 +256,6 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
                         "           var helper = document.createElement('div');" +
                         "           helper.innerHTML = crontoDiv;"+
                         "           insertAfter(document.getElementById(imageLocDomID),helper);}"+
-
-
-
-//                        "           document.getElementById(imageLocDomID).innerHTML += crontoDiv;}" +
                         "       var style = document.createElement('style');" +
                         "       style.type = 'text/css';" +
                         "       style.id = 'ostid_cronto_style';" +
@@ -276,7 +266,6 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
                         "      if(document.getElementById('ostid_cronto')) document.getElementById('ostid_cronto').remove();  " +
                         "      if(document.getElementById('ostid_cronto_style')) document.getElementById('ostid_cronto_style').remove();  " +
                         "  }" +
-
                         " function insertAfter(referenceNode, newNode) {" +
                         "   if(referenceNode.parentNode){"+
                         "         referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);" +
