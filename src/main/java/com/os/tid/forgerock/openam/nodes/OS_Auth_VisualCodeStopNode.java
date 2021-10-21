@@ -25,7 +25,7 @@ import javax.security.auth.callback.Callback;
 
 
 /**
- * This node reads the visual code message from the sharedState and renders it as a visual code, which allows the device integrated with the Mobile Security Suite SDKs to scan with.
+ * This node hides the visual code from UI
  */
 @Node.Metadata( outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
                 configClass = OS_Auth_VisualCodeStopNode.Config.class,
@@ -34,7 +34,7 @@ public class OS_Auth_VisualCodeStopNode extends SingleOutcomeNode {
     private final Logger logger = LoggerFactory.getLogger("amAuth");
 
     /**
-     * Configuration for the OneSpan TID Stop Visual Code Node.
+     * Configuration for the OneSpan Auth Stop Visual Code Node.
      */
     public interface Config {
     }
@@ -61,5 +61,4 @@ public class OS_Auth_VisualCodeStopNode extends SingleOutcomeNode {
                         "document.getElementById('loginButton_0').click();");
         return displayScriptCallback;
     }
-
 }

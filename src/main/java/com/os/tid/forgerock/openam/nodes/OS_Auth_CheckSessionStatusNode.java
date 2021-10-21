@@ -26,7 +26,6 @@ import com.os.tid.forgerock.openam.models.HttpEntity;
 import com.os.tid.forgerock.openam.utils.DateUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
-import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
 import com.sun.identity.sm.SMSException;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.*;
@@ -36,12 +35,11 @@ import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.security.auth.callback.Callback;
 import java.util.List;
 import java.util.ResourceBundle;
 
 /**
- * This node invokes the Check Session Status Service API, in order to checks the status of a request.
+ * This node invokes the Check Session Status API, which checks the status of a request.
  *
  */
 @Node.Metadata( outcomeProvider = OS_Auth_CheckSessionStatusNode.OSTIDCheckSessionStatusOutcomeProvider.class,
@@ -53,7 +51,7 @@ public class OS_Auth_CheckSessionStatusNode implements Node {
     private final OSConfigurationsService serviceConfig;
 
     /**
-     * Configuration for the OS TID Check Activate Node.
+     * Configuration for the OS Auth Check Session Status Node.
      */
     public interface Config {
 
@@ -68,7 +66,6 @@ public class OS_Auth_CheckSessionStatusNode implements Node {
         }
     }
 
-
     @Override
     public Action process(TreeContext context) {
         logger.debug("OS_Auth_CheckSessionStatusNode started");
@@ -76,18 +73,6 @@ public class OS_Auth_CheckSessionStatusNode implements Node {
         String tenantName = serviceConfig.tenantNameToLowerCase();
         String environment = serviceConfig.environment().name();
 
-//        //1. go to next
-//        JsonValue ostid_cronto_status = sharedState.get(Constants.OSTID_CRONTO_STATUS);
-//        if(ostid_cronto_status.isString()){
-//            CheckSessionStatusOutcome ostid_cronto_status_enum = CheckSessionStatusOutcome.valueOf(ostid_cronto_status.asString());
-//            sharedState.remove(Constants.OSTID_CRONTO_STATUS);
-//            return goTo(ostid_cronto_status_enum)
-//                    .replaceSharedState(sharedState)
-//                    .build();
-//        }
-
-        //2.
-        // call API and send to page (in order to remove the Cronto JS)
         JsonValue eventExpiryJsonValue = sharedState.get(Constants.OSTID_EVENT_EXPIRY_DATE);
         JsonValue requestIdJsonValue = sharedState.get(Constants.OSTID_REQUEST_ID);
         CheckSessionStatusOutcome checkSessionStatusEnum;
@@ -124,70 +109,24 @@ public class OS_Auth_CheckSessionStatusNode implements Node {
                 return goTo(CheckSessionStatusOutcome.pending).build();
             case accepted:
                 return goTo(CheckSessionStatusOutcome.accepted).build();
-//                if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()){
-//                    return goTo(CheckSessionStatusOutcome.accepted).build();
-//                }else {
-//                    sharedState.put(Constants.OSTID_CRONTO_STATUS, CheckSessionStatusOutcome.accepted.name());
-//                    return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
-//                }
             case refused:
                 sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: End user refused to validate the event!");
                 return goTo(CheckSessionStatusOutcome.refused).replaceSharedState(sharedState).build();
-//                if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()){
-//                    return goTo(CheckSessionStatusOutcome.refused).replaceSharedState(sharedState).build();
-//                }else {
-//                    sharedState.put(Constants.OSTID_CRONTO_STATUS, CheckSessionStatusOutcome.error.name());
-//                    return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
-//                }
             case failure:
                 sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: End user failed to validate the event!");
                 return goTo(CheckSessionStatusOutcome.failure).replaceSharedState(sharedState).build();
-//                if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()){
-//                    return goTo(CheckSessionStatusOutcome.failure).replaceSharedState(sharedState).build();
-//                }else {
-//                    sharedState.put(Constants.OSTID_CRONTO_STATUS, CheckSessionStatusOutcome.failure.name());
-//                    return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
-//                }
             case timeout:
                 sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: The session has been expired!");
                 return goTo(CheckSessionStatusOutcome.timeout).replaceSharedState(sharedState).build();
-//                if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()){
-//                    return goTo(CheckSessionStatusOutcome.timeout).replaceSharedState(sharedState).build();
-//                }else {
-//                    sharedState.put(Constants.OSTID_CRONTO_STATUS, CheckSessionStatusOutcome.timeout.name());
-//                    return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
-//                }
             case unknown:
                 sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: The event validation status is unknown!");
                 return goTo(CheckSessionStatusOutcome.unknown).replaceSharedState(sharedState).build();
-//                if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()){
-//                    return goTo(CheckSessionStatusOutcome.unknown).replaceSharedState(sharedState).build();
-//                }else {
-//                    sharedState.put(Constants.OSTID_CRONTO_STATUS, CheckSessionStatusOutcome.unknown.name());
-//                    return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
-//                }
             case error:
                 return goTo(CheckSessionStatusOutcome.error).replaceSharedState(sharedState).build();
-//                if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()){
-//                    return goTo(CheckSessionStatusOutcome.error).replaceSharedState(sharedState).build();
-//                }else {
-//                    sharedState.put(Constants.OSTID_CRONTO_STATUS, CheckSessionStatusOutcome.error.name());
-//                    return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
-//                }
             default:
                 return goTo(CheckSessionStatusOutcome.pending).build();
         }
     }
-
-//    private Callback getStopCrontoCallback() {
-//        ScriptTextOutputCallback displayScriptCallback = new ScriptTextOutputCallback(
-//                "document.getElementById('loginButton_0').style.display = 'none';" +
-//                "if (CDDC_stop && typeof CDDC_stop === 'function') { " +
-//                "    CDDC_stop();" +
-//                "}" +
-//                "document.getElementById('loginButton_0').click();");
-//       return displayScriptCallback;
-//    }
 
     private Action.ActionBuilder goTo(CheckSessionStatusOutcome outcome) {
         return Action.goTo(outcome.name());
@@ -222,6 +161,5 @@ public class OS_Auth_CheckSessionStatusNode implements Node {
             );
         }
     }
-
 }
 

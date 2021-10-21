@@ -44,7 +44,7 @@ import java.util.*;
 import java.util.stream.Stream;
 
 /**
- * This node invokes the User Register/Unregister Service API, in order to validate and process the registration/unregistration of a user.
+ * This node invokes the User Login API, which validates and processes the login request.
  */
 @Node.Metadata( outcomeProvider = OS_Auth_UserLoginNode.OSTID_Adaptive_UserLoginNode3OutcomeProvider.class,
                 configClass = OS_Auth_UserLoginNode.Config.class,
@@ -56,11 +56,11 @@ public class OS_Auth_UserLoginNode implements Node {
     private final OSConfigurationsService serviceConfig;
 
     /**
-     * Configuration for the OneSpan TID Adaptive User Login Node.
+     * Configuration for the OS Auth User Login Node.
      */
     public interface Config {
         /**
-         * @return
+         * Input payload object type.
          */
         @Attribute(order = 100, validators = RequiredValueValidator.class)
         default ObjectType objectType() {
@@ -68,7 +68,7 @@ public class OS_Auth_UserLoginNode implements Node {
         }
 
         /**
-         * @return
+         * Credentials to authenticate the user.
          */
         @Attribute(order = 200, validators = RequiredValueValidator.class)
         default CredentialsType credentialsType() {
@@ -76,7 +76,7 @@ public class OS_Auth_UserLoginNode implements Node {
         }
 
         /**
-         * @return
+         * The key name in Shared State which represents the IAA/OCA username
          */
         @Attribute(order = 300, validators = RequiredValueValidator.class)
         default String userNameInSharedData() {
@@ -84,7 +84,7 @@ public class OS_Auth_UserLoginNode implements Node {
         }
 
         /**
-         * @return
+         * The key name in Shared State which represents the IAA/OCA password. Static password for the user or keyword to trigger out-of-band authentication.
          */
         @Attribute(order = 400, validators = RequiredValueValidator.class)
         default String passwordInTransientState() {
@@ -93,8 +93,6 @@ public class OS_Auth_UserLoginNode implements Node {
 
         /**
          * Configurable attributes in request JSON payload
-         *
-         * @return
          */
         @Attribute(order = 500)
         default Map<String, String> optionalAttributes() {
@@ -102,7 +100,7 @@ public class OS_Auth_UserLoginNode implements Node {
         }
 
         /**
-         * @return
+         * Indicates whether a push notification should be sent, and/or if the orchestration command should be included in the response requestMessage.
          */
         @Attribute(order = 600)
         default OrchestrationDelivery orchestrationDelivery() {
@@ -110,22 +108,20 @@ public class OS_Auth_UserLoginNode implements Node {
         }
 
         /**
-         * @return Hidden Value Callback Id contains the Visual Code URL
+         * Timeout in seconds.
          */
         @Attribute(order = 700)
         default int timeout() {
             return Constants.OSTID_DEFAULT_EVENT_EXPIRY;
         }
 
-
         /**
-         * @return Hidden Value Callback Id contains the Visual Code URL
+         * How to build and store visual code message in SharedState
          */
         @Attribute(order = 800)
         default VisualCodeMessageOptions visualCodeMessageOptions() {
             return VisualCodeMessageOptions.sessionID;
         }
-
     }
 
     @Inject
@@ -139,7 +135,7 @@ public class OS_Auth_UserLoginNode implements Node {
     }
 
     @Override
-    public Action process(TreeContext context) throws NodeProcessException {
+    public Action process(TreeContext context) {
         logger.debug("OS_Auth_UserLoginNode started");
         JsonValue sharedState = context.sharedState;
         JsonValue transientState = context.transientState;
@@ -170,8 +166,8 @@ public class OS_Auth_UserLoginNode implements Node {
                 cddcIpJsonValue
         )))
         ) {  //missing data
-            logger.debug("OS_Auth_UserLoginNode exception: Oopts, there's missing data for OneSpan TID Adaptive User Login Process!");
-            sharedState.put(Constants.OSTID_ERROR_MESSAGE, "Oopts, there's missing data for OneSpan TID Adaptive User Login Process!");
+            logger.debug("OS_Auth_UserLoginNode exception: Oopts, there are missing data for OneSpan Auth User Login Process!");
+            sharedState.put(Constants.OSTID_ERROR_MESSAGE, "Oopts, there are missing data for OneSpan Auth User Login Process!");
             return goTo(UserLoginOutcome.Error)
                     .replaceSharedState(sharedState)
                     .build();
@@ -334,7 +330,6 @@ public class OS_Auth_UserLoginNode implements Node {
                         .replaceSharedState(sharedState)
                         .build();
             }
-
         }
     }
 

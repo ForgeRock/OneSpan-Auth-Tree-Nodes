@@ -45,7 +45,7 @@ import java.util.ResourceBundle;
 import java.util.stream.Stream;
 
 /**
- * This node invokes the Check Activation Status Service API, in order to checks the status of a pending activation of a device.
+ * This node invokes the Activate Device API, which finalizes the OCA provisioning process.
  *
  */
 @Node.Metadata( outcomeProvider = OS_Auth_ActivateDeviceNode.OSTIDActivateDeviceOutcomeProvider.class,
@@ -57,7 +57,7 @@ public class OS_Auth_ActivateDeviceNode implements Node {
     private final OSConfigurationsService serviceConfig;
 
     /**
-     * Configuration for the OS TID Check Activate Node.
+     * Configuration for the OS Auth Activate Device Node.
      */
     public interface Config {
     }
@@ -97,7 +97,7 @@ public class OS_Auth_ActivateDeviceNode implements Node {
                 signature
         ))){
             logger.debug("OS_Auth_ActivateDeviceNode has missing data!");
-            sharedState.put(Constants.OSTID_ERROR_MESSAGE,"Oopts, there's missing data for OneSpan OCA Activate Device call!");
+            sharedState.put(Constants.OSTID_ERROR_MESSAGE,"Oopts, there are missing data for OneSpan OCA Activate Device call!");
             return goTo(OS_Auth_ActivateDeviceNode.OSTIDActivateDeviceOutcome.error)
                     .replaceSharedState(sharedState)
                     .build();

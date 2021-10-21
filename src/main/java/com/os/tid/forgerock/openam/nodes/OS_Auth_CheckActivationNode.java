@@ -26,7 +26,6 @@ import com.os.tid.forgerock.openam.models.HttpEntity;
 import com.os.tid.forgerock.openam.utils.DateUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
-import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
 import com.sun.identity.sm.SMSException;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.*;
@@ -36,12 +35,11 @@ import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.security.auth.callback.Callback;
 import java.util.List;
 import java.util.ResourceBundle;
 
 /**
- * This node invokes the Check Activation Status Service API, in order to checks the status of a pending activation of a device.
+ * This node invokes the Check Activation Status API, which checks the status of a pending activation of a device.
  *
  */
 @Node.Metadata( outcomeProvider = OS_Auth_CheckActivationNode.OSTIDCheckActivateOutcomeProvider.class,
@@ -53,7 +51,7 @@ public class OS_Auth_CheckActivationNode implements Node {
     private final OSConfigurationsService serviceConfig;
 
     /**
-     * Configuration for the OS TID Check Activate Node.
+     * Configuration for the OS Auth Check Activate Node.
      */
     public interface Config {
     }
@@ -125,52 +123,18 @@ public class OS_Auth_CheckActivationNode implements Node {
                 return goTo(ActivationStatusOutcome.pending).build();
             case activated:
                 return goTo(ActivationStatusOutcome.activated).build();
-//                if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()){
-//
-//                }else {
-//                    sharedState.put(Constants.OSTID_CRONTO_STATUS, ActivationStatusOutcome.activated.name());
-//                    return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
-//                }
             case error:
                 return goTo(ActivationStatusOutcome.error).replaceSharedState(sharedState).build();
-//                if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()){
-//                    return goTo(ActivationStatusOutcome.error).replaceSharedState(sharedState).build();
-//                }else {
-//                    sharedState.put(Constants.OSTID_CRONTO_STATUS, ActivationStatusOutcome.error.name());
-//                    return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
-//                }
             case timeout:
                 sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Activation: Your session has timed out!");
                 return goTo(ActivationStatusOutcome.timeout).replaceSharedState(sharedState).build();
-//                if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()){
-//                    return goTo(ActivationStatusOutcome.timeout).replaceSharedState(sharedState).build();
-//                }else {
-//                    sharedState.put(Constants.OSTID_CRONTO_STATUS, ActivationStatusOutcome.timeout.name());
-//                    return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
-//                }
             case unknown:
                 sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Activation: Status Unknown!");
                 return goTo(ActivationStatusOutcome.unknown).replaceSharedState(sharedState).build();
-//                if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()){
-//                    return goTo(ActivationStatusOutcome.unknown).replaceSharedState(sharedState).build();
-//                }else {
-//                    sharedState.put(Constants.OSTID_CRONTO_STATUS, ActivationStatusOutcome.unknown.name());
-//                    return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
-//                }
             default:
                 return goTo(ActivationStatusOutcome.pending).build();
         }
     }
-
-//    private Callback getStopCrontoCallback() {
-//        ScriptTextOutputCallback displayScriptCallback = new ScriptTextOutputCallback(
-//                "document.getElementById('loginButton_0').style.display = 'none';" +
-//                "if (CDDC_stop && typeof CDDC_stop === 'function') { " +
-//                "    CDDC_stop();" +
-//                "}" +
-//                "document.getElementById('loginButton_0').click();");
-//       return displayScriptCallback;
-//    }
 
     private Action.ActionBuilder goTo(ActivationStatusOutcome outcome) {
         return Action.goTo(outcome.name());

@@ -44,7 +44,7 @@ import java.util.*;
 import java.util.stream.Stream;
 
 /**
- * This node invokes the User Register/Unregister Service API, in order to validate and process the registration/unregistration of a user.
+ * This node invokes the Validate Event API, which validates and processes the authentication for a non-monetary request.
  */
 @Node.Metadata( outcomeProvider = OS_Auth_ValidateEventNode.OS_Auth_EventValidationNodeOutcomeProvider.class,
                 configClass = OS_Auth_ValidateEventNode.Config.class,
@@ -56,12 +56,11 @@ public class OS_Auth_ValidateEventNode implements Node {
     private final OSConfigurationsService serviceConfig;
 
     /**
-     * Configuration for the OneSpan TID Adaptive User Login Node.
+     * Configuration for the OneSpan Auth Validate Event Node.
      */
     public interface Config {
         /**
-         *
-         * @return
+         * Name of the non-monetary event type. String values for numeric keys related to custom event types are additionally accepted.
          */
         @Attribute(order = 100, validators = RequiredValueValidator.class)
         default OS_Auth_ValidateEventNode.EventType eventType() {
@@ -69,8 +68,7 @@ public class OS_Auth_ValidateEventNode implements Node {
         }
 
         /**
-         *
-         * @return
+         * The hardcoded value of the event type.
          */
         @Attribute(order = 200)
         default String specifyEventType() {
@@ -78,15 +76,15 @@ public class OS_Auth_ValidateEventNode implements Node {
         }
 
         /**
-         *
-         * @return
+         * The key name of the event type in SharedState.
          */
         @Attribute(order = 300)
         default String eventTypeInSharedState() {
             return "";
         }
+
         /**
-         * @return
+         * Credentials to authenticate the user.
          */
         @Attribute(order = 400, validators = RequiredValueValidator.class)
         default CredentialsType credentialsType() {
@@ -94,7 +92,7 @@ public class OS_Auth_ValidateEventNode implements Node {
         }
 
         /**
-         * @return
+         * The key name in Shared State which represents the IAA username
          */
         @Attribute(order = 500, validators = RequiredValueValidator.class)
         default String userNameInSharedData() {
@@ -102,7 +100,7 @@ public class OS_Auth_ValidateEventNode implements Node {
         }
 
         /**
-         * @return
+         * The key name in Shared State which represents the IAA/OCA password. Static password for the user or keyword to trigger out-of-band authentication.
          */
         @Attribute(order = 600, validators = RequiredValueValidator.class)
         default String passwordInTransientState() {
@@ -111,8 +109,6 @@ public class OS_Auth_ValidateEventNode implements Node {
 
         /**
          * Configurable attributes in request JSON payload
-         *
-         * @return
          */
         @Attribute(order = 700)
         default Map<String, String> optionalAttributes() {
@@ -120,7 +116,7 @@ public class OS_Auth_ValidateEventNode implements Node {
         }
 
         /**
-         * @return
+         * Indicates whether a push notification should be sent, and/or if the orchestration command should be included in the response requestMessage.
          */
         @Attribute(order = 800)
         default OrchestrationDelivery orchestrationDelivery() {
@@ -128,22 +124,20 @@ public class OS_Auth_ValidateEventNode implements Node {
         }
 
         /**
-         * @return
+         * Timeout in seconds.
          */
         @Attribute(order = 900)
         default int timeout() {
             return Constants.OSTID_DEFAULT_EVENT_EXPIRY;
         }
 
-
         /**
-         * @return Hidden Value Callback Id contains the Visual Code URL
+         * How to build and store visual code message in SharedState
          */
         @Attribute(order = 1000)
         default VisualCodeMessageOptions visualCodeMessageOptions() {
             return VisualCodeMessageOptions.sessionID;
         }
-
     }
 
     @Inject
@@ -157,7 +151,7 @@ public class OS_Auth_ValidateEventNode implements Node {
     }
 
     @Override
-    public Action process(TreeContext context) throws NodeProcessException {
+    public Action process(TreeContext context) {
         logger.debug("OS_Auth_ValidateEventNode started");
         JsonValue sharedState = context.sharedState;
         JsonValue transientState = context.transientState;
@@ -325,7 +319,6 @@ public class OS_Auth_ValidateEventNode implements Node {
                                 break;
                         }
                     }
-
                     logger.debug("OS_Auth_ValidateEventNode user login outcome:" + eventValidationOutcome.name());
                     return goTo(eventValidationOutcome)
                             .replaceSharedState(sharedState)
@@ -344,7 +337,6 @@ public class OS_Auth_ValidateEventNode implements Node {
                         }else{
                             sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithoutValidation(message,log_correction_id,requestJSON));         //error return from IAA server
                         }
-
                         logger.debug("OS_Auth_ValidateEventNode outcome:" + EventValidationOutcome.Error.name());
 
                         return goTo(EventValidationOutcome.Error)
@@ -359,7 +351,6 @@ public class OS_Auth_ValidateEventNode implements Node {
                         .replaceSharedState(sharedState)
                         .build();
             }
-
         }
     }
 

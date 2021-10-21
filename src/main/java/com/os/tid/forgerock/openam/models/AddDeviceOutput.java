@@ -1,8 +1,5 @@
 package com.os.tid.forgerock.openam.models;
 
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-
 public class AddDeviceOutput {
       public String activationMessage2;
       public String activationType;

@@ -32,10 +32,6 @@ import javax.security.auth.callback.PasswordCallback;
 import java.util.*;
 
 
-/**
- *
- *
- */
 @Node.Metadata( outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
                 configClass = OS_Sample_TransactionCollector.Config.class,
                 tags = {"OneSpan", "mfa", "utilities"})
@@ -90,8 +86,6 @@ public class OS_Sample_TransactionCollector extends SingleOutcomeNode {
                 put(bundle.getString("callback.debtorIBAN"),Constants.OSTID_DEFAULT_DEBTORIBAN);
         }};
 
-
-
         config.optionalAttributes().forEach(attr -> attrMap.putIfAbsent(attr,attr));
         attrMap.values().forEach(attrName -> attrValueMap.putIfAbsent(attrName,null));
 
@@ -132,7 +126,6 @@ public class OS_Sample_TransactionCollector extends SingleOutcomeNode {
         }else{
             return Action.send(collectTransactionData(bundle)).build();
         }
-
     }
 
     private List<Callback> collectTransactionData(ResourceBundle bundle){
@@ -166,8 +159,6 @@ public class OS_Sample_TransactionCollector extends SingleOutcomeNode {
             NameCallback NameCallback = new NameCallback(optionalAttribute);
             callbackList.add(NameCallback);
         }
-
         return callbackList;
     }
-
 }
