@@ -116,7 +116,7 @@ public class Constants {
     public static final String OSTID_DIGI_SERIAL = "osstid_digi_serial";
     public static final String OSTID_REGISTRATION_ID = "osstid_registration_id";
     public static final String OSTID_CRONTO = "osstid_cronto";
-    public static final String OSTID_ACTIVATION_CODE = "ostid";
+    public static final String OSTID_ACTIVATION_CODE = "ostid_activationPassword";
     public static final String OSTID_ACTIVATION_CODE2 = "activationPassword";
     public static final String OSTID_IRM_RESPONSE = "ostid_irm_response";
     public static final String OSTID_COMMAND = "ostid_command";

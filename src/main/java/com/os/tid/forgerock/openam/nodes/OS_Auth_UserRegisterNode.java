@@ -224,9 +224,9 @@ public class OS_Auth_UserRegisterNode implements Node {
 
                 if (httpEntity.isSuccess()) {
                     UserRegisterOutputEx userRegisterOutputEx = JSON.toJavaObject(responseJSON, UserRegisterOutputEx.class);
+                    String activationCode = userRegisterOutputEx.getActivationPassword();
                     if (config.nodeFunction() == NodeFunction.UserRegister && config.objectType() == ObjectType.IAA) {
                         //"02;user01211;111;duoliang11071-mailin;3zE6RNH5;duoliang11071-mailin"
-                        String activationCode = userRegisterOutputEx.getActivationPassword();
                         String crontoValueRaw = String.format(Constants.OSTID_CRONTO_FORMULA,
                                 Constants.OSTID_API_VERSION,                        //param1
                                 usernameJsonValue.asString(),                       //param2
@@ -245,8 +245,9 @@ public class OS_Auth_UserRegisterNode implements Node {
 
                     } else if (config.nodeFunction() == NodeFunction.UserRegister && config.objectType() == ObjectType.OCA) {
                         sharedState.put(Constants.OSTID_SESSIONID, sessionId);
-                        sharedState.put(Constants.OSTID_ACTIVATION_CODE, userRegisterOutputEx.getActivationPassword());
-                        sharedState.put(Constants.OSTID_CRONTO_MSG, userRegisterOutputEx.getActivationPassword());
+                        sharedState.put(Constants.OSTID_ACTIVATION_CODE, activationCode);
+                        sharedState.put(Constants.OSTID_ACTIVATION_CODE2, activationCode);
+                        sharedState.put(Constants.OSTID_CRONTO_MSG, activationCode);
                         sharedState.put(Constants.OSTID_DIGI_SERIAL, userRegisterOutputEx.getSerialNumber());
                         sharedState.put(Constants.OSTID_REGISTRATION_ID, userRegisterOutputEx.getRegistrationID());
                         sharedState.put(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.activationTokenExpiry()));

@@ -1,0 +1,220 @@
+
+{
+  "origin": "4188da2c4ac583f1fea3a6ff4eb25a45 -",
+  "innernodes": {
+    "72fdbd39-d1ee-40aa-b65c-665cae468f2f": {
+      "_id": "72fdbd39-d1ee-40aa-b65c-665cae468f2f",
+      "pushCDDCJsAsCallback": true,
+      "CDDCJsonHiddenValueId": "osstid_cddc_json",
+      "CDDCHashHiddenValueId": "osstid_cddc_hash",
+      "_type": {
+        "_id": "OS_Risk_CDDCNode",
+        "name": "OneSpan Risk CDDC",
+        "collection": true
+      },
+      "_outcomes": [
+        {
+          "id": "outcome",
+          "displayName": "Outcome"
+        }
+      ]
+    },
+    "f22c4a59-5a16-4154-97ce-d1547c28d54a": {
+      "_id": "f22c4a59-5a16-4154-97ce-d1547c28d54a",
+      "_type": {
+        "_id": "UsernameCollectorNode",
+        "name": "Username Collector",
+        "collection": true
+      },
+      "_outcomes": [
+        {
+          "id": "outcome",
+          "displayName": "Outcome"
+        }
+      ]
+    },
+    "daa2c63b-222e-4a91-80bc-a9f514d95f24": {
+      "_id": "daa2c63b-222e-4a91-80bc-a9f514d95f24",
+      "attributes": [
+        "OTP"
+      ],
+      "_type": {
+        "_id": "OS_Sample_AttributesCollector",
+        "name": "OneSpan Sample Attributes Collector",
+        "collection": true
+      },
+      "_outcomes": [
+        {
+          "id": "outcome",
+          "displayName": "Outcome"
+        }
+      ]
+    }
+  },
+  "nodes": {
+    "49d9270d-1886-4e82-acc2-7c64debde8e1": {
+      "_id": "49d9270d-1886-4e82-acc2-7c64debde8e1",
+      "incrementUserAttributeOnFailure": true,
+      "retryLimit": 3,
+      "_type": {
+        "_id": "RetryLimitDecisionNode",
+        "name": "Retry Limit Decision",
+        "collection": true
+      },
+      "_outcomes": [
+        {
+          "id": "Retry",
+          "displayName": "Retry"
+        },
+        {
+          "id": "Reject",
+          "displayName": "Reject"
+        }
+      ]
+    },
+    "4bb76eef-e3ec-4400-856c-f224376addb5": {
+      "_id": "4bb76eef-e3ec-4400-856c-f224376addb5",
+      "attributes": [],
+      "_type": {
+        "_id": "OS_Sample_AttributesCollector",
+        "name": "OneSpan Sample Attributes Collector",
+        "collection": true
+      },
+      "_outcomes": [
+        {
+          "id": "outcome",
+          "displayName": "Outcome"
+        }
+      ]
+    },
+    "5d2d09a1-f105-448d-86c4-63703ff64cf2": {
+      "_id": "5d2d09a1-f105-448d-86c4-63703ff64cf2",
+      "credentialsType": "authenticator",
+      "visualCodeMessageOptions": "sessionID",
+      "objectType": "LoginInput",
+      "timeout": 60,
+      "userNameInSharedData": "username",
+      "passwordInTransientState": "password",
+      "optionalAttributes": {},
+      "orchestrationDelivery": "none",
+      "_type": {
+        "_id": "OS_Auth_UserLoginNode",
+        "name": "OneSpan Auth User Login",
+        "collection": true
+      },
+      "_outcomes": [
+        {
+          "id": "Accept",
+          "displayName": "Accept"
+        },
+        {
+          "id": "Decline",
+          "displayName": "Decline"
+        },
+        {
+          "id": "StepUp",
+          "displayName": "Step Up"
+        },
+        {
+          "id": "Error",
+          "displayName": "Error"
+        }
+      ]
+    },
+    "aec139e7-70e6-4c33-a047-0909fb361b85": {
+      "_id": "aec139e7-70e6-4c33-a047-0909fb361b85",
+      "pageHeader": {},
+      "pageDescription": {},
+      "nodes": [
+        {
+          "_id": "72fdbd39-d1ee-40aa-b65c-665cae468f2f",
+          "nodeType": "OS_Risk_CDDCNode",
+          "displayName": "OneSpan Risk CDDC"
+        },
+        {
+          "_id": "f22c4a59-5a16-4154-97ce-d1547c28d54a",
+          "nodeType": "UsernameCollectorNode",
+          "displayName": "Username Collector"
+        },
+        {
+          "_id": "daa2c63b-222e-4a91-80bc-a9f514d95f24",
+          "nodeType": "OS_Sample_AttributesCollector",
+          "displayName": "OneSpan Sample Attributes Collector"
+        }
+      ],
+      "_type": {
+        "_id": "PageNode",
+        "name": "Page Node",
+        "collection": true
+      },
+      "_outcomes": [
+        {
+          "id": "outcome",
+          "displayName": "Outcome"
+        }
+      ]
+    }
+  },
+  "scripts": {},
+  "emailTemplates": {},
+  "tree": {
+    "_id": "OneSpan-XUI-Cloud-Authentication-User-Login-OTP-Sample-Tree",
+    "nodes": {
+      "aec139e7-70e6-4c33-a047-0909fb361b85": {
+        "displayName": "Page Node",
+        "nodeType": "PageNode",
+        "x": 187,
+        "y": 128,
+        "connections": {
+          "outcome": "5d2d09a1-f105-448d-86c4-63703ff64cf2"
+        }
+      },
+      "5d2d09a1-f105-448d-86c4-63703ff64cf2": {
+        "displayName": "OneSpan Auth User Login",
+        "nodeType": "OS_Auth_UserLoginNode",
+        "x": 543,
+        "y": 134,
+        "connections": {
+          "Accept": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0",
+          "Decline": "4bb76eef-e3ec-4400-856c-f224376addb5",
+          "Error": "4bb76eef-e3ec-4400-856c-f224376addb5"
+        }
+      },
+      "4bb76eef-e3ec-4400-856c-f224376addb5": {
+        "displayName": "OneSpan Sample Attributes Collector",
+        "nodeType": "OS_Sample_AttributesCollector",
+        "x": 414,
+        "y": 499,
+        "connections": {
+          "outcome": "49d9270d-1886-4e82-acc2-7c64debde8e1"
+        }
+      },
+      "49d9270d-1886-4e82-acc2-7c64debde8e1": {
+        "displayName": "Retry Limit Decision",
+        "nodeType": "RetryLimitDecisionNode",
+        "x": 787,
+        "y": 498,
+        "connections": {
+          "Retry": "aec139e7-70e6-4c33-a047-0909fb361b85",
+          "Reject": "e301438c-0bd0-429c-ab0c-66126501069a"
+        }
+      }
+    },
+    "staticNodes": {
+      "startNode": {
+        "x": 52,
+        "y": 50
+      },
+      "70e691a5-1e33-4ac3-a356-e7b6d60d92e0": {
+        "x": 1117,
+        "y": 149
+      },
+      "e301438c-0bd0-429c-ab0c-66126501069a": {
+        "x": 1110,
+        "y": 546
+      }
+    },
+    "uiConfig": {},
+    "entryNodeId": "aec139e7-70e6-4c33-a047-0909fb361b85"
+  }
+}
