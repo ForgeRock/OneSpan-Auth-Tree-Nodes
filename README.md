@@ -13,7 +13,7 @@
  *
  * Copyright 2019 ForgeRock AS.
 -->
-# OneSpan IAA Auth Tree Nodes
+# OneSpan Auth Tree Nodes
 
 OneSpan [Intelligent Adaptive Authentication (IAA)](https://www.onespan.com/products/intelligent-adaptive-authentication) helps drive down fraud, improve customer experience, and meet compliance requirements by combining our powerful [OneSpan Cloud Authentication](https://www.onespan.com/products/onespan-cloud-authentication) (OCA) and [Risk Analytics](https://www.onespan.com/products/risk-analytics) (RA) service. 
 By analyzing vast and disparate data acquired from user actions, device integrity, and transaction data in real time, the end-user can be dynamically presented with the appropriate authentication level for the current session or transaction.
