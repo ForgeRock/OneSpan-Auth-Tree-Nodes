@@ -20,6 +20,8 @@ By analyzing vast and disparate data acquired from user actions, device integrit
 
 Watch this video to learn [how OneSpan intelligent adaptive authentication works](https://www.onespan.com/partners/forgerock).
 
+OneSpan Auth Tree Nodes work in tandem with ForgeRock [Access Management (AM) 7.1](https://backstage.forgerock.com/docs/am/7.1).
+
 ## About OneSpan IAA
 
 OneSpan Adaptive Authentication provides hosted solutions to test and build web and mobile applications for login and transaction signing flows.
