@@ -2,3 +2,4 @@
 target/
 deprecated/
 dependency-reduced-pom.xml
+*.iml
