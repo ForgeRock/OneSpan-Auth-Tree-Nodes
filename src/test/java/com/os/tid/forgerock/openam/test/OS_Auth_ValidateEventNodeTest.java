@@ -3,9 +3,8 @@ package com.os.tid.forgerock.openam.test;
 import com.google.common.collect.ImmutableMap;
 import com.iplanet.sso.SSOException;
 import com.os.tid.forgerock.openam.config.Constants;
-import com.os.tid.forgerock.openam.nodes.OSTIDConfigurationsService;
-import com.os.tid.forgerock.openam.nodes.OSTIDEventValidationNode;
-import com.os.tid.forgerock.openam.nodes.OSTIDLoginNode;
+import com.os.tid.forgerock.openam.nodes.OSConfigurationsService;
+import com.os.tid.forgerock.openam.nodes.OS_Auth_ValidateEventNode;
 import com.sun.identity.sm.SMSException;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
@@ -30,13 +29,12 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 @Test
-public class OSTIDEventValidationNodeTest {
+public class OS_Auth_ValidateEventNodeTest {
+    @Mock
+    private OS_Auth_ValidateEventNode.Config config;
 
     @Mock
-    private OSTIDEventValidationNode.Config config;
-
-    @Mock
-    private OSTIDConfigurationsService configurationsService;
+    private OSConfigurationsService configurationsService;
 
     @Mock
     private Realm realm;
@@ -49,23 +47,23 @@ public class OSTIDEventValidationNodeTest {
         initMocks(this);
         given(configurationsService.tenantNameToLowerCase()).willReturn(TestData.TENANT_NAME.toLowerCase());
         given(configurationsService.environment()).willReturn(TestData.ENVIRONMENT);
-        given(annotatedServiceRegistry.getRealmSingleton(OSTIDConfigurationsService.class, realm)).willReturn(Optional.of(configurationsService));
+        given(configurationsService.applicationRef()).willReturn(TestData.APPLICATION_REF);
+        given(annotatedServiceRegistry.getRealmSingleton(OSConfigurationsService.class, realm)).willReturn(Optional.of(configurationsService));
     }
 
     @Test
     public void testProcessMissingData() throws NodeProcessException{
         // Given
         //config
-        given(config.eventType()).willReturn(OSTIDEventValidationNode.EventType.SpecifyBelow);
+        given(config.eventType()).willReturn(OS_Auth_ValidateEventNode.EventType.SpecifyBelow);
+        given(config.credentialsType()).willReturn(OS_Auth_ValidateEventNode.CredentialsType.passKey);
         given(config.specifyEventType()).willReturn("LoginAttempt");
         given(config.userNameInSharedData()).willReturn(Constants.OSTID_DEFAULT_USERNAME);
-        given(config.passKeyRequired()).willReturn(false);
         given(config.passwordInTransientState()).willReturn(Constants.OSTID_DEFAULT_PASSKEY);
-        given(config.notificationsActivated()).willReturn(OSTIDEventValidationNode.NotificationsActivated.No);
-        given(config.eventValidationExpiry()).willReturn(Constants.OSTID_DEFAULT_EVENT_EXPIRY);
-        given(config.visualCodeMessageOptions()).willReturn(OSTIDEventValidationNode.VisualCodeMessageOptions.SessionId);
+        given(config.orchestrationDelivery()).willReturn(OS_Auth_ValidateEventNode.OrchestrationDelivery.none);
+        given(config.visualCodeMessageOptions()).willReturn(OS_Auth_ValidateEventNode.VisualCodeMessageOptions.sessionID);
 
-        OSTIDEventValidationNode node = new OSTIDEventValidationNode(config, realm, annotatedServiceRegistry);
+        OS_Auth_ValidateEventNode node = new OS_Auth_ValidateEventNode(config, realm, annotatedServiceRegistry);
 
         //tree context
         JsonValue sharedState = json(object(1));
@@ -84,24 +82,26 @@ public class OSTIDEventValidationNodeTest {
     public void testProcessHardCodeEventTypeSuccess() throws NodeProcessException{
         // Given
         //config
-        given(config.eventType()).willReturn(OSTIDEventValidationNode.EventType.SpecifyBelow);
+        given(config.eventType()).willReturn(OS_Auth_ValidateEventNode.EventType.SpecifyBelow);
         given(config.specifyEventType()).willReturn("LoginAttempt");
+        given(config.credentialsType()).willReturn(OS_Auth_ValidateEventNode.CredentialsType.passKey);
         given(config.userNameInSharedData()).willReturn(Constants.OSTID_DEFAULT_USERNAME);
-        given(config.passKeyRequired()).willReturn(false);
         given(config.passwordInTransientState()).willReturn(Constants.OSTID_DEFAULT_PASSKEY);
-        given(config.notificationsActivated()).willReturn(OSTIDEventValidationNode.NotificationsActivated.No);
-        given(config.eventValidationExpiry()).willReturn(Constants.OSTID_DEFAULT_EVENT_EXPIRY);
-        given(config.visualCodeMessageOptions()).willReturn(OSTIDEventValidationNode.VisualCodeMessageOptions.SessionId);
+        given(config.orchestrationDelivery()).willReturn(OS_Auth_ValidateEventNode.OrchestrationDelivery.none);
+        given(config.visualCodeMessageOptions()).willReturn(OS_Auth_ValidateEventNode.VisualCodeMessageOptions.sessionID);
 
-        OSTIDEventValidationNode node = new OSTIDEventValidationNode(config, realm, annotatedServiceRegistry);
+        OS_Auth_ValidateEventNode node = new OS_Auth_ValidateEventNode(config, realm, annotatedServiceRegistry);
 
         //tree context
         JsonValue sharedState = json(object(1));
         sharedState.put(Constants.OSTID_DEFAULT_USERNAME,TestData.TEST_USERNAME);
+        sharedState.put(Constants.OSTID_DEFAULT_PASSKEY,TestData.TEST_PASS_KEY);
         sharedState.put(Constants.OSTID_CDDC_JSON,TestData.TEST_CDDC_JSON);
         sharedState.put(Constants.OSTID_CDDC_HASH,TestData.TEST_CDDC_HASH);
         sharedState.put(Constants.OSTID_CDDC_IP,TestData.TEST_CDDC_IP);
-        TreeContext context = getContext(sharedState,json(object(1)),Collections.emptyList());
+        JsonValue transientState = json(object(1));
+        transientState.put(Constants.OSTID_DEFAULT_PASSKEY,TestData.TEST_PASS_KEY);
+        TreeContext context = getContext(sharedState,transientState,Collections.emptyList());
 
         // When
         Action result = node.process(context);
@@ -120,16 +120,15 @@ public class OSTIDEventValidationNodeTest {
     public void testProcessPassInEventTypeSuccess() throws NodeProcessException{
         // Given
         //config
-        given(config.eventType()).willReturn(OSTIDEventValidationNode.EventType.ReadFromSharedState);
+        given(config.eventType()).willReturn(OS_Auth_ValidateEventNode.EventType.ReadFromSharedState);
         given(config.eventTypeInSharedState()).willReturn("OSTID_EVENT_TYPE");
         given(config.userNameInSharedData()).willReturn(Constants.OSTID_DEFAULT_USERNAME);
-        given(config.passKeyRequired()).willReturn(false);
         given(config.passwordInTransientState()).willReturn(Constants.OSTID_DEFAULT_PASSKEY);
-        given(config.notificationsActivated()).willReturn(OSTIDEventValidationNode.NotificationsActivated.No);
-        given(config.eventValidationExpiry()).willReturn(Constants.OSTID_DEFAULT_EVENT_EXPIRY);
-        given(config.visualCodeMessageOptions()).willReturn(OSTIDEventValidationNode.VisualCodeMessageOptions.SessionId);
+        given(config.orchestrationDelivery()).willReturn(OS_Auth_ValidateEventNode.OrchestrationDelivery.none);
+        given(config.visualCodeMessageOptions()).willReturn(OS_Auth_ValidateEventNode.VisualCodeMessageOptions.sessionID);
+        given(config.credentialsType()).willReturn(OS_Auth_ValidateEventNode.CredentialsType.passKey);
 
-        OSTIDEventValidationNode node = new OSTIDEventValidationNode(config, realm, annotatedServiceRegistry);
+        OS_Auth_ValidateEventNode node = new OS_Auth_ValidateEventNode(config, realm, annotatedServiceRegistry);
 
         //tree context
         JsonValue sharedState = json(object(1));
@@ -138,7 +137,9 @@ public class OSTIDEventValidationNodeTest {
         sharedState.put(Constants.OSTID_CDDC_JSON,TestData.TEST_CDDC_JSON);
         sharedState.put(Constants.OSTID_CDDC_HASH,TestData.TEST_CDDC_HASH);
         sharedState.put(Constants.OSTID_CDDC_IP,TestData.TEST_CDDC_IP);
-        TreeContext context = getContext(sharedState,json(object(1)),Collections.emptyList());
+        JsonValue transientState = json(object(1));
+        transientState.put(Constants.OSTID_DEFAULT_PASSKEY,TestData.TEST_PASS_KEY);
+        TreeContext context = getContext(sharedState,transientState,Collections.emptyList());
 
         // When
         Action result = node.process(context);
@@ -157,19 +158,18 @@ public class OSTIDEventValidationNodeTest {
     public void testProcessWithOptionalAttributesSuccess() throws NodeProcessException{
         // Given
         //config
-        given(config.eventType()).willReturn(OSTIDEventValidationNode.EventType.SpecifyBelow);
+        given(config.eventType()).willReturn(OS_Auth_ValidateEventNode.EventType.SpecifyBelow);
         given(config.specifyEventType()).willReturn("LoginAttempt");
         given(config.userNameInSharedData()).willReturn(Constants.OSTID_DEFAULT_USERNAME);
-        given(config.passKeyRequired()).willReturn(false);
         given(config.passwordInTransientState()).willReturn(Constants.OSTID_DEFAULT_PASSKEY);
-        given(config.notificationsActivated()).willReturn(OSTIDEventValidationNode.NotificationsActivated.No);
-        given(config.eventValidationExpiry()).willReturn(Constants.OSTID_DEFAULT_EVENT_EXPIRY);
-        given(config.visualCodeMessageOptions()).willReturn(OSTIDEventValidationNode.VisualCodeMessageOptions.SessionId);
+        given(config.credentialsType()).willReturn(OS_Auth_ValidateEventNode.CredentialsType.passKey);
+        given(config.orchestrationDelivery()).willReturn(OS_Auth_ValidateEventNode.OrchestrationDelivery.none);
+        given(config.visualCodeMessageOptions()).willReturn(OS_Auth_ValidateEventNode.VisualCodeMessageOptions.sessionID);
         given(config.optionalAttributes()).willReturn(ImmutableMap.of(
-                "mobile_phone_number","mobilePhoneNumber",
-                "email_address","emailAddress"
+                "mobilePhoneNumber","mobile_phone_number",
+                "emailAddress","email_address"
         ));
-        OSTIDEventValidationNode node = new OSTIDEventValidationNode(config, realm, annotatedServiceRegistry);
+        OS_Auth_ValidateEventNode node = new OS_Auth_ValidateEventNode(config, realm, annotatedServiceRegistry);
 
         //tree context
         JsonValue sharedState = json(object(1));
@@ -179,8 +179,9 @@ public class OSTIDEventValidationNodeTest {
         sharedState.put(Constants.OSTID_CDDC_IP,TestData.TEST_CDDC_IP);
         sharedState.put("mobile_phone_number",TestData.TEST_MOBILE_PHONE);
         sharedState.put("email_address",TestData.TEST_EMAIL_ADDRESS);
-
-        TreeContext context = getContext(sharedState,json(object(1)),Collections.emptyList());
+        JsonValue transientState = json(object(1));
+        transientState.put(Constants.OSTID_DEFAULT_PASSKEY,TestData.TEST_PASS_KEY);
+        TreeContext context = getContext(sharedState,transientState,Collections.emptyList());
 
         // When
         Action result = node.process(context);
@@ -196,6 +197,6 @@ public class OSTIDEventValidationNodeTest {
     }
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState, List<Callback> callbackList) {
-        return new TreeContext(sharedState, transientState, new Builder().build(), callbackList);
+        return new TreeContext("managed/user", sharedState, transientState, new Builder().build(), callbackList,null);
     }
 }

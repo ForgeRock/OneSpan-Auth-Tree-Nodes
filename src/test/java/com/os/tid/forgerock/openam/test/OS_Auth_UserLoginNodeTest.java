@@ -3,9 +3,8 @@ package com.os.tid.forgerock.openam.test;
 import com.google.common.collect.ImmutableMap;
 import com.iplanet.sso.SSOException;
 import com.os.tid.forgerock.openam.config.Constants;
-import com.os.tid.forgerock.openam.nodes.OSTIDConfigurationsService;
-import com.os.tid.forgerock.openam.nodes.OSTIDLoginNode;
-import com.os.tid.forgerock.openam.nodes.OSTIDTransactionsNode;
+import com.os.tid.forgerock.openam.nodes.OSConfigurationsService;
+import com.os.tid.forgerock.openam.nodes.OS_Auth_UserLoginNode;
 import com.sun.identity.sm.SMSException;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
@@ -30,26 +29,28 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 @Test
-public class OSTIDTransactionsNodeTest {
+public class OS_Auth_UserLoginNodeTest {
 
     @Mock
-    private OSTIDTransactionsNode.Config config;
+    private OS_Auth_UserLoginNode.Config config;
 
     @Mock
-    private OSTIDConfigurationsService configurationsService;
+    protected OSConfigurationsService configurationsService;
 
     @Mock
-    private Realm realm;
+    protected Realm realm;
 
     @Mock
-    private AnnotatedServiceRegistry annotatedServiceRegistry;
+    protected AnnotatedServiceRegistry annotatedServiceRegistry;
 
     @BeforeMethod
     public void before() throws SMSException, SSOException {
         initMocks(this);
         given(configurationsService.tenantNameToLowerCase()).willReturn(TestData.TENANT_NAME.toLowerCase());
         given(configurationsService.environment()).willReturn(TestData.ENVIRONMENT);
-        given(annotatedServiceRegistry.getRealmSingleton(OSTIDConfigurationsService.class, realm)).willReturn(Optional.of(configurationsService));
+        given(configurationsService.applicationRef()).willReturn(TestData.APPLICATION_REF);
+
+        given(annotatedServiceRegistry.getRealmSingleton(OSConfigurationsService.class, realm)).willReturn(Optional.of(configurationsService));
     }
 
     @Test
@@ -57,19 +58,12 @@ public class OSTIDTransactionsNodeTest {
         // Given
         //config
         given(config.userNameInSharedData()).willReturn(Constants.OSTID_DEFAULT_USERNAME);
-        given(config.passKeyRequired()).willReturn(false);
         given(config.passwordInTransientState()).willReturn(Constants.OSTID_DEFAULT_PASSKEY);
-        given(config.transactionTypeInSharedData()).willReturn(Constants.OSTID_DEFAULT_TRANSACTIONTYPE);
-        given(config.currencyInSharedData()).willReturn(Constants.OSTID_DEFAULT_CURRENCY);
-        given(config.amountInSharedData()).willReturn(Constants.OSTID_DEFAULT_AMOUNT);
-        given(config.creditorIBANInSharedData()).willReturn(Constants.OSTID_DEFAULT_CREDITORIBAN);
-        given(config.accountRefInSharedData()).willReturn(Constants.OSTID_DEFAULT_ACCOUNTREF);
-        given(config.creditorNameInSharedData()).willReturn(Constants.OSTID_DEFAULT_CREDITORNAME);
-        given(config.notificationsActivated()).willReturn(OSTIDTransactionsNode.NotificationsActivated.No);
-        given(config.transactionExpiry()).willReturn(Constants.OSTID_DEFAULT_EVENT_EXPIRY);
-        given(config.visualCodeMessageOptions()).willReturn(OSTIDTransactionsNode.VisualCodeMessageOptions.SessionId);
+        given(config.orchestrationDelivery()).willReturn(OS_Auth_UserLoginNode.OrchestrationDelivery.none);
+        given(config.visualCodeMessageOptions()).willReturn(OS_Auth_UserLoginNode.VisualCodeMessageOptions.sessionID);
+        given(config.objectType()).willReturn(OS_Auth_UserLoginNode.ObjectType.AdaptiveLoginInput);
 
-        OSTIDTransactionsNode node = new OSTIDTransactionsNode(config, realm, annotatedServiceRegistry);
+        OS_Auth_UserLoginNode node = new OS_Auth_UserLoginNode(config, realm, annotatedServiceRegistry);
 
         //tree context
         JsonValue sharedState = json(object(1));
@@ -85,23 +79,18 @@ public class OSTIDTransactionsNodeTest {
     }
 
     @Test
-    public void testProcessSuccess() throws NodeProcessException{
+    public Action testProcessSuccess() throws NodeProcessException{
         // Given
         //config
         given(config.userNameInSharedData()).willReturn(Constants.OSTID_DEFAULT_USERNAME);
-        given(config.passKeyRequired()).willReturn(false);
-        given(config.passwordInTransientState()).willReturn(Constants.OSTID_DEFAULT_PASSKEY);
-        given(config.transactionTypeInSharedData()).willReturn(Constants.OSTID_DEFAULT_TRANSACTIONTYPE);
-        given(config.currencyInSharedData()).willReturn(Constants.OSTID_DEFAULT_CURRENCY);
-        given(config.amountInSharedData()).willReturn(Constants.OSTID_DEFAULT_AMOUNT);
-        given(config.creditorIBANInSharedData()).willReturn(Constants.OSTID_DEFAULT_CREDITORIBAN);
-        given(config.accountRefInSharedData()).willReturn(Constants.OSTID_DEFAULT_ACCOUNTREF);
-        given(config.creditorNameInSharedData()).willReturn(Constants.OSTID_DEFAULT_CREDITORNAME);
-        given(config.notificationsActivated()).willReturn(OSTIDTransactionsNode.NotificationsActivated.No);
-        given(config.transactionExpiry()).willReturn(Constants.OSTID_DEFAULT_EVENT_EXPIRY);
-        given(config.visualCodeMessageOptions()).willReturn(OSTIDTransactionsNode.VisualCodeMessageOptions.SessionId);
+//        given(config.passwordInTransientState()).willReturn(Constants.OSTID_DEFAULT_PASSKEY);
+        given(config.orchestrationDelivery()).willReturn(OS_Auth_UserLoginNode.OrchestrationDelivery.none);
+        given(config.visualCodeMessageOptions()).willReturn(OS_Auth_UserLoginNode.VisualCodeMessageOptions.sessionID);
+        given(config.objectType()).willReturn(OS_Auth_UserLoginNode.ObjectType.AdaptiveLoginInput);
+        given(config.credentialsType()).willReturn(OS_Auth_UserLoginNode.CredentialsType.none);
+        given(config.timeout()).willReturn(Constants.OSTID_DEFAULT_EVENT_EXPIRY);
 
-        OSTIDTransactionsNode node = new OSTIDTransactionsNode(config, realm, annotatedServiceRegistry);
+        OS_Auth_UserLoginNode node = new OS_Auth_UserLoginNode(config, realm, annotatedServiceRegistry);
 
         //tree context
         JsonValue sharedState = json(object(1));
@@ -109,14 +98,9 @@ public class OSTIDTransactionsNodeTest {
         sharedState.put(Constants.OSTID_CDDC_JSON,TestData.TEST_CDDC_JSON);
         sharedState.put(Constants.OSTID_CDDC_HASH,TestData.TEST_CDDC_HASH);
         sharedState.put(Constants.OSTID_CDDC_IP,TestData.TEST_CDDC_IP);
-        sharedState.put(Constants.OSTID_DEFAULT_TRANSACTIONTYPE,"ExternalTransfer");
-        sharedState.put(Constants.OSTID_DEFAULT_CURRENCY,"CAD");
-        sharedState.put(Constants.OSTID_DEFAULT_AMOUNT,"66.66");
-        sharedState.put(Constants.OSTID_DEFAULT_CREDITORIBAN,"IBAN123123");
-        sharedState.put(Constants.OSTID_DEFAULT_ACCOUNTREF,"Ref123123");
-        sharedState.put(Constants.OSTID_DEFAULT_CREDITORNAME,"John Smith");
-        TreeContext context = getContext(sharedState,json(object(1)),Collections.emptyList());
-
+        JsonValue transientState = json(object(1));
+//        transientState.put(Constants.OSTID_DEFAULT_PASSKEY,TestData.TEST_PASS_KEY);
+        TreeContext context = getContext(sharedState,transientState,Collections.emptyList());
         // When
         Action result = node.process(context);
         // Then
@@ -128,6 +112,8 @@ public class OSTIDTransactionsNodeTest {
         assertThat(result.sharedState.keys()).contains(Constants.OSTID_IRM_RESPONSE);
         assertThat(result.sharedState.keys()).contains(Constants.OSTID_COMMAND);
         assertThat(result.sharedState.keys()).contains(Constants.OSTID_CRONTO_MSG);
+
+        return result;
     }
 
     @Test
@@ -135,22 +121,17 @@ public class OSTIDTransactionsNodeTest {
         // Given
         //config
         given(config.userNameInSharedData()).willReturn(Constants.OSTID_DEFAULT_USERNAME);
-        given(config.passKeyRequired()).willReturn(false);
         given(config.passwordInTransientState()).willReturn(Constants.OSTID_DEFAULT_PASSKEY);
-        given(config.transactionTypeInSharedData()).willReturn(Constants.OSTID_DEFAULT_TRANSACTIONTYPE);
-        given(config.currencyInSharedData()).willReturn(Constants.OSTID_DEFAULT_CURRENCY);
-        given(config.amountInSharedData()).willReturn(Constants.OSTID_DEFAULT_AMOUNT);
-        given(config.creditorIBANInSharedData()).willReturn(Constants.OSTID_DEFAULT_CREDITORIBAN);
-        given(config.accountRefInSharedData()).willReturn(Constants.OSTID_DEFAULT_ACCOUNTREF);
-        given(config.creditorNameInSharedData()).willReturn(Constants.OSTID_DEFAULT_CREDITORNAME);
-        given(config.notificationsActivated()).willReturn(OSTIDTransactionsNode.NotificationsActivated.No);
-        given(config.transactionExpiry()).willReturn(Constants.OSTID_DEFAULT_EVENT_EXPIRY);
-        given(config.visualCodeMessageOptions()).willReturn(OSTIDTransactionsNode.VisualCodeMessageOptions.SessionId);
+        given(config.credentialsType()).willReturn(OS_Auth_UserLoginNode.CredentialsType.passKey);
+        given(config.orchestrationDelivery()).willReturn(OS_Auth_UserLoginNode.OrchestrationDelivery.none);
+        given(config.visualCodeMessageOptions()).willReturn(OS_Auth_UserLoginNode.VisualCodeMessageOptions.sessionID);
+        given(config.objectType()).willReturn(OS_Auth_UserLoginNode.ObjectType.AdaptiveLoginInput);
         given(config.optionalAttributes()).willReturn(ImmutableMap.of(
-                "mobile_phone_number","mobilePhoneNumber",
-                "email_address","emailAddress"
+                "mobilePhoneNumber","mobile_phone_number",
+                "emailAddress","email_address"
         ));
-        OSTIDTransactionsNode node = new OSTIDTransactionsNode(config, realm, annotatedServiceRegistry);
+
+        OS_Auth_UserLoginNode node = new OS_Auth_UserLoginNode(config, realm, annotatedServiceRegistry);
 
         //tree context
         JsonValue sharedState = json(object(1));
@@ -158,15 +139,11 @@ public class OSTIDTransactionsNodeTest {
         sharedState.put(Constants.OSTID_CDDC_JSON,TestData.TEST_CDDC_JSON);
         sharedState.put(Constants.OSTID_CDDC_HASH,TestData.TEST_CDDC_HASH);
         sharedState.put(Constants.OSTID_CDDC_IP,TestData.TEST_CDDC_IP);
-        sharedState.put(Constants.OSTID_DEFAULT_TRANSACTIONTYPE,"ExternalTransfer");
-        sharedState.put(Constants.OSTID_DEFAULT_CURRENCY,"CAD");
-        sharedState.put(Constants.OSTID_DEFAULT_AMOUNT,"66.66");
-        sharedState.put(Constants.OSTID_DEFAULT_CREDITORNAME,"John Smith");
-        sharedState.put(Constants.OSTID_DEFAULT_CREDITORIBAN,"IBAN123123");
-        sharedState.put(Constants.OSTID_DEFAULT_ACCOUNTREF,"Ref123123");
         sharedState.put("mobile_phone_number",TestData.TEST_MOBILE_PHONE);
         sharedState.put("email_address",TestData.TEST_EMAIL_ADDRESS);
-        TreeContext context = getContext(sharedState,json(object(1)),Collections.emptyList());
+        JsonValue transientState = json(object(1));
+        transientState.put(Constants.OSTID_DEFAULT_PASSKEY,TestData.TEST_PASS_KEY);
+        TreeContext context = getContext(sharedState,transientState,Collections.emptyList());
 
         // When
         Action result = node.process(context);
@@ -182,6 +159,6 @@ public class OSTIDTransactionsNodeTest {
     }
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState, List<Callback> callbackList) {
-        return new TreeContext(sharedState, transientState, new Builder().build(), callbackList);
+        return new TreeContext("managed/user", sharedState, transientState, new Builder().build(), callbackList,null);
     }
 }

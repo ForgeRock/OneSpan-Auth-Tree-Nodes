@@ -3,9 +3,8 @@ package com.os.tid.forgerock.openam.test;
 import com.google.common.collect.ImmutableMap;
 import com.iplanet.sso.SSOException;
 import com.os.tid.forgerock.openam.config.Constants;
-import com.os.tid.forgerock.openam.nodes.OSTIDConfigurationsService;
-import com.os.tid.forgerock.openam.nodes.OSTIDLoginNode;
-import com.os.tid.forgerock.openam.nodes.OSTIDUserRegisterNode;
+import com.os.tid.forgerock.openam.nodes.OSConfigurationsService;
+import com.os.tid.forgerock.openam.nodes.OS_Auth_UserRegisterNode;
 import com.sun.identity.sm.SMSException;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
@@ -30,13 +29,12 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 @Test
-public class OSTIDLoginNodeTest {
+public class OS_Auth_UserRegisterNodeTest {
+    @Mock
+    private OS_Auth_UserRegisterNode.Config config;
 
     @Mock
-    private OSTIDLoginNode.Config config;
-
-    @Mock
-    protected OSTIDConfigurationsService configurationsService;
+    protected OSConfigurationsService configurationsService;
 
     @Mock
     protected Realm realm;
@@ -49,21 +47,21 @@ public class OSTIDLoginNodeTest {
         initMocks(this);
         given(configurationsService.tenantNameToLowerCase()).willReturn(TestData.TENANT_NAME.toLowerCase());
         given(configurationsService.environment()).willReturn(TestData.ENVIRONMENT);
-        given(annotatedServiceRegistry.getRealmSingleton(OSTIDConfigurationsService.class, realm)).willReturn(Optional.of(configurationsService));
+        given(configurationsService.applicationRef()).willReturn(TestData.APPLICATION_REF);
+        given(configurationsService.applicationRef()).willReturn(TestData.APPLICATION_REF);
+
+        given(annotatedServiceRegistry.getRealmSingleton(OSConfigurationsService.class, realm)).willReturn(Optional.of(configurationsService));
     }
 
     @Test
     public void testProcessMissingData() throws NodeProcessException{
         // Given
         //config
+        given(config.nodeFunction()).willReturn(OS_Auth_UserRegisterNode.NodeFunction.UserRegister);
         given(config.userNameInSharedData()).willReturn(Constants.OSTID_DEFAULT_USERNAME);
-        given(config.passKeyRequired()).willReturn(false);
         given(config.passwordInTransientState()).willReturn(Constants.OSTID_DEFAULT_PASSKEY);
-        given(config.notificationsActivated()).willReturn(OSTIDLoginNode.NotificationsActivated.No);
-        given(config.loginExpiry()).willReturn(Constants.OSTID_DEFAULT_EVENT_EXPIRY);
-        given(config.visualCodeMessageOptions()).willReturn(OSTIDLoginNode.VisualCodeMessageOptions.SessionId);
 
-        OSTIDLoginNode node = new OSTIDLoginNode(config, realm, annotatedServiceRegistry);
+        OS_Auth_UserRegisterNode node = new OS_Auth_UserRegisterNode(config, realm, annotatedServiceRegistry);
 
         //tree context
         JsonValue sharedState = json(object(1));
@@ -79,17 +77,16 @@ public class OSTIDLoginNodeTest {
     }
 
     @Test
-    public Action testProcessSuccess() throws NodeProcessException{
+    public void testProcessSuccess() throws NodeProcessException{
         // Given
         //config
+        given(config.nodeFunction()).willReturn(OS_Auth_UserRegisterNode.NodeFunction.UserRegister);
         given(config.userNameInSharedData()).willReturn(Constants.OSTID_DEFAULT_USERNAME);
-        given(config.passKeyRequired()).willReturn(false);
         given(config.passwordInTransientState()).willReturn(Constants.OSTID_DEFAULT_PASSKEY);
-        given(config.notificationsActivated()).willReturn(OSTIDLoginNode.NotificationsActivated.No);
-        given(config.loginExpiry()).willReturn(Constants.OSTID_DEFAULT_EVENT_EXPIRY);
-        given(config.visualCodeMessageOptions()).willReturn(OSTIDLoginNode.VisualCodeMessageOptions.SessionId);
+        given(config.objectType()).willReturn(OS_Auth_UserRegisterNode.ObjectType.IAA);
+        given(config.activationType()).willReturn(OS_Auth_UserRegisterNode.ActivationType.onlineMDL);
 
-        OSTIDLoginNode node = new OSTIDLoginNode(config, realm, annotatedServiceRegistry);
+        OS_Auth_UserRegisterNode node = new OS_Auth_UserRegisterNode(config, realm, annotatedServiceRegistry);
 
         //tree context
         JsonValue sharedState = json(object(1));
@@ -97,39 +94,38 @@ public class OSTIDLoginNodeTest {
         sharedState.put(Constants.OSTID_CDDC_JSON,TestData.TEST_CDDC_JSON);
         sharedState.put(Constants.OSTID_CDDC_HASH,TestData.TEST_CDDC_HASH);
         sharedState.put(Constants.OSTID_CDDC_IP,TestData.TEST_CDDC_IP);
-        TreeContext context = getContext(sharedState,json(object(1)),Collections.emptyList());
+        JsonValue transientState = json(object(1));
+        transientState.put(Constants.OSTID_DEFAULT_PASSKEY,TestData.TEST_PASS_KEY);
+        TreeContext context = getContext(sharedState,transientState,Collections.emptyList());
 
         // When
         Action result = node.process(context);
         // Then
-        assertThat(result.outcome).isEqualTo("StepUp");
+        assertThat(result.outcome).isEqualTo("Success");
         assertThat(result.callbacks.isEmpty());
-        assertThat(result.sharedState.keys()).contains(Constants.OSTID_EVENT_EXPIRY_DATE);
         assertThat(result.sharedState.keys()).contains(Constants.OSTID_SESSIONID);
-        assertThat(result.sharedState.keys()).contains(Constants.OSTID_REQUEST_ID);
-        assertThat(result.sharedState.keys()).contains(Constants.OSTID_IRM_RESPONSE);
-        assertThat(result.sharedState.keys()).contains(Constants.OSTID_COMMAND);
+        assertThat(result.sharedState.keys()).contains(Constants.OSTID_ACTIVATION_CODE);
         assertThat(result.sharedState.keys()).contains(Constants.OSTID_CRONTO_MSG);
-
-        return result;
+        assertThat(result.sharedState.keys()).contains(Constants.OSTID_DIGI_SERIAL);
+        assertThat(result.sharedState.keys()).contains(Constants.OSTID_EVENT_EXPIRY_DATE);
     }
 
     @Test
     public void testProcessWithOptionalAttributesSuccess() throws NodeProcessException{
         // Given
         //config
+        given(config.nodeFunction()).willReturn(OS_Auth_UserRegisterNode.NodeFunction.UserRegister);
         given(config.userNameInSharedData()).willReturn(Constants.OSTID_DEFAULT_USERNAME);
-        given(config.passKeyRequired()).willReturn(false);
         given(config.passwordInTransientState()).willReturn(Constants.OSTID_DEFAULT_PASSKEY);
-        given(config.notificationsActivated()).willReturn(OSTIDLoginNode.NotificationsActivated.No);
-        given(config.loginExpiry()).willReturn(Constants.OSTID_DEFAULT_EVENT_EXPIRY);
-        given(config.visualCodeMessageOptions()).willReturn(OSTIDLoginNode.VisualCodeMessageOptions.SessionId);
+        given(config.objectType()).willReturn(OS_Auth_UserRegisterNode.ObjectType.IAA);
+        given(config.activationType()).willReturn(OS_Auth_UserRegisterNode.ActivationType.onlineMDL);
         given(config.optionalAttributes()).willReturn(ImmutableMap.of(
-                "mobile_phone_number","mobilePhoneNumber",
-                "email_address","emailAddress"
+                "mobilePhoneNumber","mobile_phone_number",
+                "emailAddress","email_address"
         ));
 
-        OSTIDLoginNode node = new OSTIDLoginNode(config, realm, annotatedServiceRegistry);
+
+        OS_Auth_UserRegisterNode node = new OS_Auth_UserRegisterNode(config, realm, annotatedServiceRegistry);
 
         //tree context
         JsonValue sharedState = json(object(1));
@@ -139,23 +135,23 @@ public class OSTIDLoginNodeTest {
         sharedState.put(Constants.OSTID_CDDC_IP,TestData.TEST_CDDC_IP);
         sharedState.put("mobile_phone_number",TestData.TEST_MOBILE_PHONE);
         sharedState.put("email_address",TestData.TEST_EMAIL_ADDRESS);
-
-        TreeContext context = getContext(sharedState,json(object(1)),Collections.emptyList());
+        JsonValue transientState = json(object(1));
+        transientState.put(Constants.OSTID_DEFAULT_PASSKEY,TestData.TEST_PASS_KEY);
+        TreeContext context = getContext(sharedState,transientState,Collections.emptyList());
 
         // When
         Action result = node.process(context);
         // Then
-        assertThat(result.outcome).isEqualTo("StepUp");
+        assertThat(result.outcome).isEqualTo("Success");
         assertThat(result.callbacks.isEmpty());
-        assertThat(result.sharedState.keys()).contains(Constants.OSTID_EVENT_EXPIRY_DATE);
         assertThat(result.sharedState.keys()).contains(Constants.OSTID_SESSIONID);
-        assertThat(result.sharedState.keys()).contains(Constants.OSTID_REQUEST_ID);
-        assertThat(result.sharedState.keys()).contains(Constants.OSTID_IRM_RESPONSE);
-        assertThat(result.sharedState.keys()).contains(Constants.OSTID_COMMAND);
+        assertThat(result.sharedState.keys()).contains(Constants.OSTID_ACTIVATION_CODE);
         assertThat(result.sharedState.keys()).contains(Constants.OSTID_CRONTO_MSG);
+        assertThat(result.sharedState.keys()).contains(Constants.OSTID_DIGI_SERIAL);
+        assertThat(result.sharedState.keys()).contains(Constants.OSTID_EVENT_EXPIRY_DATE);
     }
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState, List<Callback> callbackList) {
-        return new TreeContext(sharedState, transientState, new Builder().build(), callbackList);
+        return new TreeContext("managed/user", sharedState, transientState, new Builder().build(), callbackList,null);
     }
 }

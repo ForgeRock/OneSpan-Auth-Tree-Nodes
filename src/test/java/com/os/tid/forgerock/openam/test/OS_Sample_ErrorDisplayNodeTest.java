@@ -1,17 +1,15 @@
 package com.os.tid.forgerock.openam.test;
 
 import com.os.tid.forgerock.openam.config.Constants;
-import com.os.tid.forgerock.openam.nodes.OSTID_DEMO_ErrorDisplayNode;
+import com.os.tid.forgerock.openam.nodes.OS_Sample_ErrorDisplayNode;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
-import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.TextOutputCallback;
 import java.util.Collections;
 import java.util.List;
@@ -22,7 +20,7 @@ import static org.forgerock.json.JsonValue.object;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 @Test
-public class OSTID_DEMO_ErrorDisplayNodeTest {
+public class OS_Sample_ErrorDisplayNodeTest {
     @BeforeMethod
     public void before() {
         initMocks(this);
@@ -31,7 +29,7 @@ public class OSTID_DEMO_ErrorDisplayNodeTest {
     @Test
     public void testProcessErrorDisplay() {
         // Given
-        OSTID_DEMO_ErrorDisplayNode node = new OSTID_DEMO_ErrorDisplayNode();
+        OS_Sample_ErrorDisplayNode node = new OS_Sample_ErrorDisplayNode();
         JsonValue sharedState = json(object(1));
         sharedState.put(Constants.OSTID_ERROR_MESSAGE,"some dummy error message!");
         TreeContext context = getContext(sharedState,json(object(1)),Collections.emptyList());
@@ -48,7 +46,7 @@ public class OSTID_DEMO_ErrorDisplayNodeTest {
     @Test
     public void testProcessNext() {
         // Given
-        OSTID_DEMO_ErrorDisplayNode node = new OSTID_DEMO_ErrorDisplayNode();
+        OS_Sample_ErrorDisplayNode node = new OS_Sample_ErrorDisplayNode();
         TreeContext context = getContext(json(object(1)),json(object(1)),Collections.emptyList());
 
         // When
@@ -60,7 +58,7 @@ public class OSTID_DEMO_ErrorDisplayNodeTest {
     }
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState, List<Callback> callbackList) {
-        return new TreeContext(sharedState, transientState, new Builder().build(), callbackList);
+        return new TreeContext("managed/user", sharedState, transientState, new Builder().build(), callbackList,null);
     }
 
 }

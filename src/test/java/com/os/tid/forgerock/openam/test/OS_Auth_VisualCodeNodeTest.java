@@ -1,11 +1,9 @@
 package com.os.tid.forgerock.openam.test;
 
-import com.google.common.collect.ImmutableList;
 import com.iplanet.sso.SSOException;
 import com.os.tid.forgerock.openam.config.Constants;
-import com.os.tid.forgerock.openam.nodes.OSTIDCDDCNode;
-import com.os.tid.forgerock.openam.nodes.OSTIDConfigurationsService;
-import com.os.tid.forgerock.openam.nodes.OSTIDVisualCodeNode;
+import com.os.tid.forgerock.openam.nodes.OSConfigurationsService;
+import com.os.tid.forgerock.openam.nodes.OS_Auth_VisualCodeNode;
 import com.sun.identity.authentication.callbacks.HiddenValueCallback;
 import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
 import com.sun.identity.sm.SMSException;
@@ -32,13 +30,12 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 @Test
-public class OSTIDVisualCodeNodeTest {
+public class OS_Auth_VisualCodeNodeTest {
+    @Mock
+    private OS_Auth_VisualCodeNode.Config config;
 
     @Mock
-    private OSTIDVisualCodeNode.Config config;
-
-    @Mock
-    private OSTIDConfigurationsService configurationsService;
+    private OSConfigurationsService configurationsService;
 
     @Mock
     private Realm realm;
@@ -51,17 +48,18 @@ public class OSTIDVisualCodeNodeTest {
         initMocks(this);
         given(configurationsService.tenantNameToLowerCase()).willReturn(TestData.TENANT_NAME.toLowerCase());
         given(configurationsService.environment()).willReturn(TestData.ENVIRONMENT);
-        given(annotatedServiceRegistry.getRealmSingleton(OSTIDConfigurationsService.class, realm)).willReturn(Optional.of(configurationsService));
+        given(configurationsService.applicationRef()).willReturn(TestData.APPLICATION_REF);
+        given(annotatedServiceRegistry.getRealmSingleton(OSConfigurationsService.class, realm)).willReturn(Optional.of(configurationsService));
     }
     @Test
     public void testProcessWithoutReturningScripts() throws NodeProcessException {
         // Given
         //config
-        given(config.visualCodeMessageOption()).willReturn(OSTIDVisualCodeNode.VisualCodeMessageOptions.DemoMobileApp);
+        given(config.visualCodeMessageOption()).willReturn(OS_Auth_VisualCodeNode.VisualCodeMessageOptions.DemoMobileApp);
         given(config.visualCodeHiddenValueId()).willReturn(Constants.OSTID_CRONTO);
         given(config.renderVisualCodeInCallback()).willReturn(false);
-        given(config.visualCodeType()).willReturn(OSTIDVisualCodeNode.VisualCodeType.Cronto);
-        OSTIDVisualCodeNode node = new OSTIDVisualCodeNode(config,realm,annotatedServiceRegistry);
+        given(config.visualCodeType()).willReturn(OS_Auth_VisualCodeNode.VisualCodeType.Cronto);
+        OS_Auth_VisualCodeNode node = new OS_Auth_VisualCodeNode(config,realm,annotatedServiceRegistry);
 
         //tree context
         JsonValue sharedState = json(object(1));
@@ -83,12 +81,12 @@ public class OSTIDVisualCodeNodeTest {
     public void testProcessWithCustomCrontoMsg() throws NodeProcessException {
         // Given
         //config
-        given(config.visualCodeMessageOption()).willReturn(OSTIDVisualCodeNode.VisualCodeMessageOptions.CustomCrontoMessage);
+        given(config.visualCodeMessageOption()).willReturn(OS_Auth_VisualCodeNode.VisualCodeMessageOptions.CustomCrontoMessage);
         given(config.customMessageInSharedState()).willReturn("my_custom_cronto_msg");
         given(config.visualCodeHiddenValueId()).willReturn(Constants.OSTID_CRONTO);
         given(config.renderVisualCodeInCallback()).willReturn(false);
-        given(config.visualCodeType()).willReturn(OSTIDVisualCodeNode.VisualCodeType.Cronto);
-        OSTIDVisualCodeNode node = new OSTIDVisualCodeNode(config,realm,annotatedServiceRegistry);
+        given(config.visualCodeType()).willReturn(OS_Auth_VisualCodeNode.VisualCodeType.Cronto);
+        OS_Auth_VisualCodeNode node = new OS_Auth_VisualCodeNode(config,realm,annotatedServiceRegistry);
 
         //tree context
         JsonValue sharedState = json(object(1));
@@ -110,7 +108,7 @@ public class OSTIDVisualCodeNodeTest {
     public void testProcessWithScriptCallbacks() throws NodeProcessException {
         // Given
         //config
-        given(config.visualCodeMessageOption()).willReturn(OSTIDVisualCodeNode.VisualCodeMessageOptions.DemoMobileApp);
+        given(config.visualCodeMessageOption()).willReturn(OS_Auth_VisualCodeNode.VisualCodeMessageOptions.DemoMobileApp);
         given(config.visualCodeHiddenValueId()).willReturn(Constants.OSTID_CRONTO);
         given(config.renderVisualCodeInCallback()).willReturn(true);
         given(config.domIdRenderVisualCode()).willReturn("dialog");
@@ -120,8 +118,8 @@ public class OSTIDVisualCodeNodeTest {
         given(config.cssForPleaseScan()).willReturn(":");
         given(config.textForExpired()).willReturn("Your Activation Code has been expired!");
         given(config.cssForExpired()).willReturn(":");
-        given(config.visualCodeType()).willReturn(OSTIDVisualCodeNode.VisualCodeType.Cronto);
-        OSTIDVisualCodeNode node = new OSTIDVisualCodeNode(config,realm,annotatedServiceRegistry);
+        given(config.visualCodeType()).willReturn(OS_Auth_VisualCodeNode.VisualCodeType.Cronto);
+        OS_Auth_VisualCodeNode node = new OS_Auth_VisualCodeNode(config,realm,annotatedServiceRegistry);
 
         //tree context
         JsonValue sharedState = json(object(1));
@@ -142,7 +140,7 @@ public class OSTIDVisualCodeNodeTest {
     }
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState, List<Callback> callbackList) {
-        return new TreeContext(sharedState, transientState, new Builder().build(), callbackList);
+        return new TreeContext("managed/user", sharedState, transientState, new Builder().build(), callbackList,null);
     }
 
 }

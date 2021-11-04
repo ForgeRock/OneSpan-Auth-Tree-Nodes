@@ -2,7 +2,7 @@ package com.os.tid.forgerock.openam.test;
 
 import com.google.common.collect.ImmutableList;
 import com.os.tid.forgerock.openam.config.Constants;
-import com.os.tid.forgerock.openam.nodes.OSTIDCDDCNode;
+import com.os.tid.forgerock.openam.nodes.OS_Risk_CDDCNode;
 import com.sun.identity.authentication.callbacks.HiddenValueCallback;
 import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
 import org.forgerock.json.JsonValue;
@@ -25,10 +25,9 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 @Test
-public class OSTIDCDDCNodeTest {
-
+public class OS_Risk_CDDCNodeTest {
     @Mock
-    private OSTIDCDDCNode.Config config;
+    private OS_Risk_CDDCNode.Config config;
 
     @BeforeMethod
     public void before() {
@@ -39,7 +38,7 @@ public class OSTIDCDDCNodeTest {
     public void testProcessWithNoCallbacks() throws NodeProcessException {
         // Given
         given(config.pushCDDCJsAsCallback()).willReturn(true);
-        OSTIDCDDCNode node = new OSTIDCDDCNode(config);
+        OS_Risk_CDDCNode node = new OS_Risk_CDDCNode(config);
         TreeContext context = getContext(json(object(1)),json(object(1)),Collections.emptyList());
 
         // When
@@ -60,7 +59,7 @@ public class OSTIDCDDCNodeTest {
     @Test
     public void testProcessWithCallbacks() throws NodeProcessException {
         // Given
-        OSTIDCDDCNode node = new OSTIDCDDCNode(config);
+        OS_Risk_CDDCNode node = new OS_Risk_CDDCNode(config);
         given(config.pushCDDCJsAsCallback()).willReturn(true);
         TreeContext context = getContext(json(object(1)), json(object(1)), ImmutableList.of(
                 new HiddenValueCallback(Constants.OSTID_CDDC_JSON, TestData.TEST_CDDC_JSON),
@@ -79,7 +78,7 @@ public class OSTIDCDDCNodeTest {
     }
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState, List<Callback> callbackList) {
-        return new TreeContext(sharedState, transientState, new Builder().build(), callbackList);
+        return new TreeContext("managed/user", sharedState, transientState, new Builder().build(), callbackList,null);
     }
 
 }
