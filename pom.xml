@@ -34,7 +34,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -66,10 +65,9 @@
         <dependency>
             <groupId>org.forgerock.am</groupId>
             <artifactId>service-config-api</artifactId>
+            <version>7.1.0</version>
             <scope>test</scope>
         </dependency>
-
-
 
         <!--for unit test-->
         <dependency>
@@ -109,24 +107,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!--<dependency>-->
-            <!--<groupId>org.powermock</groupId>-->
-            <!--<artifactId>powermock-module-junit4</artifactId>-->
-            <!--<version>2.0.2</version>-->
-            <!--<scope>test</scope>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-            <!--<groupId>org.powermock</groupId>-->
-            <!--<artifactId>powermock-api-easymock</artifactId>-->
-            <!--<version>2.0.2</version>-->
-            <!--<scope>test</scope>-->
-        <!--</dependency>-->
-        <!--<dependency>-->
-            <!--<groupId>org.powermock</groupId>-->
-            <!--<artifactId>powermock-api-mockito2</artifactId>-->
-            <!--<version>2.0.2</version>-->
-            <!--<scope>test</scope>-->
-        <!--</dependency>-->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
@@ -141,21 +121,12 @@
             <scope>test</scope>
         </dependency>
 
-        <!--&lt;!&ndash; https://mvnrepository.com/artifact/org.mockito/mockito-junit-jupiter &ndash;&gt;-->
-        <!--<dependency>-->
-            <!--<groupId>org.mockito</groupId>-->
-            <!--<artifactId>mockito-junit-jupiter</artifactId>-->
-            <!--<version>2.22.0</version>-->
-            <!--<scope>test</scope>-->
-        <!--</dependency>-->
-
         <!-- https://mvnrepository.com/artifact/com.alibaba/fastjson -->
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
             <version>1.2.47</version>
         </dependency>
-
 
     </dependencies>
 

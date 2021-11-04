@@ -30,7 +30,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 @Test
-public class OSTIDVisualCodeNodeTest {
+public class OS_Auth_VisualCodeNodeTest {
     @Mock
     private OS_Auth_VisualCodeNode.Config config;
 
@@ -49,7 +49,6 @@ public class OSTIDVisualCodeNodeTest {
         given(configurationsService.tenantNameToLowerCase()).willReturn(TestData.TENANT_NAME.toLowerCase());
         given(configurationsService.environment()).willReturn(TestData.ENVIRONMENT);
         given(configurationsService.applicationRef()).willReturn(TestData.APPLICATION_REF);
-
         given(annotatedServiceRegistry.getRealmSingleton(OSConfigurationsService.class, realm)).willReturn(Optional.of(configurationsService));
     }
     @Test
@@ -65,7 +64,7 @@ public class OSTIDVisualCodeNodeTest {
         //tree context
         JsonValue sharedState = json(object(1));
         sharedState.put(Constants.OSTID_CRONTO_MSG,TestData.TEST_CRONTO_MSG);
-        TreeContext context = getContext(sharedState,Collections.emptyList());
+        TreeContext context = getContext(sharedState,json(object(1)),Collections.emptyList());
 
         // When
         Action result = node.process(context);
@@ -92,7 +91,7 @@ public class OSTIDVisualCodeNodeTest {
         //tree context
         JsonValue sharedState = json(object(1));
         sharedState.put("my_custom_cronto_msg",TestData.TEST_CRONTO_MSG);
-        TreeContext context = getContext(sharedState,Collections.emptyList());
+        TreeContext context = getContext(sharedState,json(object(1)),Collections.emptyList());
 
         // When
         Action result = node.process(context);
@@ -125,7 +124,7 @@ public class OSTIDVisualCodeNodeTest {
         //tree context
         JsonValue sharedState = json(object(1));
         sharedState.put(Constants.OSTID_CRONTO_MSG,TestData.TEST_CRONTO_MSG);
-        TreeContext context = getContext(sharedState,Collections.emptyList());
+        TreeContext context = getContext(sharedState,json(object(1)),Collections.emptyList());
 
         // When
         Action result = node.process(context);
@@ -140,8 +139,8 @@ public class OSTIDVisualCodeNodeTest {
         assertThat(result.callbacks.get(4)).isInstanceOf(ScriptTextOutputCallback.class);
     }
 
-    private TreeContext getContext(JsonValue sharedState, List<Callback> callbackList) {
-        return new TreeContext("managed/user", sharedState, new Builder().build(), callbackList);
+    private TreeContext getContext(JsonValue sharedState, JsonValue transientState, List<Callback> callbackList) {
+        return new TreeContext("managed/user", sharedState, transientState, new Builder().build(), callbackList,null);
     }
 
 }
