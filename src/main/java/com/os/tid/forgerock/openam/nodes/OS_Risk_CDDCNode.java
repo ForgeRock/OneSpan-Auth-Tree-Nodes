@@ -143,9 +143,11 @@ public class OS_Risk_CDDCNode extends SingleOutcomeNode {
                     sharedState.put(Constants.OSTID_CDDC_HAS_PUSHED_JS, true);
                 }
 
-                String customCDDCScriptBase =   "document.getElementById('%1$s').value = $.Vasco.getJSON(true);\n" +
+                String customCDDCScriptBase =
+                        "document.getElementById('%1$s').value = $.Vasco.getJSON(true);\n" +
                         "document.getElementById('%2$s').value = $.Vasco.getHASH(true);\n" +
-                        "//document.getElementById('loginButton_0').click();";
+                        "if(typeof loginHelpers !== 'undefined'){loginHelpers.setHiddenCallback('%1$s', $.Vasco.getJSON(true))}\n" +
+                        "if(typeof loginHelpers !== 'undefined'){loginHelpers.setHiddenCallback('%2$s', $.Vasco.getHASH(true))}\n";
                 String customCDDCScript = String.format(customCDDCScriptBase, Constants.OSTID_CDDC_JSON,Constants.OSTID_CDDC_HASH);
                 ScriptTextOutputCallback customCDDCScriptCallback = new ScriptTextOutputCallback(customCDDCScript);
                 returnCallback.add(customCDDCScriptCallback);

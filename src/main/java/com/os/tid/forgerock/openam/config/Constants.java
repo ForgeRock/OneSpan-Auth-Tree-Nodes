@@ -94,15 +94,15 @@ public class Constants {
     public static final String OSTID_RESPONSE_CHECK_ACTIVATION_STATUS = "activationStatus";
     public static final String OSTID_ERROR_MESSAGE = "ostid_error_message";
 
-    public static final String OSTID_CDDC_JSON = "osstid_cddc_json";
-    public static final String OSTID_CDDC_HASH = "osstid_cddc_hash";
-    public static final String OSTID_CDDC_IP = "osstid_cddc_ip";
+    public static final String OSTID_CDDC_JSON = "ostid_cddc_json";
+    public static final String OSTID_CDDC_HASH = "ostid_cddc_hash";
+    public static final String OSTID_CDDC_IP = "ostid_cddc_ip";
     public static final String OSTID_CDDC_HAS_PUSHED_JS = "ostid_cddc_has_pushed_js";
     public static final String OSTID_USERNAME_IN_SHARED_STATE = "ostid_username_in_shared_state";
 
-    public static final String OSTID_DIGI_SERIAL = "osstid_digi_serial";
-    public static final String OSTID_REGISTRATION_ID = "osstid_registration_id";
-    public static final String OSTID_CRONTO = "osstid_cronto";
+    public static final String OSTID_DIGI_SERIAL = "ostid_digi_serial";
+    public static final String OSTID_REGISTRATION_ID = "ostid_registration_id";
+    public static final String OSTID_CRONTO = "ostid_cronto";
     public static final String OSTID_ACTIVATION_CODE = "ostid_activationPassword";
     public static final String OSTID_ACTIVATION_CODE2 = "activationPassword";
     public static final String OSTID_IRM_RESPONSE = "ostid_irm_response";
@@ -113,7 +113,7 @@ public class Constants {
     public static final String OSTID_RISK_RESPONSE_CODE2 = "riskResponseCode";
     public static final String OSTID_ACTIVATION_MESSAGE2 = "activationMessage2";
 
-    public static final String OSTID_SESSIONID = "osstid_session_id";
+    public static final String OSTID_SESSIONID = "ostid_session_id";
     public static final String OSTID_DEVICE_CODE = "deviceCode";
     public static final String OSTID_SIGNATURE = "signature";
     public static final String OSTID_REQUEST_ID = "ostid_request_id";
