@@ -81,15 +81,15 @@ public class OS_Auth_ActivateDeviceNode implements Node {
         JsonValue registration_id = sharedState.get(Constants.OSTID_REGISTRATION_ID);
         JsonValue signature = sharedState.get(Constants.OSTID_SIGNATURE);
 
-        //1. go to next
-        JsonValue ostid_cronto_status = sharedState.get(Constants.OSTID_CRONTO_STATUS);
-        if(ostid_cronto_status.isString()){
-            OSTIDActivateDeviceOutcome ostid_cronto_status_enum = OSTIDActivateDeviceOutcome.valueOf(ostid_cronto_status.asString());
-            sharedState.remove(Constants.OSTID_CRONTO_STATUS);
-            return goTo(ostid_cronto_status_enum)
-                    .replaceSharedState(sharedState)
-                    .build();
-        }
+//        //1. go to next
+//        JsonValue ostid_cronto_status = sharedState.get(Constants.OSTID_CRONTO_STATUS);
+//        if(ostid_cronto_status.isString()){
+//            OSTIDActivateDeviceOutcome ostid_cronto_status_enum = OSTIDActivateDeviceOutcome.valueOf(ostid_cronto_status.asString());
+//            sharedState.remove(Constants.OSTID_CRONTO_STATUS);
+//            return goTo(ostid_cronto_status_enum)
+//                    .replaceSharedState(sharedState)
+//                    .build();
+//        }
 
         //2. invoke API
         if(CollectionsUtils.hasAnyNullValues(ImmutableList.of(
@@ -111,8 +111,9 @@ public class OS_Auth_ActivateDeviceNode implements Node {
                 HttpEntity httpEntity = RestUtils.doPostJSON(url, activateDeviceJSON);
                 JSONObject responseJSON = httpEntity.getResponseJSON();
                 if(httpEntity.isSuccess()) {
-                    sharedState.put(Constants.OSTID_CRONTO_STATUS, OSTIDActivateDeviceOutcome.success.name());
-                    return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
+                    //sharedState.put(Constants.OSTID_CRONTO_STATUS, OSTIDActivateDeviceOutcome.success.name());
+//                    return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
+                    return goTo(OSTIDActivateDeviceOutcome.success).replaceSharedState(sharedState).build();
                 }else{
                     String error = responseJSON.getString("error");
                     String message = responseJSON.getString("message");
@@ -147,11 +148,17 @@ public class OS_Auth_ActivateDeviceNode implements Node {
 
     private Callback getStopCrontoCallback() {
         ScriptTextOutputCallback displayScriptCallback = new ScriptTextOutputCallback(
-                "document.getElementById('loginButton_0').style.display = 'none';" +
-                        "if (CDDC_stop && typeof CDDC_stop === 'function') { " +
-                        "    CDDC_stop();" +
+                        "if (typeof $.CDDC_display == 'function') { " +
+                        "    $.CDDC_display(false)();" +
                         "}" +
-                        "document.getElementById('loginButton_0').click();");
+                        "if(typeof loginHelpers !== 'undefined'){" +
+                        "   document.getElementsByClassName('btn-primary')[0].style.display = 'none';"+
+                        "   document.getElementsByClassName('btn-primary')[0].click();"+
+                        "}else{" +
+                        "   document.getElementById('loginButton_0').style.display = 'none';"+
+                        "   document.getElementById('loginButton_0').click();"+
+                        "}"
+        );
         return displayScriptCallback;
     }
 
