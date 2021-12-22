@@ -91,7 +91,7 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
          */
         @Attribute(order = 500)
         default String domIdRenderVisualCode() {
-            return "dialog";
+            return "callbacksPanel";
         }
 
         /**
@@ -172,8 +172,8 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
         boolean hasConsumed = false;
         if(context.getCallbacks(HiddenValueCallback.class) != null && context.getCallbacks(HiddenValueCallback.class).size() >= 1){
             for (HiddenValueCallback hiddenValueCallback : context.getCallbacks(HiddenValueCallback.class)) {
-                if (Constants.OSTID_CRONTO_HAS_RENDERED.contains(hiddenValueCallback.getId())) {
-                    hasConsumed = hiddenValueCallback.getValue().equalsIgnoreCase("true");
+                if (Constants.OSTID_CRONTO_HAS_RENDERED.equalsIgnoreCase(hiddenValueCallback.getId())) {
+                    hasConsumed = true;
                 }
             }
         }
@@ -226,57 +226,65 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
 
     private void addCrontoScript(List<Callback> returnCallback ){
         String displayScript =
-                        "function CDDC_display(isStart) {" +
-                        " var CDDC_timer;" +
+                        "window.CDDC_display = function(isStart) {" +
                         " function start(countDownDate,countdownText,expiryText,imageSrc,imageAlt,imageHeight,imageLocDomID,countdownCSS,expiryCSS) { " +
                         "    addCrontoUI(imageSrc,imageAlt,imageHeight,imageLocDomID);"+
-                        "    this.CDDC_timer = setInterval(function() {" +
+                        "    if(typeof window.CDDC_timer !== 'undefined'){" +
+                        "       console.log('start(): '+window.CDDC_timer);" +
+                        "       clearInterval(window.CDDC_timer);" +
+                        "    }"+
+                        "    window.CDDC_timer = setInterval(function() {" +
                         "       var now = new Date().getTime();" +
                         "       var distance = countDownDate - now;      " +
                         "       var seconds = Math.floor((distance / 1000) % 3600);" +
-                        "       document.getElementById('ostid_cronto_countdown').innerHTML = '<p style=\"' + countdownCSS + '\">' + countdownText + \" \" + seconds + ' s</p>';" +
                         "       if (seconds < 0) {" +
                         "            document.getElementById('ostid_cronto_countdown').innerHTML = '<p style=\"' + expiryCSS + '\">' + expiryText + '</p>';" +
-                        "            clearTimeout(this.CDDC_timer); " +
+                        "            clearInterval(window.CDDC_timer); " +
+                        "       }else{" +
+                        "            document.getElementById('ostid_cronto_countdown').innerHTML = '<p style=\"' + countdownCSS + '\">' + countdownText + \" \" + seconds + ' s</p>';" +
                         "       }" +
                         "    }, 1000);" +
+                        "       console.log('CDDC timer initialized: '+window.CDDC_timer);" +
                         "  }" +
                         " function stop() { " +
-                        "      clearTimeout(this.CDDC_timer); " +
+                        "      console.log('stop(): '+window.CDDC_timer);" +
+                        "      clearInterval(window.CDDC_timer); " +
                         "      removeCrontoUI();  " +
                         "  }" +
                         " function addCrontoUI(imageSrc,imageAlt,imageHeight,imageLocDomID) { " +
-                        "       var crontoDiv = \"<div id='ostid_cronto'>" +
+                        "       var crontoDiv = \"<div id='ostid_cronto_div'>" +
                         "                           <img style='display:block;margin:auto;'  src='\"+imageSrc+\"' alt='\"+imageAlt+\"' height='\"+imageHeight+\"' width='\"+imageHeight+\"'></img><br/>" +
                         "                           <p id='ostid_cronto_countdown' style='text-align:center'></p>" +
                         "                         </div>\";" +
-                        "       if(document.getElementById('ostid_cronto')){" +
-                        "           document.getElementById('ostid_cronto').innerHTML = crontoDiv;" +
+                        "       if(document.getElementById('ostid_cronto_div')){" +
+                        "           document.getElementById('ostid_cronto_div').innerHTML = crontoDiv;" +
                         "       }else{" +
                         "           var helper = document.createElement('div');" +
                         "           helper.innerHTML = crontoDiv;"+
-                        "           insertAfter(document.getElementById(imageLocDomID),helper);}"+
+                        "           insertBefore(document.getElementById(imageLocDomID),helper);}"+
                         "       var style = document.createElement('style');" +
                         "       style.type = 'text/css';" +
                         "       style.id = 'ostid_cronto_style';" +
-                        "       style.innerHTML = '.spinner { display: none!important;} .panel-default{display:none!important;}';" +
+                        "       if(typeof loginHelpers !== 'undefined'){" +
+                                "               style.innerHTML = '.polling-spinner-container { display: none!important;}';" +
+                        "       }else{" +
+                                "               style.innerHTML = '.spinner { display: none!important;} .panel-default{display:none!important;}';" +
+                                "       }"+
                         "       document.getElementsByTagName('head')[0].appendChild(style);" +
                         "  }" +
                         " function removeCrontoUI() { " +
-                        "      if(document.getElementById('ostid_cronto')) document.getElementById('ostid_cronto').remove();  " +
+                        "      if(document.getElementById('ostid_cronto_div')) document.getElementById('ostid_cronto_div').remove();  " +
                         "      if(document.getElementById('ostid_cronto_style')) document.getElementById('ostid_cronto_style').remove();  " +
                         "  }" +
-                        " function insertAfter(referenceNode, newNode) {" +
+                        " function insertBefore(referenceNode, newNode) {" +
                         "   if(referenceNode.parentNode){"+
-                        "         referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);" +
+                        "         referenceNode.parentNode.insertBefore(newNode, referenceNode);" +
                         "   }else{" +
                         "        referenceNode.innerHtml += newNode.innerHtml;" +
                         "   }"+
                         " }" +
                         " return isStart == true ? start : stop;" +
-                        "}" +
-                        "var CDDC_start = CDDC_display(true);" +
-                        "var CDDC_stop = CDDC_display(false);" ;
+                        "}" ;
 
         ScriptTextOutputCallback displayScriptCallback = new ScriptTextOutputCallback(displayScript);
         returnCallback.add(displayScriptCallback);
@@ -286,13 +294,18 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
         String expiryDateInMilli = getExpiryString(sharedState);
 
         String displayScriptBase =
-                //extra code to inject hidden callback value
-                "document.getElementById('loginButton_0').style.display = 'none';"+
-                "if (CDDC_start && typeof CDDC_start === 'function') { " +
-                "   CDDC_start(%1$s,'%2$s','%3$s','%4$s','%5$s',%6$d,'%7$s','%8$s','%9$s');" +
-                "}" +
-                "document.getElementById('%10$s').value = 'true';" +
-                "document.getElementById('loginButton_0').click();";
+                "if (typeof window.CDDC_display == 'function') { " +
+                "   window.CDDC_display(true)(%1$s,'%2$s','%3$s','%4$s','%5$s',%6$d,'%7$s','%8$s','%9$s');" +
+                "}"+
+                "if(typeof loginHelpers !== 'undefined'){" +
+                "   loginHelpers.setHiddenCallback('%10$s', 'true');" +
+//                "   document.getElementsByClassName('btn-primary')[0].style.display = 'none';"+
+                "   document.getElementsByClassName('btn-primary')[0].click();"+
+                "}else{" +
+                "   document.getElementById('%10$s').value = 'true';" +
+//                "   document.getElementById('loginButton_0').style.display = 'none';"+
+                "   document.getElementById('loginButton_0').click();"+
+                "}";
 
         // function start(seconds,countdownText,expiryText,imageSrc,imageAlt,imageHeight,imageLocDomID)
         String displayScript = String.format(displayScriptBase,

@@ -65,7 +65,7 @@ import org.forgerock.openam.plugins.StartupType;
  * @since AM 5.5.0
  */
 public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
-	static private String currentVersion = "1.1.0.16";
+	static private String currentVersion = "1.1.0";
 
 	private final List<Class<? extends Node>> nodeList = ImmutableList.of(
 			//OCA

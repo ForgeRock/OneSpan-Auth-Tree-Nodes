@@ -2,8 +2,8 @@
 {
   "origin": "4188da2c4ac583f1fea3a6ff4eb25a45 -",
   "innernodes": {
-    "97d8634b-30a5-4320-bfb2-7b69f25b6498": {
-      "_id": "97d8634b-30a5-4320-bfb2-7b69f25b6498",
+    "6f5d1bd8-fcb2-469e-88c8-8629d0a40d2b": {
+      "_id": "6f5d1bd8-fcb2-469e-88c8-8629d0a40d2b",
       "pushCDDCJsAsCallback": true,
       "CDDCJsonHiddenValueId": "osstid_cddc_json",
       "CDDCHashHiddenValueId": "osstid_cddc_hash",
@@ -19,8 +19,8 @@
         }
       ]
     },
-    "efbc530d-96a9-4e31-af46-32da4c27f9cd": {
-      "_id": "efbc530d-96a9-4e31-af46-32da4c27f9cd",
+    "92a6d0d3-ddc0-436a-9d99-959d46b88222": {
+      "_id": "92a6d0d3-ddc0-436a-9d99-959d46b88222",
       "_type": {
         "_id": "UsernameCollectorNode",
         "name": "Username Collector",
@@ -33,8 +33,8 @@
         }
       ]
     },
-    "ec9bb8d9-c619-4fc6-8dda-94f277af621c": {
-      "_id": "ec9bb8d9-c619-4fc6-8dda-94f277af621c",
+    "78e01305-a945-4682-b359-cae7549beeb1": {
+      "_id": "78e01305-a945-4682-b359-cae7549beeb1",
       "attributes": [
         "amount",
         "transactionType",
@@ -59,8 +59,8 @@
     }
   },
   "nodes": {
-    "3a4794e5-2caf-4adb-b98e-82494e20f0b4": {
-      "_id": "3a4794e5-2caf-4adb-b98e-82494e20f0b4",
+    "13b5b0f6-d479-4722-8d41-a72193dd99b5": {
+      "_id": "13b5b0f6-d479-4722-8d41-a72193dd99b5",
       "adaptiveAttributes": {
         "creditorName": "creditorName",
         "transactionType": "transactionType",
@@ -96,47 +96,23 @@
         }
       ]
     },
-    "71d1596a-6c8a-413a-9097-6509027de069": {
-      "_id": "71d1596a-6c8a-413a-9097-6509027de069",
-      "script": "197bcecf-28c1-44e3-a4cb-3985fe1a3675",
-      "outcomes": [
-        "21"
-      ],
-      "outputs": [
-        "*"
-      ],
-      "inputs": [
-        "*"
-      ],
-      "_type": {
-        "_id": "ScriptedDecisionNode",
-        "name": "Scripted Decision",
-        "collection": true
-      },
-      "_outcomes": [
-        {
-          "id": "21",
-          "displayName": "21"
-        }
-      ]
-    },
-    "8e834a87-0c1c-41fc-9987-bd2643b2bc18": {
-      "_id": "8e834a87-0c1c-41fc-9987-bd2643b2bc18",
+    "9f1de5cf-6cbb-4917-8774-ee2fef458de7": {
+      "_id": "9f1de5cf-6cbb-4917-8774-ee2fef458de7",
       "pageHeader": {},
       "pageDescription": {},
       "nodes": [
         {
-          "_id": "97d8634b-30a5-4320-bfb2-7b69f25b6498",
+          "_id": "6f5d1bd8-fcb2-469e-88c8-8629d0a40d2b",
           "nodeType": "OS_Risk_CDDCNode",
           "displayName": "OneSpan Risk CDDC"
         },
         {
-          "_id": "efbc530d-96a9-4e31-af46-32da4c27f9cd",
+          "_id": "92a6d0d3-ddc0-436a-9d99-959d46b88222",
           "nodeType": "UsernameCollectorNode",
           "displayName": "Username Collector"
         },
         {
-          "_id": "ec9bb8d9-c619-4fc6-8dda-94f277af621c",
+          "_id": "78e01305-a945-4682-b359-cae7549beeb1",
           "nodeType": "OS_Sample_AttributesCollector",
           "displayName": "OneSpan Sample Attributes Collector"
         }
@@ -153,8 +129,32 @@
         }
       ]
     },
-    "a511f26f-8de5-49e7-a0ff-93070670297d": {
-      "_id": "a511f26f-8de5-49e7-a0ff-93070670297d",
+    "cde9e0a7-a42b-4ece-acea-925eb43cf7aa": {
+      "_id": "cde9e0a7-a42b-4ece-acea-925eb43cf7aa",
+      "script": "197bcecf-28c1-44e3-a4cb-3985fe1a3675",
+      "outputs": [
+        "*"
+      ],
+      "outcomes": [
+        "22"
+      ],
+      "inputs": [
+        "*"
+      ],
+      "_type": {
+        "_id": "ScriptedDecisionNode",
+        "name": "Scripted Decision",
+        "collection": true
+      },
+      "_outcomes": [
+        {
+          "id": "22",
+          "displayName": "22"
+        }
+      ]
+    },
+    "d64fffe6-0aef-4818-ad7f-67a17c9ca0bf": {
+      "_id": "d64fffe6-0aef-4818-ad7f-67a17c9ca0bf",
       "_type": {
         "_id": "OS_Sample_ErrorDisplayNode",
         "name": "OneSpan Sample Error Display",
@@ -172,8 +172,8 @@
     "197bcecf-28c1-44e3-a4cb-3985fe1a3675": {
       "_id": "197bcecf-28c1-44e3-a4cb-3985fe1a3675",
       "name": "OneSpan Risk Send Transaction Script",
-      "description": null,
-      "script": "LyoKICAtIERhdGEgbWFkZSBhdmFpbGFibGUgYnkgbm9kZXMgdGhhdCBoYXZlIGFscmVhZHkgZXhlY3V0ZWQgYXJlIGF2YWlsYWJsZSBpbiB0aGUgc2hhcmVkU3RhdGUgdmFyaWFibGUuCiAgLSBUaGUgc2NyaXB0IHNob3VsZCBzZXQgb3V0Y29tZSB0byBlaXRoZXIgInRydWUiIG9yICJmYWxzZSIuCiAqLwoKCnZhciByaXNrUmVzcG9uc2VDb2RlID0gc2hhcmVkU3RhdGUuZ2V0KCJyaXNrUmVzcG9uc2VDb2RlIikKc3dpdGNoKHJpc2tSZXNwb25zZUNvZGUpIHsKICBjYXNlIDA6CiAgIG91dGNvbWUgPSAiMCI7CiAgICBicmVhazsKICBjYXNlIDE6CiAgICBvdXRjb21lID0gIjEiOwogICAgYnJlYWs7CiAgY2FzZSAyMToKICAgIG91dGNvbWUgPSAiMjEiOwogICAgYnJlYWs7CiAgZGVmYXVsdDoKICAgIAp9",
+      "description": "null",
+      "script": "LyoKICAtIERhdGEgbWFkZSBhdmFpbGFibGUgYnkgbm9kZXMgdGhhdCBoYXZlIGFscmVhZHkgZXhlY3V0ZWQgYXJlIGF2YWlsYWJsZSBpbiB0aGUgc2hhcmVkU3RhdGUgdmFyaWFibGUuCiAgLSBUaGUgc2NyaXB0IHNob3VsZCBzZXQgb3V0Y29tZSB0byBlaXRoZXIgInRydWUiIG9yICJmYWxzZSIuCiAqLwoKCnZhciByaXNrUmVzcG9uc2VDb2RlID0gc2hhcmVkU3RhdGUuZ2V0KCJyaXNrUmVzcG9uc2VDb2RlIikKc3dpdGNoKHJpc2tSZXNwb25zZUNvZGUpIHsKICBjYXNlIDA6CiAgIG91dGNvbWUgPSAiMCI7CiAgICBicmVhazsKICBjYXNlIDE6CiAgICBvdXRjb21lID0gIjEiOwogICAgYnJlYWs7CiAgY2FzZSAyMjoKICAgIG91dGNvbWUgPSAiMjIiOwogICAgYnJlYWs7CiAgZGVmYXVsdDoKICAgIAp9",
       "default": false,
       "language": "JAVASCRIPT",
       "context": "AUTHENTICATION_TREE_DECISION_NODE",
@@ -186,45 +186,29 @@
   "emailTemplates": {},
   "tree": {
     "_id": "OneSpan-XUI-Risk-Analytics-Send-Transaction-Sample-Tree",
-    "staticNodes": {
-      "startNode": {
-        "x": 65,
-        "y": 62
-      },
-      "70e691a5-1e33-4ac3-a356-e7b6d60d92e0": {
-        "x": 1258,
-        "y": 93
-      },
-      "e301438c-0bd0-429c-ab0c-66126501069a": {
-        "x": 1268,
-        "y": 459
-      }
-    },
-    "uiConfig": {},
-    "entryNodeId": "8e834a87-0c1c-41fc-9987-bd2643b2bc18",
+    "entryNodeId": "9f1de5cf-6cbb-4917-8774-ee2fef458de7",
     "nodes": {
-      "3a4794e5-2caf-4adb-b98e-82494e20f0b4": {
+      "13b5b0f6-d479-4722-8d41-a72193dd99b5": {
         "displayName": "OneSpan Risk Analytics Send Transaction",
         "nodeType": "OS_Risk_InsertTransactionNode",
-        "x": 534,
-        "y": 83,
+        "x": 525,
+        "y": 102,
         "connections": {
-          "Accept": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0",
           "Decline": "e301438c-0bd0-429c-ab0c-66126501069a",
-          "Error": "a511f26f-8de5-49e7-a0ff-93070670297d",
-          "Challenge": "71d1596a-6c8a-413a-9097-6509027de069"
+          "Error": "d64fffe6-0aef-4818-ad7f-67a17c9ca0bf",
+          "Challenge": "cde9e0a7-a42b-4ece-acea-925eb43cf7aa"
         }
       },
-      "8e834a87-0c1c-41fc-9987-bd2643b2bc18": {
+      "9f1de5cf-6cbb-4917-8774-ee2fef458de7": {
         "displayName": "Page Node",
         "nodeType": "PageNode",
-        "x": 192,
-        "y": 82,
+        "x": 166,
+        "y": 98,
         "connections": {
-          "outcome": "3a4794e5-2caf-4adb-b98e-82494e20f0b4"
+          "outcome": "13b5b0f6-d479-4722-8d41-a72193dd99b5"
         }
       },
-      "a511f26f-8de5-49e7-a0ff-93070670297d": {
+      "d64fffe6-0aef-4818-ad7f-67a17c9ca0bf": {
         "displayName": "OneSpan Sample Error Display",
         "nodeType": "OS_Sample_ErrorDisplayNode",
         "x": 686,
@@ -233,14 +217,29 @@
           "outcome": "e301438c-0bd0-429c-ab0c-66126501069a"
         }
       },
-      "71d1596a-6c8a-413a-9097-6509027de069": {
+      "cde9e0a7-a42b-4ece-acea-925eb43cf7aa": {
         "displayName": "Scripted Decision",
         "nodeType": "ScriptedDecisionNode",
-        "x": 980,
-        "y": 154,
+        "x": 964,
+        "y": 170,
         "connections": {
-          "21": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0"
+          "22": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0"
         }
+      }
+    },
+    "uiConfig": {},
+    "staticNodes": {
+      "startNode": {
+        "x": 58,
+        "y": 46
+      },
+      "70e691a5-1e33-4ac3-a356-e7b6d60d92e0": {
+        "x": 1259,
+        "y": 169
+      },
+      "e301438c-0bd0-429c-ab0c-66126501069a": {
+        "x": 1268,
+        "y": 459
       }
     }
   }

@@ -54,11 +54,17 @@ public class OS_Auth_VisualCodeStopNode extends SingleOutcomeNode {
 
     private Callback getStopCrontoCallback() {
         ScriptTextOutputCallback displayScriptCallback = new ScriptTextOutputCallback(
-                        "document.getElementById('loginButton_0').style.display = 'none';" +
-                        "if (CDDC_stop && typeof CDDC_stop === 'function') { " +
-                        "    CDDC_stop();" +
+                        "if (typeof window.CDDC_display == 'function') { " +
+                        "    window.CDDC_display(false)();" +
                         "}" +
-                        "document.getElementById('loginButton_0').click();");
+                        "if(typeof loginHelpers !== 'undefined'){" +
+//                        "   document.getElementsByClassName('btn-primary')[0].style.display = 'none';"+
+                        "   document.getElementsByClassName('btn-primary')[0].click();"+
+                        "}else{" +
+//                        "   document.getElementById('loginButton_0').style.display = 'none';"+
+                        "   document.getElementById('loginButton_0').click();"+
+                        "}"
+        );
         return displayScriptCallback;
     }
 }
