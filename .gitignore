@@ -3,3 +3,6 @@ target/
 deprecated/
 dependency-reduced-pom.xml
 *.iml
+.settings
+.classpath
+.project

@@ -20,7 +20,7 @@ By analyzing vast and disparate data acquired from user actions, device integrit
 
 Watch this video to learn [how OneSpan intelligent adaptive authentication works](https://www.onespan.com/partners/forgerock).
 
-OneSpan Auth Tree Nodes work in tandem with ForgeRock [Access Management (AM) 7.1](https://backstage.forgerock.com/docs/am/7.1).
+OneSpan Auth Tree Nodes work in tandem with ForgeRock [Access Management (AM) 7.2](https://backstage.forgerock.com/docs/am/7.2).
 
 ## About OneSpan IAA
 
@@ -75,7 +75,7 @@ Copy the jar file to the "../web-container/webapps/openam/WEB-INF/lib" folder wh
 
 ## Before You Begin
 
-Below sections only give you a brief introduction to get started. For more detailed descriptions, refer to the [completed guide](./doc/OneSpan%20Auth%20Tree%20Nodes%20Guide%20-%20v1.1.0.pdf).
+Below sections only give you a brief introduction to get started. For more detailed descriptions, refer to the [completed guide](./doc/OneSpan%20Auth%20Tree%20Nodes%20Guide%20-%20v1.2.0.pdf).
 
 **For OneSpan IAA & RA Users:**
 

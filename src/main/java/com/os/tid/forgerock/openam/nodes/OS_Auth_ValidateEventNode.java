@@ -155,7 +155,7 @@ public class OS_Auth_ValidateEventNode implements Node {
         logger.debug("OS_Auth_ValidateEventNode started");
         JsonValue sharedState = context.sharedState;
         JsonValue transientState = context.transientState;
-        String tenantName = serviceConfig.tenantNameToLowerCase();
+        String tenantName = serviceConfig.tenantName().toLowerCase();
         String environment = serviceConfig.environment().name();
 
         JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());

@@ -24,12 +24,16 @@ import com.google.inject.assistedinject.Assisted;
 import com.iplanet.sso.SSOException;
 import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.models.HttpEntity;
+import com.os.tid.forgerock.openam.nodes.OSConfigurationsService.EnvOptions;
 import com.os.tid.forgerock.openam.utils.CollectionsUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
 import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
+import com.sun.identity.sm.RequiredValueValidator;
 import com.sun.identity.sm.SMSException;
 import org.forgerock.json.JsonValue;
+import org.forgerock.openam.annotations.sm.Attribute;
+import org.forgerock.openam.annotations.sm.Config;
 import org.forgerock.openam.auth.node.api.*;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.sm.AnnotatedServiceRegistry;
@@ -57,7 +61,7 @@ public class OS_Auth_ActivateDeviceNode implements Node {
     private final OSConfigurationsService serviceConfig;
 
     /**
-     * Configuration for the OS Auth Activate Device Node.
+     * Configuration for the OS Auth Add Device Node.
      */
     public interface Config {
     }
@@ -75,7 +79,7 @@ public class OS_Auth_ActivateDeviceNode implements Node {
     public Action process(TreeContext context) {
         logger.debug("OS_Auth_ActivateDeviceNode started");
         JsonValue sharedState = context.sharedState;
-        String tenantName = serviceConfig.tenantNameToLowerCase();
+        String tenantName = serviceConfig.tenantName().toLowerCase();
         String environment = serviceConfig.environment().name();
 
         JsonValue registration_id = sharedState.get(Constants.OSTID_REGISTRATION_ID);

@@ -98,7 +98,7 @@ public class OS_Risk_InsertTransactionNode implements Node {
     public Action process(TreeContext context) {
         logger.debug("OS_Risk_InsertTransactionNode started");
         JsonValue sharedState = context.sharedState;
-        String tenantName = serviceConfig.tenantNameToLowerCase();
+        String tenantName = serviceConfig.tenantName().toLowerCase();
         String environment = serviceConfig.environment().name();
 
         boolean missAttr = false;

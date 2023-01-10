@@ -181,7 +181,7 @@ public class OS_Auth_ValidateTransactionNode implements Node {
     public Action process(TreeContext context) {
         logger.debug("OS_Auth_ValidateTransactionNode started");
         JsonValue sharedState = context.sharedState;
-        String tenantName = serviceConfig.tenantNameToLowerCase();
+        String tenantName = serviceConfig.tenantName().toLowerCase();
         String environment = serviceConfig.environment().name();
 
         JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
