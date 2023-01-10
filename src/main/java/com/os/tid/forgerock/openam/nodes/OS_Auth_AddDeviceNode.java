@@ -74,7 +74,7 @@ public class OS_Auth_AddDeviceNode implements Node {
     public Action process(TreeContext context) {
         logger.debug("OS_Auth_AddDeviceNode started");
         JsonValue sharedState = context.sharedState;
-        String tenantName = serviceConfig.tenantNameToLowerCase();
+        String tenantName = serviceConfig.tenantName().toLowerCase();
         String environment = serviceConfig.environment().name();
 
         JsonValue registration_id = sharedState.get(Constants.OSTID_REGISTRATION_ID);

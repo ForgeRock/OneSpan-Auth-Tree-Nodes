@@ -81,7 +81,7 @@ public class OS_Sample_StoreCommandNode implements Node {
     public Action process(TreeContext context) {
         logger.debug("OSTID_DEMO_BackCommandsNode started");
         JsonValue sharedState = context.sharedState;
-        String tenantName = serviceConfig.tenantNameToLowerCase();
+        String tenantName = serviceConfig.tenantName().toLowerCase();
 
         JsonValue ostid_sessionid = sharedState.get(Constants.OSTID_SESSIONID);
         JsonValue ostid_irm_response = sharedState.get(Constants.OSTID_IRM_RESPONSE);

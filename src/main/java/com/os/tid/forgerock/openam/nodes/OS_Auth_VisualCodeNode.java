@@ -165,7 +165,7 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
     public Action process(TreeContext context) throws NodeProcessException {
         logger.debug("OS_Auth_VisualCodeNode started");
         JsonValue sharedState = context.sharedState;
-        String tenantName = serviceConfig.tenantNameToLowerCase();
+        String tenantName = serviceConfig.tenantName().toLowerCase();
         String environment = serviceConfig.environment().name();
 
         JsonValue crontoMsgJsonValue = config.visualCodeMessageOption() == VisualCodeMessageOptions.CustomCrontoMessage ? sharedState.get(config.customMessageInSharedState()) : sharedState.get(Constants.OSTID_CRONTO_MSG);

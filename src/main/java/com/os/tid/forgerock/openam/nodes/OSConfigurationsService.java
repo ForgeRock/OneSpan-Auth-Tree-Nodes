@@ -25,18 +25,16 @@ import org.forgerock.openam.annotations.sm.Config;
 @Config(scope = Config.Scope.REALM)
 public interface OSConfigurationsService {
 
-    @Attribute(order = 100, validators = RequiredValueValidator.class)
+    @Attribute(order = 1)
     String tenantName();
 
-    @Attribute(order = 200, validators = RequiredValueValidator.class)
+    @Attribute(order = 2)
     EnvOptions environment();
 
-    @Attribute(order = 300, validators = RequiredValueValidator.class)
+    @Attribute(order = 3)
     String applicationRef();
 
-    default String tenantNameToLowerCase() {return tenantName().toLowerCase();}
-
-    enum EnvOptions {
+    public enum EnvOptions {
         sdb, prod
     }
 }
