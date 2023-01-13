@@ -15,6 +15,26 @@
  */
 package com.os.tid.forgerock.openam.nodes;
 
+import java.util.Date;
+import java.util.List;
+import java.util.Objects;
+import java.util.ResourceBundle;
+import java.util.stream.Stream;
+
+import javax.security.auth.callback.Callback;
+
+import org.forgerock.json.JsonValue;
+import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.Node;
+import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.OutcomeProvider;
+import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.sm.AnnotatedServiceRegistry;
+import org.forgerock.util.i18n.PreferredLocales;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -24,29 +44,11 @@ import com.google.inject.assistedinject.Assisted;
 import com.iplanet.sso.SSOException;
 import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.models.HttpEntity;
-import com.os.tid.forgerock.openam.nodes.OSConfigurationsService.EnvOptions;
 import com.os.tid.forgerock.openam.utils.CollectionsUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
 import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
-import com.sun.identity.sm.RequiredValueValidator;
 import com.sun.identity.sm.SMSException;
-import org.forgerock.json.JsonValue;
-import org.forgerock.openam.annotations.sm.Attribute;
-import org.forgerock.openam.annotations.sm.Config;
-import org.forgerock.openam.auth.node.api.*;
-import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.sm.AnnotatedServiceRegistry;
-import org.forgerock.util.i18n.PreferredLocales;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.security.auth.callback.Callback;
-import java.io.IOException;
-import java.util.List;
-import java.util.Objects;
-import java.util.ResourceBundle;
-import java.util.stream.Stream;
 
 /**
  * This node invokes the Activate Device API, which finalizes the OCA provisioning process.
@@ -54,11 +56,12 @@ import java.util.stream.Stream;
  */
 @Node.Metadata( outcomeProvider = OS_Auth_ActivateDeviceNode.OSTIDActivateDeviceOutcomeProvider.class,
                 configClass = OS_Auth_ActivateDeviceNode.Config.class,
-                tags = {"OneSpan", "mfa", "basic authentication"})
+                tags = {"OneSpan", "mfa", "basic authentication", "marketplace", "trustnetwork"})
 public class OS_Auth_ActivateDeviceNode implements Node {
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_ActivateDeviceNode";
     private final OSConfigurationsService serviceConfig;
+    private static final String loggerPrefix = "[OneSpan Auth Activate Device][Marketplace] ";
 
     /**
      * Configuration for the OS Auth Add Device Node.
@@ -77,46 +80,30 @@ public class OS_Auth_ActivateDeviceNode implements Node {
 
     @Override
     public Action process(TreeContext context) {
-        logger.debug("OS_Auth_ActivateDeviceNode started");
-        JsonValue sharedState = context.sharedState;
-        String tenantName = serviceConfig.tenantName().toLowerCase();
-        String environment = serviceConfig.environment().name();
-
-        JsonValue registration_id = sharedState.get(Constants.OSTID_REGISTRATION_ID);
-        JsonValue signature = sharedState.get(Constants.OSTID_SIGNATURE);
-
-//        //1. go to next
-//        JsonValue ostid_cronto_status = sharedState.get(Constants.OSTID_CRONTO_STATUS);
-//        if(ostid_cronto_status.isString()){
-//            OSTIDActivateDeviceOutcome ostid_cronto_status_enum = OSTIDActivateDeviceOutcome.valueOf(ostid_cronto_status.asString());
-//            sharedState.remove(Constants.OSTID_CRONTO_STATUS);
-//            return goTo(ostid_cronto_status_enum)
-//                    .replaceSharedState(sharedState)
-//                    .build();
-//        }
-
-        //2. invoke API
-        if(CollectionsUtils.hasAnyNullValues(ImmutableList.of(
-                registration_id,
-                signature
-        ))){
-            logger.debug("OS_Auth_ActivateDeviceNode has missing data!");
-            sharedState.put(Constants.OSTID_ERROR_MESSAGE,"Oopts, there are missing data for OneSpan OCA Activate Device call!");
-            return goTo(OS_Auth_ActivateDeviceNode.OSTIDActivateDeviceOutcome.error)
-                    .replaceSharedState(sharedState)
-                    .build();
-        }else{
-            String activateDeviceJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_ACTIVATE_DEVICE,
-                    signature.asString()                                //param1
-            );
-
-            try {
+    	try {
+	        logger.debug(loggerPrefix + "OS_Auth_ActivateDeviceNode started");
+	        JsonValue sharedState = context.sharedState;
+	        String tenantName = serviceConfig.tenantName().toLowerCase();
+	        String environment = serviceConfig.environment().name();
+	
+	        JsonValue registration_id = sharedState.get(Constants.OSTID_REGISTRATION_ID);
+	        JsonValue signature = sharedState.get(Constants.OSTID_SIGNATURE);
+	
+	
+	        if(CollectionsUtils.hasAnyNullValues(ImmutableList.of(
+	                registration_id,
+	                signature
+	        ))){
+	            throw new NodeProcessException("OS_Auth_ActivateDeviceNode has missing data!");
+	        }else{
+	            String activateDeviceJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_ACTIVATE_DEVICE,
+	                    signature.asString()                                //param1
+	            );
+	
                 String url = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_ADAPTIVE_ACTIVATE_DEVICE,registration_id.asString());
                 HttpEntity httpEntity = RestUtils.doPostJSON(url, activateDeviceJSON);
                 JSONObject responseJSON = httpEntity.getResponseJSON();
                 if(httpEntity.isSuccess()) {
-                    //sharedState.put(Constants.OSTID_CRONTO_STATUS, OSTIDActivateDeviceOutcome.success.name());
-//                    return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
                     return goTo(OSTIDActivateDeviceOutcome.success).replaceSharedState(sharedState).build();
                 }else{
                     String error = responseJSON.getString("error");
@@ -130,24 +117,25 @@ public class OS_Auth_ActivateDeviceNode implements Node {
                     }else {
                         JSONArray validationErrors = responseJSON.getJSONArray("validationErrors");
                         if(validationErrors != null && validationErrors.size() > 0 && validationErrors.getJSONObject(0).getString("message") != null){
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithValidation(message,log_correction_id,validationErrors.getJSONObject(0).getString("message"),requestJSON));         //error return from IAA server
+                        	String errorMsgNoRetCodeWithValidation = StringUtils.getErrorMsgNoRetCodeWithValidation(message,log_correction_id,validationErrors.getJSONObject(0).getString("message"),requestJSON);
+                            throw new NodeProcessException(errorMsgNoRetCodeWithValidation);
                         }else{
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithoutValidation(message,log_correction_id,requestJSON));         //error return from IAA server
+                        	String errorMsgNoRetCodeWithoutValidation = StringUtils.getErrorMsgNoRetCodeWithoutValidation(message,log_correction_id,requestJSON);
+                            throw new NodeProcessException(errorMsgNoRetCodeWithoutValidation);
                         }
-                        return goTo(OSTIDActivateDeviceOutcome.error)
-                                .replaceSharedState(sharedState)
-                                .build();
                     }
                 }
-            } catch (IOException | NodeProcessException e) {
-                logger.debug("OS_Auth_ActivateDeviceNode exception: " + e.getMessage());
-                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan OCA Activate Device process: " + e.getMessage());     //general error msg
-                return goTo(OSTIDActivateDeviceOutcome.error)
-                        .replaceSharedState(sharedState)
-                        .build();
-            }
+	        }
+    	}catch (Exception ex) {
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
+			ex.printStackTrace();
+			context.getStateFor(this).putShared("OS_Auth_ActivateDeviceNode Exception", new Date() + ": " + ex.getMessage())
+									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan OCA Activate Device process: " + ex.getMessage());
+			return goTo(OSTIDActivateDeviceOutcome.error).build();
+	    }
 
-        }
+        
     }
 
     private Callback getStopCrontoCallback() {

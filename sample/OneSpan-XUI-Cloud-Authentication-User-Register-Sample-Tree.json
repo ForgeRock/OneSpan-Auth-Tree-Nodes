@@ -1,5 +1,8 @@
-
 {
+  "trees":{
+"OneSpan-XUI-Cloud-Authentication-User-Register-Sample-Tree":  
+ 
+    {
   "origin": "4188da2c4ac583f1fea3a6ff4eb25a45 -",
   "innernodes": {
     "90f26663-45ec-47b3-9a2d-7f28de6b4d7b": {
@@ -422,3 +425,6 @@
     }
   }
 }
+  }
+}
+

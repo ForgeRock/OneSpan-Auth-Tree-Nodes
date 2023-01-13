@@ -5,6 +5,7 @@ import com.os.tid.forgerock.openam.nodes.OS_Sample_ErrorDisplayNode;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
+import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -27,7 +28,7 @@ public class OS_Sample_ErrorDisplayNodeTest {
     }
 
     @Test
-    public void testProcessErrorDisplay() {
+    public void testProcessErrorDisplay() throws NodeProcessException {
         // Given
         OS_Sample_ErrorDisplayNode node = new OS_Sample_ErrorDisplayNode();
         JsonValue sharedState = json(object(1));
@@ -44,7 +45,7 @@ public class OS_Sample_ErrorDisplayNodeTest {
     }
 
     @Test
-    public void testProcessNext() {
+    public void testProcessNext() throws NodeProcessException {
         // Given
         OS_Sample_ErrorDisplayNode node = new OS_Sample_ErrorDisplayNode();
         TreeContext context = getContext(json(object(1)),json(object(1)),Collections.emptyList());

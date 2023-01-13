@@ -24,6 +24,7 @@ import com.iplanet.sso.SSOException;
 import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.models.GeneralResponseOutput;
 import com.os.tid.forgerock.openam.models.HttpEntity;
+import com.os.tid.forgerock.openam.nodes.OS_Auth_UserLoginNode.UserLoginOutcome;
 import com.os.tid.forgerock.openam.utils.CollectionsUtils;
 import com.os.tid.forgerock.openam.utils.DateUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
@@ -48,12 +49,13 @@ import java.util.stream.Stream;
  */
 @Node.Metadata( outcomeProvider = OS_Auth_ValidateEventNode.OS_Auth_EventValidationNodeOutcomeProvider.class,
                 configClass = OS_Auth_ValidateEventNode.Config.class,
-                tags = {"OneSpan", "basic authentication", "mfa", "risk"})
+                tags = {"OneSpan", "basic authentication", "mfa", "risk", "marketplace", "trustnetwork"})
 public class OS_Auth_ValidateEventNode implements Node {
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_ValidateEventNode";
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private final OS_Auth_ValidateEventNode.Config config;
     private final OSConfigurationsService serviceConfig;
+    private static final String loggerPrefix = "[OneSpan Auth Validate Event][Marketplace] ";
 
     /**
      * Configuration for the OneSpan Auth Validate Event Node.
@@ -152,42 +154,40 @@ public class OS_Auth_ValidateEventNode implements Node {
 
     @Override
     public Action process(TreeContext context) {
-        logger.debug("OS_Auth_ValidateEventNode started");
-        JsonValue sharedState = context.sharedState;
-        JsonValue transientState = context.transientState;
-        String tenantName = serviceConfig.tenantName().toLowerCase();
-        String environment = serviceConfig.environment().name();
-
-        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
-        JsonValue cddcJsonJsonValue = sharedState.get(Constants.OSTID_CDDC_JSON);
-        JsonValue cddcHashJsonValue = sharedState.get(Constants.OSTID_CDDC_HASH);
-        JsonValue cddcIpJsonValue = sharedState.get(Constants.OSTID_CDDC_IP);
-        sharedState.put(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
-
-        boolean missOptionalAttr = false;
-        StringBuilder optionalAttributesStringBuilder = new StringBuilder(1000);
-        Map<String, String> optionalAttributesMap = config.optionalAttributes();
-        for (Map.Entry<String, String> entrySet : optionalAttributesMap.entrySet()) {
-            JsonValue jsonValue = sharedState.get(entrySet.getValue());
-            if (jsonValue.isString()) {
-                optionalAttributesStringBuilder.append("\"").append(entrySet.getKey()).append("\":\"").append(jsonValue.asString()).append("\",");
-            } else {
-                missOptionalAttr = true;
-            }
-        }
-
-        if (usernameJsonValue.isNull() || missOptionalAttr ||  CollectionsUtils.hasAnyNullValues(ImmutableList.of(
-                cddcJsonJsonValue,
-                cddcHashJsonValue,
-                cddcIpJsonValue
-        ))
-        ) {  //missing data
-            logger.debug("OS_Auth_ValidateEventNode exception: Oopts, there are missing data for OneSpan TID Adaptive Event Validation Process!");
-            sharedState.put(Constants.OSTID_ERROR_MESSAGE, "Oopts, there are missing data for OneSpan TID Adaptive Event Validation Process!");
-            return goTo(EventValidationOutcome.Error)
-                    .replaceSharedState(sharedState)
-                    .build();
-        } else {
+    	try {
+	        logger.debug(loggerPrefix + "OS_Auth_ValidateEventNode started");
+	        JsonValue sharedState = context.sharedState;
+	        JsonValue transientState = context.transientState;
+	        String tenantName = serviceConfig.tenantName().toLowerCase();
+	        String environment = serviceConfig.environment().name();
+	
+	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
+	        JsonValue cddcJsonJsonValue = sharedState.get(Constants.OSTID_CDDC_JSON);
+	        JsonValue cddcHashJsonValue = sharedState.get(Constants.OSTID_CDDC_HASH);
+	        JsonValue cddcIpJsonValue = sharedState.get(Constants.OSTID_CDDC_IP);
+	        sharedState.put(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
+	
+	        boolean missOptionalAttr = false;
+	        StringBuilder optionalAttributesStringBuilder = new StringBuilder(1000);
+	        Map<String, String> optionalAttributesMap = config.optionalAttributes();
+	        for (Map.Entry<String, String> entrySet : optionalAttributesMap.entrySet()) {
+	            JsonValue jsonValue = sharedState.get(entrySet.getValue());
+	            if (jsonValue.isString()) {
+	                optionalAttributesStringBuilder.append("\"").append(entrySet.getKey()).append("\":\"").append(jsonValue.asString()).append("\",");
+	            } else {
+	                missOptionalAttr = true;
+	            }
+	        }
+	
+	        if (usernameJsonValue.isNull() || missOptionalAttr ||  CollectionsUtils.hasAnyNullValues(ImmutableList.of(
+	                cddcJsonJsonValue,
+	                cddcHashJsonValue,
+	                cddcIpJsonValue
+	        ))
+	        ) {  //missing data
+	            throw new NodeProcessException("Oopts, there are missing data for OneSpan Auth Event Validation Process!");
+	        } 
+	        
             String APIUrl = String.format(Constants.OSTID_API_ADAPTIVE_EVENT_VALIDATION, usernameJsonValue.asString(), tenantName);
             /**
              * 1.eventType
@@ -270,88 +270,85 @@ public class OS_Auth_ValidateEventNode implements Node {
                     optionalAttributesStringBuilder.toString(),                     //param7
                     fido                                                            //param8
             );
-            logger.debug("OS_Auth_ValidateEventNode request JSON:" + eventValidationJSON);
+            logger.debug(loggerPrefix + "OS_Auth_ValidateEventNode request JSON:" + eventValidationJSON);
 
-            try {
-                HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, eventValidationJSON);
-                JSONObject responseJSON = httpEntity.getResponseJSON();
+            HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, eventValidationJSON);
+            JSONObject responseJSON = httpEntity.getResponseJSON();
 
-                if (httpEntity.isSuccess()) {
-                    GeneralResponseOutput responseOutput = JSON.toJavaObject(responseJSON, GeneralResponseOutput.class);
-                    int irmResponse = responseOutput.getRiskResponseCode();
-                    sharedState.put(Constants.OSTID_IRM_RESPONSE,irmResponse);
-                    sharedState.put(Constants.OSTID_SESSIONID,sessionID);
-                    sharedState.put(Constants.OSTID_REQUEST_ID, StringUtils.isEmpty(responseOutput.getRequestID())? requestID : responseOutput.getRequestID());
-                    sharedState.put(Constants.OSTID_COMMAND,responseOutput.getRequestMessage());
-                    sharedState.put(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.timeout()));
+            if (httpEntity.isSuccess()) {
+                GeneralResponseOutput responseOutput = JSON.toJavaObject(responseJSON, GeneralResponseOutput.class);
+                int irmResponse = responseOutput.getRiskResponseCode();
+                sharedState.put(Constants.OSTID_IRM_RESPONSE,irmResponse);
+                sharedState.put(Constants.OSTID_SESSIONID,sessionID);
+                sharedState.put(Constants.OSTID_REQUEST_ID, StringUtils.isEmpty(responseOutput.getRequestID())? requestID : responseOutput.getRequestID());
+                sharedState.put(Constants.OSTID_COMMAND,responseOutput.getRequestMessage());
+                sharedState.put(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.timeout()));
 
-                    EventValidationOutcome eventValidationOutcome = EventValidationOutcome.Error;
+                EventValidationOutcome eventValidationOutcome = EventValidationOutcome.Error;
 
-                    if(irmResponse > -1) {
-                        sharedState.put(Constants.OSTID_IRM_RESPONSE, irmResponse);
-                        if(irmResponse == 0){
-                            eventValidationOutcome = EventValidationOutcome.Accept;
-                        }else if(irmResponse == 1){
-                            eventValidationOutcome = EventValidationOutcome.Decline;
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan TID Event Validation process: Request has been declined!");
-                        }else if(Constants.OSTID_API_CHALLANGE_MAP.containsKey(irmResponse)){
-                            eventValidationOutcome = EventValidationOutcome.StepUp;
-                        }
-                        switch (config.visualCodeMessageOptions()) {
-                            case sessionID:
-                                sharedState.put(Constants.OSTID_CRONTO_MSG, StringUtils.stringToHex(sessionID));
-                                break;
-                            case requestID:
-                                String crontoMsg = StringUtils.stringToHex(responseOutput.getRequestID() == null ? "" : responseOutput.getRequestID());
-                                sharedState.put(Constants.OSTID_CRONTO_MSG, crontoMsg);
-                                break;
-                        }
-                    }else{
-                        switch (EventValidationSessionStatus.valueOf(responseOutput.getSessionStatus())){
-                            case accepted:
-                                eventValidationOutcome = EventValidationOutcome.Accept;
-                                break;
-                            case failed:
-                                eventValidationOutcome = EventValidationOutcome.Error;
-                                break;
-                            case refused:
-                                eventValidationOutcome = EventValidationOutcome.Decline;
-                                break;
-                        }
+                if(irmResponse > -1) {
+                    sharedState.put(Constants.OSTID_IRM_RESPONSE, irmResponse);
+                    if(irmResponse == 0){
+                        eventValidationOutcome = EventValidationOutcome.Accept;
+                    }else if(irmResponse == 1){
+                        eventValidationOutcome = EventValidationOutcome.Decline;
+                        sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Event Validation process: Request has been declined!");
+                    }else if(Constants.OSTID_API_CHALLANGE_MAP.containsKey(irmResponse)){
+                        eventValidationOutcome = EventValidationOutcome.StepUp;
                     }
-                    logger.debug("OS_Auth_ValidateEventNode user login outcome:" + eventValidationOutcome.name());
-                    return goTo(eventValidationOutcome)
-                            .replaceSharedState(sharedState)
-                            .build();
-                } else {
-                    String log_correction_id = httpEntity.getLog_correlation_id();
-                    String message = responseJSON.getString("message");
-                    String requestJSON = "POST " + StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl + " : " + eventValidationJSON;
-
-                    if (Stream.of(log_correction_id, message).anyMatch(Objects::isNull)) {
-                        throw new NodeProcessException("Fail to parse response: " + JSON.toJSONString(responseJSON));
-                    } else {
-                        JSONArray validationErrors = responseJSON.getJSONArray("validationErrors");
-                        if(validationErrors != null && validationErrors.size() > 0 && validationErrors.getJSONObject(0).getString("message") != null){
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithValidation(message,log_correction_id,validationErrors.getJSONObject(0).getString("message"),requestJSON));         //error return from IAA server
-                        }else{
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithoutValidation(message,log_correction_id,requestJSON));         //error return from IAA server
-                        }
-                        logger.debug("OS_Auth_ValidateEventNode outcome:" + EventValidationOutcome.Error.name());
-
-                        return goTo(EventValidationOutcome.Error)
-                                .replaceSharedState(sharedState)
-                                .build();
+                    switch (config.visualCodeMessageOptions()) {
+                        case sessionID:
+                            sharedState.put(Constants.OSTID_CRONTO_MSG, StringUtils.stringToHex(sessionID));
+                            break;
+                        case requestID:
+                            String crontoMsg = StringUtils.stringToHex(responseOutput.getRequestID() == null ? "" : responseOutput.getRequestID());
+                            sharedState.put(Constants.OSTID_CRONTO_MSG, crontoMsg);
+                            break;
+                    }
+                }else{
+                    switch (EventValidationSessionStatus.valueOf(responseOutput.getSessionStatus())){
+                        case accepted:
+                            eventValidationOutcome = EventValidationOutcome.Accept;
+                            break;
+                        case failed:
+                            eventValidationOutcome = EventValidationOutcome.Error;
+                            break;
+                        case refused:
+                            eventValidationOutcome = EventValidationOutcome.Decline;
+                            break;
                     }
                 }
-            } catch (Exception e) {
-                logger.debug("OS_Auth_ValidateEventNode exception: " + e.getMessage());
-                sharedState.put(Constants.OSTID_ERROR_MESSAGE, "Fail to validate event!");                            //general error msg
-                return goTo(EventValidationOutcome.Error)
+                logger.debug(loggerPrefix + "OS_Auth_ValidateEventNode user login outcome:" + eventValidationOutcome.name());
+                return goTo(eventValidationOutcome)
                         .replaceSharedState(sharedState)
                         .build();
+            } else {
+                String log_correction_id = httpEntity.getLog_correlation_id();
+                String message = responseJSON.getString("message");
+                String requestJSON = "POST " + StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl + " : " + eventValidationJSON;
+
+                if (Stream.of(log_correction_id, message).anyMatch(Objects::isNull)) {
+                    throw new NodeProcessException("Fail to parse response: " + JSON.toJSONString(responseJSON));
+                } else {
+                    JSONArray validationErrors = responseJSON.getJSONArray("validationErrors");
+                    if(validationErrors != null && validationErrors.size() > 0 && validationErrors.getJSONObject(0).getString("message") != null){
+                    	String errorMsgNoRetCodeWithValidation = StringUtils.getErrorMsgNoRetCodeWithValidation(message,log_correction_id,validationErrors.getJSONObject(0).getString("message"),requestJSON);
+                        throw new NodeProcessException(errorMsgNoRetCodeWithValidation);
+                    }else{
+                    	String errorMsgNoRetCodeWithoutValidation = StringUtils.getErrorMsgNoRetCodeWithoutValidation(message,log_correction_id,requestJSON);
+                        throw new NodeProcessException(errorMsgNoRetCodeWithoutValidation);
+                    }
+                }
             }
-        }
+    	}catch (Exception ex) {
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
+			ex.printStackTrace();
+			context.getStateFor(this).putShared("OS_Auth_ValidateEventNode Exception", new Date() + ": " + ex.getMessage())
+									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Event Validation process: " + ex.getMessage());
+			return goTo(EventValidationOutcome.Error).build();
+	    }
+        
     }
 
     public enum EventType{

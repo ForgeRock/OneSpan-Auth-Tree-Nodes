@@ -19,6 +19,7 @@ import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import com.iplanet.sso.SSOException;
 import com.os.tid.forgerock.openam.config.Constants;
+import com.os.tid.forgerock.openam.nodes.OS_Auth_UserLoginNode.UserLoginOutcome;
 import com.os.tid.forgerock.openam.utils.DateUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
 import com.sun.identity.authentication.callbacks.HiddenValueCallback;
@@ -34,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.security.auth.callback.Callback;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 
@@ -43,11 +45,12 @@ import java.util.List;
  */
 @Node.Metadata( outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
                 configClass = OS_Auth_VisualCodeNode.Config.class,
-                tags = {"OneSpan", "mfa", "utilities", "basic authentication"})
+                tags = {"OneSpan", "mfa", "utilities", "basic authentication", "marketplace", "trustnetwork"})
 public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private final OS_Auth_VisualCodeNode.Config config;
     private final OSConfigurationsService serviceConfig;
+    private static final String loggerPrefix = "[OneSpan Auth Visual Code][Marketplace] ";
 
     /**
      * Configuration for the OneSpan Auth Visual Code Node.
@@ -163,65 +166,75 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
 
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
-        logger.debug("OS_Auth_VisualCodeNode started");
-        JsonValue sharedState = context.sharedState;
-        String tenantName = serviceConfig.tenantName().toLowerCase();
-        String environment = serviceConfig.environment().name();
-
-        JsonValue crontoMsgJsonValue = config.visualCodeMessageOption() == VisualCodeMessageOptions.CustomCrontoMessage ? sharedState.get(config.customMessageInSharedState()) : sharedState.get(Constants.OSTID_CRONTO_MSG);
-        boolean hasConsumed = false;
-        if(context.getCallbacks(HiddenValueCallback.class) != null && context.getCallbacks(HiddenValueCallback.class).size() >= 1){
-            for (HiddenValueCallback hiddenValueCallback : context.getCallbacks(HiddenValueCallback.class)) {
-                if (Constants.OSTID_CRONTO_HAS_RENDERED.equalsIgnoreCase(hiddenValueCallback.getId())) {
-                    hasConsumed = true;
-                }
-            }
-        }
-
-        //1. throw exception, if user input is not intact
-        if(!crontoMsgJsonValue.isString() ){
-            logger.debug("OS_Auth_VisualCodeNode crontoMsgJsonValue is null: " + crontoMsgJsonValue.isNull());
-            throw new NodeProcessException("Can't find Cronto Message in shared state!");
-        }
-        //2. go to next
-        else if(hasConsumed) {
-            sharedState.remove(config.visualCodeHiddenValueId());
-            return goToNext().replaceSharedState(sharedState).build();
-        }
-        //3. send to page
-        else {
-            List<Callback> returnCallback = new ArrayList<>();
-
-            //return visual code URL as hiddenValueCallback
-            String crontURL = "";
-            if (sharedState.get(config.visualCodeHiddenValueId()).isNull()) {
-                crontURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_ADAPTIVE_CRTONTO_RENDER,
-                        config.visualCodeType().name().toUpperCase(),
-                        crontoMsgJsonValue.asString());
-                sharedState.put(config.visualCodeHiddenValueId(), crontURL);
-            } else {
-                crontURL = sharedState.get(config.visualCodeHiddenValueId()).asString();
-            }
-            HiddenValueCallback hiddenValueCDDCJson = new HiddenValueCallback(config.visualCodeHiddenValueId(), crontURL);
-            HiddenValueCallback expiryDateCallback = new HiddenValueCallback(Constants.OSTID_EVENT_EXPIRY_DATE, getExpiryString(sharedState));
-            HiddenValueCallback hasConsumedCallback = new HiddenValueCallback(Constants.OSTID_CRONTO_HAS_RENDERED, Constants.OSTID_CRONTO_HAS_RENDERED);
-            returnCallback.add(hiddenValueCDDCJson);
-            returnCallback.add(expiryDateCallback);
-            returnCallback.add(hasConsumedCallback);
-
-            //return Visual Code Script if required
-            if (config.renderVisualCodeInCallback() ) {
-                if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()) {
-                    addCrontoScript(returnCallback);
-                    sharedState.put(Constants.OSTID_CRONTO_PUSH_JS, true);
-                }
-                addStartScript(sharedState, crontURL, returnCallback);
-            }
-
-            return Action.send(returnCallback)
-                    .replaceSharedState(sharedState)
-                    .build();
-        }
+    	try {
+	        logger.debug(loggerPrefix + "OS_Auth_VisualCodeNode started");
+	        JsonValue sharedState = context.sharedState;
+	        String tenantName = serviceConfig.tenantName().toLowerCase();
+	        String environment = serviceConfig.environment().name();
+	
+	        JsonValue crontoMsgJsonValue = config.visualCodeMessageOption() == VisualCodeMessageOptions.CustomCrontoMessage ? sharedState.get(config.customMessageInSharedState()) : sharedState.get(Constants.OSTID_CRONTO_MSG);
+	        boolean hasConsumed = false;
+	        if(context.getCallbacks(HiddenValueCallback.class) != null && context.getCallbacks(HiddenValueCallback.class).size() >= 1){
+	            for (HiddenValueCallback hiddenValueCallback : context.getCallbacks(HiddenValueCallback.class)) {
+	                if (Constants.OSTID_CRONTO_HAS_RENDERED.equalsIgnoreCase(hiddenValueCallback.getId())) {
+	                    hasConsumed = true;
+	                }
+	            }
+	        }
+	
+	        //1. throw exception, if user input is not intact
+	        if(!crontoMsgJsonValue.isString() ){
+	            logger.debug(loggerPrefix + "OS_Auth_VisualCodeNode crontoMsgJsonValue is null: " + crontoMsgJsonValue.isNull());
+	            throw new NodeProcessException("Can't find Cronto Message in shared state!");
+	        }
+	        //2. go to next
+	        else if(hasConsumed) {
+	            sharedState.remove(config.visualCodeHiddenValueId());
+	            return goToNext().replaceSharedState(sharedState).build();
+	        }
+	        //3. send to page
+	        else {
+	            List<Callback> returnCallback = new ArrayList<>();
+	
+	            //return visual code URL as hiddenValueCallback
+	            String crontURL = "";
+	            if (sharedState.get(config.visualCodeHiddenValueId()).isNull()) {
+	                crontURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_ADAPTIVE_CRTONTO_RENDER,
+	                        config.visualCodeType().name().toUpperCase(),
+	                        crontoMsgJsonValue.asString());
+	                sharedState.put(config.visualCodeHiddenValueId(), crontURL);
+	            } else {
+	                crontURL = sharedState.get(config.visualCodeHiddenValueId()).asString();
+	            }
+	            HiddenValueCallback hiddenValueCDDCJson = new HiddenValueCallback(config.visualCodeHiddenValueId(), crontURL);
+	            HiddenValueCallback expiryDateCallback = new HiddenValueCallback(Constants.OSTID_EVENT_EXPIRY_DATE, getExpiryString(sharedState));
+	            HiddenValueCallback hasConsumedCallback = new HiddenValueCallback(Constants.OSTID_CRONTO_HAS_RENDERED, Constants.OSTID_CRONTO_HAS_RENDERED);
+	            returnCallback.add(hiddenValueCDDCJson);
+	            returnCallback.add(expiryDateCallback);
+	            returnCallback.add(hasConsumedCallback);
+	
+	            //return Visual Code Script if required
+	            if (config.renderVisualCodeInCallback() ) {
+	                if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()) {
+	                    addCrontoScript(returnCallback);
+	                    sharedState.put(Constants.OSTID_CRONTO_PUSH_JS, true);
+	                }
+	                addStartScript(sharedState, crontURL, returnCallback);
+	            }
+	
+	            return Action.send(returnCallback)
+	                    .replaceSharedState(sharedState)
+	                    .build();
+	        }
+        
+    	}catch (Exception ex) {
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
+			ex.printStackTrace();
+			context.getStateFor(this).putShared("OS_Auth_VisualCodeNode Exception", new Date() + ": " + ex.getMessage())
+									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Visual Code Node: " + ex.getMessage());
+			throw new NodeProcessException(ex.getMessage());
+	    }
     }
 
     private void addCrontoScript(List<Callback> returnCallback ){

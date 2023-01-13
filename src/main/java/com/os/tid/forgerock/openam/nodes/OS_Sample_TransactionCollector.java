@@ -34,11 +34,12 @@ import java.util.*;
 
 @Node.Metadata( outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
                 configClass = OS_Sample_TransactionCollector.Config.class,
-                tags = {"OneSpan", "mfa", "utilities"})
+                tags = {"OneSpan", "mfa", "utilities", "marketplace", "trustnetwork"})
 public class OS_Sample_TransactionCollector extends SingleOutcomeNode {
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private final OS_Sample_TransactionCollector.Config config;
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Sample_TransactionCollector";
+    private static final String loggerPrefix = "[OneSpan Sample Transaction Collector][Marketplace] ";
 
     /**
      * Configuration for the OS_Sample_TransactionCollector.
@@ -67,65 +68,76 @@ public class OS_Sample_TransactionCollector extends SingleOutcomeNode {
     }
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
-        logger.debug("OS_Sample_TransactionCollector started");
-        JsonValue sharedState = context.sharedState;
-        JsonValue transientState = context.transientState;
-
-        ResourceBundle bundle = context.request.locales.getBundleInPreferredLocale(BUNDLE, getClass().getClassLoader());
-
-        Map<String, String> attrValueMap = new HashMap<>(); //attribute name in sharedState : callback value
-        final Map<String, String> attrMap = new HashMap<String, String>(){{   //label name : attribute name in sharedState
-                put(bundle.getString("callback.username"),Constants.OSTID_DEFAULT_USERNAME);
-                put(bundle.getString("callback.amount"),Constants.OSTID_DEFAULT_AMOUNT);
-                put(bundle.getString("callback.currency"),Constants.OSTID_DEFAULT_CURRENCY);
-                put(bundle.getString("callback.transactionType"),Constants.OSTID_DEFAULT_TRANSACTIONTYPE);
-                put(bundle.getString("callback.accountRef"),Constants.OSTID_DEFAULT_ACCOUNTREF);
-                put(bundle.getString("callback.creditorName"),Constants.OSTID_DEFAULT_CREDITORNAME);
-                put(bundle.getString("callback.creditorIBAN"),Constants.OSTID_DEFAULT_CREDITORIBAN);
-                put(bundle.getString("callback.creditorBank"),Constants.OSTID_DEFAULT_CREDITORBANK);
-                put(bundle.getString("callback.debtorIBAN"),Constants.OSTID_DEFAULT_DEBTORIBAN);
-        }};
-
-        config.optionalAttributes().forEach(attr -> attrMap.putIfAbsent(attr,attr));
-        attrMap.values().forEach(attrName -> attrValueMap.putIfAbsent(attrName,null));
-
-        if( context.getCallbacks(NameCallback.class) != null &&
-            context.getCallbacks(NameCallback.class).size() >= 7 ){
-            context.getCallbacks(NameCallback.class)
-                    .forEach(nameCallback -> {
-                        if (attrMap.keySet().contains(nameCallback.getPrompt())) {
-                            attrValueMap.put(attrMap.get(nameCallback.getPrompt()), nameCallback.getName());
-                        }
-                    });
-        }
-
-        boolean passKeyInclude = true;
-        String password = "";
-        if(config.passKeyRequired()){
-            if(context.getCallbacks(PasswordCallback.class) != null && context.getCallbacks(PasswordCallback.class).size() > 0){
-                PasswordCallback passwordCallback = context.getCallbacks(PasswordCallback.class).get(0);
-                password = String.valueOf(passwordCallback.getPassword());
-            }else{
-                passKeyInclude = false;
-            }
-        }
-
-        if(!CollectionsUtils.hasAnyNullValues(attrValueMap) && passKeyInclude) { //second time, with collected data
-            for (Map.Entry<String, String> entry : attrValueMap.entrySet()) {
-                sharedState.put(entry.getKey(), entry.getValue());
-            }
-            if(config.passKeyRequired()){
-                transientState.put(Constants.OSTID_DEFAULT_PASSKEY,password);
-            }
-            logger.debug("OS_Sample_TransactionCollector shared state: " + JSON.toJSONString(sharedState));
-            logger.debug("OS_Sample_TransactionCollector transient state: " + JSON.toJSONString(transientState));
-            return goToNext()
-                    .replaceSharedState(sharedState)
-                    .replaceTransientState(transientState)
-                    .build();
-        }else{
-            return Action.send(collectTransactionData(bundle)).build();
-        }
+    	try {
+	        logger.debug(loggerPrefix + "OS_Sample_TransactionCollector started");
+	        JsonValue sharedState = context.sharedState;
+	        JsonValue transientState = context.transientState;
+	
+	        ResourceBundle bundle = context.request.locales.getBundleInPreferredLocale(BUNDLE, getClass().getClassLoader());
+	
+	        Map<String, String> attrValueMap = new HashMap<>(); //attribute name in sharedState : callback value
+	        final Map<String, String> attrMap = new HashMap<String, String>(){{   //label name : attribute name in sharedState
+	                put(bundle.getString("callback.username"),Constants.OSTID_DEFAULT_USERNAME);
+	                put(bundle.getString("callback.amount"),Constants.OSTID_DEFAULT_AMOUNT);
+	                put(bundle.getString("callback.currency"),Constants.OSTID_DEFAULT_CURRENCY);
+	                put(bundle.getString("callback.transactionType"),Constants.OSTID_DEFAULT_TRANSACTIONTYPE);
+	                put(bundle.getString("callback.accountRef"),Constants.OSTID_DEFAULT_ACCOUNTREF);
+	                put(bundle.getString("callback.creditorName"),Constants.OSTID_DEFAULT_CREDITORNAME);
+	                put(bundle.getString("callback.creditorIBAN"),Constants.OSTID_DEFAULT_CREDITORIBAN);
+	                put(bundle.getString("callback.creditorBank"),Constants.OSTID_DEFAULT_CREDITORBANK);
+	                put(bundle.getString("callback.debtorIBAN"),Constants.OSTID_DEFAULT_DEBTORIBAN);
+	        }};
+	
+	        config.optionalAttributes().forEach(attr -> attrMap.putIfAbsent(attr,attr));
+	        attrMap.values().forEach(attrName -> attrValueMap.putIfAbsent(attrName,null));
+	
+	        if( context.getCallbacks(NameCallback.class) != null &&
+	            context.getCallbacks(NameCallback.class).size() >= 7 ){
+	            context.getCallbacks(NameCallback.class)
+	                    .forEach(nameCallback -> {
+	                        if (attrMap.keySet().contains(nameCallback.getPrompt())) {
+	                            attrValueMap.put(attrMap.get(nameCallback.getPrompt()), nameCallback.getName());
+	                        }
+	                    });
+	        }
+	
+	        boolean passKeyInclude = true;
+	        String password = "";
+	        if(config.passKeyRequired()){
+	            if(context.getCallbacks(PasswordCallback.class) != null && context.getCallbacks(PasswordCallback.class).size() > 0){
+	                PasswordCallback passwordCallback = context.getCallbacks(PasswordCallback.class).get(0);
+	                password = String.valueOf(passwordCallback.getPassword());
+	            }else{
+	                passKeyInclude = false;
+	            }
+	        }
+	
+	        if(!CollectionsUtils.hasAnyNullValues(attrValueMap) && passKeyInclude) { //second time, with collected data
+	            for (Map.Entry<String, String> entry : attrValueMap.entrySet()) {
+	                sharedState.put(entry.getKey(), entry.getValue());
+	            }
+	            if(config.passKeyRequired()){
+	                transientState.put(Constants.OSTID_DEFAULT_PASSKEY,password);
+	            }
+	            logger.debug(loggerPrefix + "OS_Sample_TransactionCollector shared state: " + JSON.toJSONString(sharedState));
+	            logger.debug(loggerPrefix + "OS_Sample_TransactionCollector transient state: " + JSON.toJSONString(transientState));
+	            return goToNext()
+	                    .replaceSharedState(sharedState)
+	                    .replaceTransientState(transientState)
+	                    .build();
+	        }else{
+	            return Action.send(collectTransactionData(bundle)).build();
+	        }
+        
+    	}catch (Exception ex) {
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
+			ex.printStackTrace();
+			context.getStateFor(this).putShared("OS_Sample_TransactionCollector Exception", new Date() + ": " + ex.getMessage())
+									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Sample Transaction Collector: " + ex.getMessage());
+			throw new NodeProcessException(ex.getMessage());
+	    }
+        
     }
 
     private List<Callback> collectTransactionData(ResourceBundle bundle){

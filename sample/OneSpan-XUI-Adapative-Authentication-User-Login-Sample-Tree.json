@@ -1,5 +1,7 @@
-
 {
+  "trees":{
+"OneSpan-XUI-Adapative-Authentication-User-Login-Sample-Tree":  
+  {
   "origin": "4188da2c4ac583f1fea3a6ff4eb25a45 -",
   "innernodes": {
     "fc4f537c-7a97-4445-94cb-8bc5f8141eab": {
@@ -37,8 +39,12 @@
   "nodes": {
     "293455de-e2b6-4cf3-b265-e5a974a12f82": {
       "_id": "293455de-e2b6-4cf3-b265-e5a974a12f82",
-      "pageHeader": {},
-      "pageDescription": {},
+      "pageHeader": {
+
+      },
+      "pageDescription": {
+
+      },
       "nodes": [
         {
           "_id": "fc4f537c-7a97-4445-94cb-8bc5f8141eab",
@@ -71,7 +77,9 @@
       "visualCodeMessageOptions": "sessionID",
       "userNameInSharedData": "username",
       "passwordInTransientState": "password",
-      "optionalAttributes": {},
+      "optionalAttributes": {
+
+      },
       "objectType": "AdaptiveLoginInput",
       "_type": {
         "_id": "OS_Auth_UserLoginNode",
@@ -163,9 +171,13 @@
       "_id": "9eaf66dd-f1c0-474d-b661-8252d9589380",
       "exitable": false,
       "secondsToWait": 1,
-      "waitingMessage": {},
+      "waitingMessage": {
+
+      },
       "spamDetectionTolerance": 3,
-      "exitMessage": {},
+      "exitMessage": {
+
+      },
       "spamDetectionEnabled": false,
       "_type": {
         "_id": "PollingWaitNode",
@@ -243,7 +255,9 @@
     "eaa27480-548f-457f-88d4-59370afee2b5": {
       "_id": "eaa27480-548f-457f-88d4-59370afee2b5",
       "javascript": "https://osgs-firestore-to-rest.herokuapp.com/{tenantName}/{sessionID}/commands",
-      "placeholderMap": {},
+      "placeholderMap": {
+
+      },
       "_type": {
         "_id": "OS_Sample_StoreCommandNode",
         "name": "OneSpan Sample Store Command",
@@ -261,8 +275,12 @@
       ]
     }
   },
-  "scripts": {},
-  "emailTemplates": {},
+  "scripts": {
+
+  },
+  "emailTemplates": {
+
+  },
   "tree": {
     "_id": "OneSpan-XUI-Adapative-Authentication-User-Login-Sample-Tree",
     "nodes": {
@@ -368,7 +386,9 @@
         }
       }
     },
-    "uiConfig": {},
+    "uiConfig": {
+
+    },
     "staticNodes": {
       "startNode": {
         "x": 85,
@@ -384,5 +404,8 @@
       }
     },
     "entryNodeId": "293455de-e2b6-4cf3-b265-e5a974a12f82"
+  }
+}
+    
   }
 }

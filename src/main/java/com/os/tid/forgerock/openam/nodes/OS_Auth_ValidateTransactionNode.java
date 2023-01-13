@@ -24,6 +24,7 @@ import com.google.inject.assistedinject.Assisted;
 import com.iplanet.sso.SSOException;
 import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.models.HttpEntity;
+import com.os.tid.forgerock.openam.nodes.OS_Auth_UserLoginNode.UserLoginOutcome;
 import com.os.tid.forgerock.openam.models.GeneralResponseOutput;
 import com.os.tid.forgerock.openam.utils.CollectionsUtils;
 import com.os.tid.forgerock.openam.utils.DateUtils;
@@ -49,12 +50,13 @@ import java.util.stream.Stream;
  */
 @Node.Metadata( outcomeProvider = OS_Auth_ValidateTransactionNode.OSTID_Adaptive_SendTransactionNodeOutcomeProvider.class,
                 configClass = OS_Auth_ValidateTransactionNode.Config.class,
-                tags = {"OneSpan", "basic authentication", "mfa", "risk"})
+                tags = {"OneSpan", "basic authentication", "mfa", "risk", "marketplace", "trustnetwork"})
 public class OS_Auth_ValidateTransactionNode implements Node {
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_ValidateTransactionNode";
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private final OS_Auth_ValidateTransactionNode.Config config;
     private final OSConfigurationsService serviceConfig;
+    private static final String loggerPrefix = "[OneSpan Auth Validate Transaction][Marketplace] ";
 
     /**
      * Configuration for the OneSpan Auth Validate Transaction Node.
@@ -179,145 +181,143 @@ public class OS_Auth_ValidateTransactionNode implements Node {
 
     @Override
     public Action process(TreeContext context) {
-        logger.debug("OS_Auth_ValidateTransactionNode started");
-        JsonValue sharedState = context.sharedState;
-        String tenantName = serviceConfig.tenantName().toLowerCase();
-        String environment = serviceConfig.environment().name();
-
-        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
-        sharedState.put(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
-
-        boolean missOptionalAttr = false;
-        StringBuilder optionalAttributesStringBuilder = new StringBuilder(1000);
-        Map<String, String> optionalAttributesMap = config.optionalAttributes();
-        for (Map.Entry<String, String> entrySet : optionalAttributesMap.entrySet()) {
-            JsonValue jsonValue = sharedState.get(entrySet.getValue());
-            if (jsonValue.isString()) {
-                optionalAttributesStringBuilder.append("\"").append(entrySet.getKey()).append("\":\"").append(jsonValue.asString()).append("\",");
-            } else {
-                missOptionalAttr = true;
-            }
-        }
-
-        String sessionID = sharedState.get(Constants.OSTID_SESSIONID).isString() ? sharedState.get(Constants.OSTID_SESSIONID).asString() : StringUtils.stringToHex(UUID.randomUUID().toString());
-        String dataJSON = "";
-        String IAAJson = "";
-        boolean hasNullValue = false;
-        switch (config.dataToSign()){
-            case fido:
-                Map<String, String> fidoDataToSign = config.fidoDataToSign();
-                String fidoProtocol = fidoDataToSign.getOrDefault("fidoProtocol", "");
-                String authenticationResponse = fidoDataToSign.getOrDefault("authenticationResponse", "");
-                boolean isFido2 = sharedState.get(fidoProtocol).asString().equalsIgnoreCase("FIDO2");
-                hasNullValue = CollectionsUtils.hasAnyNullValues(ImmutableList.of(
-                        sharedState.get(fidoProtocol),
-                        sharedState.get(authenticationResponse)
-                )) ||  (isFido2 && sharedState.get(Constants.OSTID_REQUEST_ID).isNull());
-                if(!hasNullValue){
-                    dataJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_DATATOSIGN_FIDO,
-                            sharedState.get(fidoProtocol).asString(),                                                                                   //param1
-                            sharedState.get(authenticationResponse).asString(),                                                                         //param2
-                            isFido2? String.format(Constants.OSTID_JSON_ADAPTIVE_REQUESTID,sharedState.get(Constants.OSTID_REQUEST_ID).asString()):""   //param3
-                    );
-                }
-                break;
-            case standard:
-                List<String> dataValues = new ArrayList<>();
-                List<String> standardDataToSign = config.standardDataToSign();
-                for (String dataToSign : standardDataToSign) {
-                    if(!sharedState.get(dataToSign).isString()){
-                        hasNullValue = true;
-                    }else{
-                        dataValues.add("\""+sharedState.get(dataToSign).asString()+"\"");
-                    }
-                }
-                hasNullValue |= !sharedState.get(config.signatureInSharedData()).isString();
-                if(!hasNullValue){
-                    dataJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_DATATOSIGN_STANDARD,
-                            String.join(",", dataValues),                           //param1
-                            sharedState.get(config.signatureInSharedData()).asString()          //param2
-                    );
-                }
-                break;
-            case secureChannel:
-                hasNullValue = CollectionsUtils.hasAnyNullValues(ImmutableList.of(
-                        sharedState.get(Constants.OSTID_REQUEST_ID),
-                        sharedState.get(config.signatureInSharedData())
-                ));
-                if(!hasNullValue){
-                    dataJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_DATATOSIGN_SECURECHANNEL,
-                            sharedState.get(Constants.OSTID_REQUEST_ID).asString(),             //param1
-                            sharedState.get(config.signatureInSharedData()).asString()          //param2
-                    );
-                }
-                break;
-            case transactionMessage:
-                List<String> adaptiveAttributesList = new ArrayList<>();
-                List<String> dataFieldsList = new ArrayList<>();
-                Map<String, String> adaptiveAttributes = config.adaptiveAttributes();
-                for (Map.Entry<String, String> entry : adaptiveAttributes.entrySet()) {
-                    String nameInSharedState = entry.getValue();
-                    if(!sharedState.get(nameInSharedState).isString()){
-                        hasNullValue = true;
-                    }else{
-                        adaptiveAttributesList.add("\""+entry.getKey()+"\":\""+sharedState.get(nameInSharedState).asString()+"\"");
-                    }
-                }
-
-                //override transaction date to make sure the transaction date doesn't get tempered
-                Map<String, String> dataToSignMap = config.adaptiveDataToSign();
-                dataToSignMap.put("login",config.userNameInSharedData());
-                dataToSignMap.put("beneficiary",config.adaptiveAttributes().get("creditorName"));
-                dataToSignMap.put("iban",config.adaptiveAttributes().get("creditorIBAN"));
-                dataToSignMap.put("amount",config.adaptiveAttributes().get("amount"));
-                dataToSignMap.put("currency",config.adaptiveAttributes().get("currency"));
-
-                for (Map.Entry<String, String> entry : dataToSignMap.entrySet()) {
-                    String key = entry.getKey();
-                    String value = entry.getValue();
-                    logger.debug("OSS data key= " + key);
-                    logger.debug("OSS data value name= " + value);
-                    if(!sharedState.get(value).isString()){
-                        hasNullValue = true;
-                    }else{
-                        logger.debug("OSS data value value= " + sharedState.get(value).asString());
-                        dataFieldsList.add(String.format(Constants.OSTID_JSON_ADAPTIVE_DATATOSIGN_TRANSACTIONMESSAGE_DATAFIELDS,
-                                key,
-                                sharedState.get(value).asString()));
-                    }
-                }
-
-                if(config.objectType() == ObjectType.AdaptiveTransactionValidationInput) {
-                    hasNullValue |= CollectionsUtils.hasAnyNullValues(ImmutableList.of(
-                            sharedState.get(Constants.OSTID_CDDC_JSON),
-                            sharedState.get(Constants.OSTID_CDDC_HASH),
-                            sharedState.get(Constants.OSTID_CDDC_IP)
-                    ));
-                }
-                if(!hasNullValue){
-                    String applicationRef = serviceConfig.applicationRef() != null ? serviceConfig.applicationRef() : "";
-                    String relationshipRefNameInSharedState = config.adaptiveAttributes().containsKey("relationshipRef") ? config.adaptiveAttributes().get("relationshipRef") : "relationshipRef";
-                    String relationshipRef = sharedState.get(relationshipRefNameInSharedState).isString() ? sharedState.get(relationshipRefNameInSharedState).asString():usernameJsonValue.asString();
-                    IAAJson = String.join(",",adaptiveAttributesList)+","+String.format(Constants.OSTID_JSON_ADAPTIVE_USER_LOGIN_IAA,
-                            sharedState.get(Constants.OSTID_CDDC_IP).asString(),
-                            sharedState.get(Constants.OSTID_CDDC_HASH).asString(),
-                            sharedState.get(Constants.OSTID_CDDC_JSON).asString(),
-                            relationshipRef,
-                            sessionID,
-                            applicationRef
-                            );
-                    dataJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_DATATOSIGN_TRANSACTIONMESSAGE, String.join(",",dataFieldsList));
-                }
-                break;
-        }
-
-        if (usernameJsonValue.isNull() || missOptionalAttr || hasNullValue){  //missing data
-            logger.debug("OS_Auth_ValidateTransactionNode exception: Oopts, there's missing data for OneSpan TID Auth Send Transaction Process!");
-            sharedState.put(Constants.OSTID_ERROR_MESSAGE, "Oopts, there's missing data for OneSpan Auth Send Transaction Process!");
-            return goTo(SendTransactionOutcome.Error)
-                    .replaceSharedState(sharedState)
-                    .build();
-        } else {
+    	try {
+	        logger.debug(loggerPrefix + "OS_Auth_ValidateTransactionNode started");
+	        JsonValue sharedState = context.sharedState;
+	        String tenantName = serviceConfig.tenantName().toLowerCase();
+	        String environment = serviceConfig.environment().name();
+	
+	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
+	        sharedState.put(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
+	
+	        boolean missOptionalAttr = false;
+	        StringBuilder optionalAttributesStringBuilder = new StringBuilder(1000);
+	        Map<String, String> optionalAttributesMap = config.optionalAttributes();
+	        for (Map.Entry<String, String> entrySet : optionalAttributesMap.entrySet()) {
+	            JsonValue jsonValue = sharedState.get(entrySet.getValue());
+	            if (jsonValue.isString()) {
+	                optionalAttributesStringBuilder.append("\"").append(entrySet.getKey()).append("\":\"").append(jsonValue.asString()).append("\",");
+	            } else {
+	                missOptionalAttr = true;
+	            }
+	        }
+	
+	        String sessionID = sharedState.get(Constants.OSTID_SESSIONID).isString() ? sharedState.get(Constants.OSTID_SESSIONID).asString() : StringUtils.stringToHex(UUID.randomUUID().toString());
+	        String dataJSON = "";
+	        String IAAJson = "";
+	        boolean hasNullValue = false;
+	        switch (config.dataToSign()){
+	            case fido:
+	                Map<String, String> fidoDataToSign = config.fidoDataToSign();
+	                String fidoProtocol = fidoDataToSign.getOrDefault("fidoProtocol", "");
+	                String authenticationResponse = fidoDataToSign.getOrDefault("authenticationResponse", "");
+	                boolean isFido2 = sharedState.get(fidoProtocol).asString().equalsIgnoreCase("FIDO2");
+	                hasNullValue = CollectionsUtils.hasAnyNullValues(ImmutableList.of(
+	                        sharedState.get(fidoProtocol),
+	                        sharedState.get(authenticationResponse)
+	                )) ||  (isFido2 && sharedState.get(Constants.OSTID_REQUEST_ID).isNull());
+	                if(!hasNullValue){
+	                    dataJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_DATATOSIGN_FIDO,
+	                            sharedState.get(fidoProtocol).asString(),                                                                                   //param1
+	                            sharedState.get(authenticationResponse).asString(),                                                                         //param2
+	                            isFido2? String.format(Constants.OSTID_JSON_ADAPTIVE_REQUESTID,sharedState.get(Constants.OSTID_REQUEST_ID).asString()):""   //param3
+	                    );
+	                }
+	                break;
+	            case standard:
+	                List<String> dataValues = new ArrayList<>();
+	                List<String> standardDataToSign = config.standardDataToSign();
+	                for (String dataToSign : standardDataToSign) {
+	                    if(!sharedState.get(dataToSign).isString()){
+	                        hasNullValue = true;
+	                    }else{
+	                        dataValues.add("\""+sharedState.get(dataToSign).asString()+"\"");
+	                    }
+	                }
+	                hasNullValue |= !sharedState.get(config.signatureInSharedData()).isString();
+	                if(!hasNullValue){
+	                    dataJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_DATATOSIGN_STANDARD,
+	                            String.join(",", dataValues),                           //param1
+	                            sharedState.get(config.signatureInSharedData()).asString()          //param2
+	                    );
+	                }
+	                break;
+	            case secureChannel:
+	                hasNullValue = CollectionsUtils.hasAnyNullValues(ImmutableList.of(
+	                        sharedState.get(Constants.OSTID_REQUEST_ID),
+	                        sharedState.get(config.signatureInSharedData())
+	                ));
+	                if(!hasNullValue){
+	                    dataJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_DATATOSIGN_SECURECHANNEL,
+	                            sharedState.get(Constants.OSTID_REQUEST_ID).asString(),             //param1
+	                            sharedState.get(config.signatureInSharedData()).asString()          //param2
+	                    );
+	                }
+	                break;
+	            case transactionMessage:
+	                List<String> adaptiveAttributesList = new ArrayList<>();
+	                List<String> dataFieldsList = new ArrayList<>();
+	                Map<String, String> adaptiveAttributes = config.adaptiveAttributes();
+	                for (Map.Entry<String, String> entry : adaptiveAttributes.entrySet()) {
+	                    String nameInSharedState = entry.getValue();
+	                    if(!sharedState.get(nameInSharedState).isString()){
+	                        hasNullValue = true;
+	                    }else{
+	                        adaptiveAttributesList.add("\""+entry.getKey()+"\":\""+sharedState.get(nameInSharedState).asString()+"\"");
+	                    }
+	                }
+	
+	                //override transaction date to make sure the transaction date doesn't get tempered
+	                Map<String, String> dataToSignMap = config.adaptiveDataToSign();
+	                dataToSignMap.put("login",config.userNameInSharedData());
+	                dataToSignMap.put("beneficiary",config.adaptiveAttributes().get("creditorName"));
+	                dataToSignMap.put("iban",config.adaptiveAttributes().get("creditorIBAN"));
+	                dataToSignMap.put("amount",config.adaptiveAttributes().get("amount"));
+	                dataToSignMap.put("currency",config.adaptiveAttributes().get("currency"));
+	
+	                for (Map.Entry<String, String> entry : dataToSignMap.entrySet()) {
+	                    String key = entry.getKey();
+	                    String value = entry.getValue();
+	                    logger.debug(loggerPrefix + "OSS data key= " + key);
+	                    logger.debug(loggerPrefix + "OSS data value name= " + value);
+	                    if(!sharedState.get(value).isString()){
+	                        hasNullValue = true;
+	                    }else{
+	                        logger.debug(loggerPrefix + "OSS data value value= " + sharedState.get(value).asString());
+	                        dataFieldsList.add(String.format(Constants.OSTID_JSON_ADAPTIVE_DATATOSIGN_TRANSACTIONMESSAGE_DATAFIELDS,
+	                                key,
+	                                sharedState.get(value).asString()));
+	                    }
+	                }
+	
+	                if(config.objectType() == ObjectType.AdaptiveTransactionValidationInput) {
+	                    hasNullValue |= CollectionsUtils.hasAnyNullValues(ImmutableList.of(
+	                            sharedState.get(Constants.OSTID_CDDC_JSON),
+	                            sharedState.get(Constants.OSTID_CDDC_HASH),
+	                            sharedState.get(Constants.OSTID_CDDC_IP)
+	                    ));
+	                }
+	                if(!hasNullValue){
+	                    String applicationRef = serviceConfig.applicationRef() != null ? serviceConfig.applicationRef() : "";
+	                    String relationshipRefNameInSharedState = config.adaptiveAttributes().containsKey("relationshipRef") ? config.adaptiveAttributes().get("relationshipRef") : "relationshipRef";
+	                    String relationshipRef = sharedState.get(relationshipRefNameInSharedState).isString() ? sharedState.get(relationshipRefNameInSharedState).asString():usernameJsonValue.asString();
+	                    IAAJson = String.join(",",adaptiveAttributesList)+","+String.format(Constants.OSTID_JSON_ADAPTIVE_USER_LOGIN_IAA,
+	                            sharedState.get(Constants.OSTID_CDDC_IP).asString(),
+	                            sharedState.get(Constants.OSTID_CDDC_HASH).asString(),
+	                            sharedState.get(Constants.OSTID_CDDC_JSON).asString(),
+	                            relationshipRef,
+	                            sessionID,
+	                            applicationRef
+	                            );
+	                    dataJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_DATATOSIGN_TRANSACTIONMESSAGE, String.join(",",dataFieldsList));
+	                }
+	                break;
+	        }
+	
+	        if (usernameJsonValue.isNull() || missOptionalAttr || hasNullValue){  //missing data
+	            throw new NodeProcessException("Oopts, there are missing data for OneSpan Auth Validate Transaction Process!");
+	        } 
+	        
             String APIUrl = String.format(Constants.OSTID_API_ADAPTIVE_SEND_TRANSACTION, usernameJsonValue.asString(), tenantName);
             /**
              * 1.objectType
@@ -353,87 +353,86 @@ public class OS_Auth_ValidateTransactionNode implements Node {
                     timeout,                                                        //param4
                     IAAJson                                                         //param5
             );
-            logger.debug("OS_Auth_ValidateTransactionNode JSON:" + sendTransactionJSON);
+            logger.debug(loggerPrefix + "OS_Auth_ValidateTransactionNode JSON:" + sendTransactionJSON);
 
-            try {
-                HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, sendTransactionJSON);
-                JSONObject responseJSON = httpEntity.getResponseJSON();
+            HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, sendTransactionJSON);
+            JSONObject responseJSON = httpEntity.getResponseJSON();
 
-                if (httpEntity.isSuccess()) {
-                    GeneralResponseOutput loginOutput = JSON.toJavaObject(responseJSON, GeneralResponseOutput.class);
-                    int irmResponse = loginOutput.getRiskResponseCode();
-                    sharedState.put(Constants.OSTID_IRM_RESPONSE,irmResponse);
-                    sharedState.put(Constants.OSTID_SESSIONID,sessionID);
-                    sharedState.put(Constants.OSTID_REQUEST_ID, loginOutput.getRequestID());
-                    sharedState.put(Constants.OSTID_COMMAND,loginOutput.getRequestMessage());
-                    sharedState.put(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.timeout()));
+            if (httpEntity.isSuccess()) {
+                GeneralResponseOutput loginOutput = JSON.toJavaObject(responseJSON, GeneralResponseOutput.class);
+                int irmResponse = loginOutput.getRiskResponseCode();
+                sharedState.put(Constants.OSTID_IRM_RESPONSE,irmResponse);
+                sharedState.put(Constants.OSTID_SESSIONID,sessionID);
+                sharedState.put(Constants.OSTID_REQUEST_ID, loginOutput.getRequestID());
+                sharedState.put(Constants.OSTID_COMMAND,loginOutput.getRequestMessage());
+                sharedState.put(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.timeout()));
 
-                    SendTransactionOutcome sendTransactionOutcome = SendTransactionOutcome.Error;
+                SendTransactionOutcome sendTransactionOutcome = SendTransactionOutcome.Error;
 
-                    if(loginOutput.getRiskResponseCode() > -1) {
-                        sharedState.put(Constants.OSTID_IRM_RESPONSE, irmResponse);
+                if(loginOutput.getRiskResponseCode() > -1) {
+                    sharedState.put(Constants.OSTID_IRM_RESPONSE, irmResponse);
 
-                        if (irmResponse == 0) {
-                            sendTransactionOutcome = SendTransactionOutcome.Accept;
-                        } else if (irmResponse == 1) {
-                            sendTransactionOutcome = SendTransactionOutcome.Decline;
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan TID Send Transaction process: Request been declined!");
-                        } else if (Constants.OSTID_API_CHALLANGE_MAP.containsKey(irmResponse)) {
-                            sendTransactionOutcome = SendTransactionOutcome.StepUp;
-                        }
-
-                        switch (config.visualCodeMessageOptions()) {
-                            case sessionID:
-                                sharedState.put(Constants.OSTID_CRONTO_MSG, StringUtils.stringToHex(sessionID));
-                                break;
-                            case requestID:
-                                String crontoMsg = StringUtils.stringToHex(loginOutput.getRequestID() == null ? "" : loginOutput.getRequestID());
-                                sharedState.put(Constants.OSTID_CRONTO_MSG, crontoMsg);
-                                break;
-                        }
-                    }else{
-                        switch (SessionStatus.valueOf(loginOutput.sessionStatus)){
-                            case accepted:
-                                sendTransactionOutcome = SendTransactionOutcome.Accept;
-                                break;
-                            case failed:
-                                sendTransactionOutcome = SendTransactionOutcome.Error;
-                                break;
-                            case refused:
-                                sendTransactionOutcome = SendTransactionOutcome.Decline;
-                                break;
-                        }
+                    if (irmResponse == 0) {
+                        sendTransactionOutcome = SendTransactionOutcome.Accept;
+                    } else if (irmResponse == 1) {
+                        sendTransactionOutcome = SendTransactionOutcome.Decline;
+                        sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Transaction process: Request been declined!");
+                    } else if (Constants.OSTID_API_CHALLANGE_MAP.containsKey(irmResponse)) {
+                        sendTransactionOutcome = SendTransactionOutcome.StepUp;
                     }
-                    return goTo(sendTransactionOutcome)
-                            .replaceSharedState(sharedState)
-                            .build();
-                } else {
-                    String log_correction_id = httpEntity.getLog_correlation_id();
-                    String message = responseJSON.getString("message");
-                    String requestJSON = "POST " + StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl + " : " + sendTransactionJSON;
 
-                    if (Stream.of(log_correction_id, message).anyMatch(Objects::isNull)) {
-                        throw new NodeProcessException("Fail to parse response: " + JSON.toJSONString(responseJSON));
-                    } else {
-                        JSONArray validationErrors = responseJSON.getJSONArray("validationErrors");
-                        if(validationErrors != null && validationErrors.size() > 0 && validationErrors.getJSONObject(0).getString("message") != null){
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithValidation(message,log_correction_id,validationErrors.getJSONObject(0).getString("message"),requestJSON));         //error return from IAA server
-                        }else{
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithoutValidation(message,log_correction_id,requestJSON));         //error return from IAA server
-                        }
-                        return goTo(SendTransactionOutcome.Error)
-                                .replaceSharedState(sharedState)
-                                .build();
+                    switch (config.visualCodeMessageOptions()) {
+                        case sessionID:
+                            sharedState.put(Constants.OSTID_CRONTO_MSG, StringUtils.stringToHex(sessionID));
+                            break;
+                        case requestID:
+                            String crontoMsg = StringUtils.stringToHex(loginOutput.getRequestID() == null ? "" : loginOutput.getRequestID());
+                            sharedState.put(Constants.OSTID_CRONTO_MSG, crontoMsg);
+                            break;
+                    }
+                }else{
+                    switch (SessionStatus.valueOf(loginOutput.sessionStatus)){
+                        case accepted:
+                            sendTransactionOutcome = SendTransactionOutcome.Accept;
+                            break;
+                        case failed:
+                            sendTransactionOutcome = SendTransactionOutcome.Error;
+                            break;
+                        case refused:
+                            sendTransactionOutcome = SendTransactionOutcome.Decline;
+                            break;
                     }
                 }
-            } catch (Exception e) {
-                logger.debug("OS_Auth_ValidateTransactionNode exception: " + e.getMessage());
-                sharedState.put(Constants.OSTID_ERROR_MESSAGE, "Fail to Send Transaction!");                            //general error msg
-                return goTo(SendTransactionOutcome.Error)
+                return goTo(sendTransactionOutcome)
                         .replaceSharedState(sharedState)
                         .build();
+            } else {
+                String log_correction_id = httpEntity.getLog_correlation_id();
+                String message = responseJSON.getString("message");
+                String requestJSON = "POST " + StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl + " : " + sendTransactionJSON;
+
+                if (Stream.of(log_correction_id, message).anyMatch(Objects::isNull)) {
+                    throw new NodeProcessException("Fail to parse response: " + JSON.toJSONString(responseJSON));
+                } else {
+                    JSONArray validationErrors = responseJSON.getJSONArray("validationErrors");
+                    if(validationErrors != null && validationErrors.size() > 0 && validationErrors.getJSONObject(0).getString("message") != null){
+                    	String errorMsgNoRetCodeWithValidation = StringUtils.getErrorMsgNoRetCodeWithValidation(message,log_correction_id,validationErrors.getJSONObject(0).getString("message"),requestJSON);
+                        throw new NodeProcessException(errorMsgNoRetCodeWithValidation);
+                    }else{
+                    	String errorMsgNoRetCodeWithoutValidation = StringUtils.getErrorMsgNoRetCodeWithoutValidation(message,log_correction_id,requestJSON);
+                        throw new NodeProcessException(errorMsgNoRetCodeWithoutValidation);
+                    }
+                }
             }
-        }
+		}catch (Exception ex) {
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
+			ex.printStackTrace();
+			context.getStateFor(this).putShared("OS_Auth_ValidateTransactionNode Exception", new Date() + ": " + ex.getMessage())
+									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Transactin Process: " + ex.getMessage());
+			return goTo(SendTransactionOutcome.Error).build();
+	    }
+        
     }
 
     public enum ObjectType {

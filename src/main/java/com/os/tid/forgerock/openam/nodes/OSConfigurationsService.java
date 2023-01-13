@@ -15,7 +15,6 @@
  */
 package com.os.tid.forgerock.openam.nodes;
 
-import com.sun.identity.sm.RequiredValueValidator;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.annotations.sm.Config;
 

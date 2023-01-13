@@ -1,5 +1,7 @@
-
 {
+  "trees":{
+"OneSpan-XUI-Risk-Analytics-Send-Transaction-Sample-Tree":  
+ {
   "origin": "4188da2c4ac583f1fea3a6ff4eb25a45 -",
   "innernodes": {
     "6f5d1bd8-fcb2-469e-88c8-8629d0a40d2b": {
@@ -244,3 +246,7 @@
     }
   }
 }
+    
+  }
+}
+

@@ -24,13 +24,15 @@ import org.slf4j.LoggerFactory;
 
 import javax.security.auth.callback.TextOutputCallback;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @Node.Metadata( outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
                 configClass = OS_Sample_ErrorDisplayNode.Config.class,
-                tags = {"OneSpan", "mfa", "utilities"})
+                tags = {"OneSpan", "mfa", "utilities", "marketplace", "trustnetwork"})
 public class OS_Sample_ErrorDisplayNode extends SingleOutcomeNode {
     private final Logger logger = LoggerFactory.getLogger("amAuth");
+    private static final String loggerPrefix = "[OneSpan Sample Error Display][Marketplace] ";
 
     /**
      * Configuration for the OS_Sample_ErrorDisplayNode.
@@ -39,26 +41,35 @@ public class OS_Sample_ErrorDisplayNode extends SingleOutcomeNode {
     }
 
     @Override
-    public Action process(TreeContext context){
-        logger.debug("OS_Sample_ErrorDisplayNode started");
-        JsonValue sharedState = context.sharedState;
-        JsonValue ostid_error_msg = sharedState.get(Constants.OSTID_ERROR_MESSAGE);
-        if(ostid_error_msg.isString()){
-            String[] split = ostid_error_msg.asString().split("<br />");
-            List<TextOutputCallback> outputCallbackList = new ArrayList<>();
-            for (String errorMsg: split) {
-                if(!StringUtils.isEmpty(errorMsg)) {
-                    TextOutputCallback errorTextOutputCallback;
-                    errorTextOutputCallback = new TextOutputCallback(2, errorMsg);
-                    outputCallbackList.add(errorTextOutputCallback);
-                }
-            }
-            sharedState.remove(Constants.OSTID_ERROR_MESSAGE);
-            return Action.send(outputCallbackList)
-                    .replaceSharedState(sharedState)
-                    .build();
-        }else{
-            return goToNext().build();
-        }
+    public Action process(TreeContext context) throws NodeProcessException {
+    	try {
+	        logger.debug(loggerPrefix + "OS_Sample_ErrorDisplayNode started");
+	        JsonValue sharedState = context.sharedState;
+	        JsonValue ostid_error_msg = sharedState.get(Constants.OSTID_ERROR_MESSAGE);
+	        if(ostid_error_msg.isString()){
+	            String[] split = ostid_error_msg.asString().split("<br />");
+	            List<TextOutputCallback> outputCallbackList = new ArrayList<>();
+	            for (String errorMsg: split) {
+	                if(!StringUtils.isEmpty(errorMsg)) {
+	                    TextOutputCallback errorTextOutputCallback;
+	                    errorTextOutputCallback = new TextOutputCallback(2, errorMsg);
+	                    outputCallbackList.add(errorTextOutputCallback);
+	                }
+	            }
+	            sharedState.remove(Constants.OSTID_ERROR_MESSAGE);
+	            return Action.send(outputCallbackList)
+	                    .replaceSharedState(sharedState)
+	                    .build();
+	        }else{
+	            return goToNext().build();
+	        }
+    	}catch (Exception ex) {
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
+			ex.printStackTrace();
+			context.getStateFor(this).putShared("OS_Sample_ErrorDisplayNode Exception", new Date() + ": " + ex.getMessage())
+									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Sample Error Display: " + ex.getMessage());
+			throw new NodeProcessException(ex.getMessage());
+	    }
     }
 }

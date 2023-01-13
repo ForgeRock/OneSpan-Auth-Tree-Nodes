@@ -24,6 +24,7 @@ import com.google.inject.assistedinject.Assisted;
 import com.iplanet.sso.SSOException;
 import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.models.HttpEntity;
+import com.os.tid.forgerock.openam.nodes.OS_Auth_UserLoginNode.UserLoginOutcome;
 import com.os.tid.forgerock.openam.utils.CollectionsUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
@@ -47,12 +48,13 @@ import java.util.stream.Stream;
  */
 @Node.Metadata( outcomeProvider = OS_Risk_InsertTransactionNode.OSTID_Risk_InsertTransactionNodeOutcomeProvider.class,
                 configClass = OS_Risk_InsertTransactionNode.Config.class,
-                tags = {"OneSpan", "basic authentication", "mfa", "risk"})
+                tags = {"OneSpan", "basic authentication", "mfa", "risk", "marketplace", "trustnetwork"})
 public class OS_Risk_InsertTransactionNode implements Node {
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Risk_InsertTransactionNode";
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private final OS_Risk_InsertTransactionNode.Config config;
     private final OSConfigurationsService serviceConfig;
+    private static final String loggerPrefix = "[OneSpan Risk Analytics Send Transaction][Marketplace] ";
 
     /**
      * Configuration for the OS Risk Insert Transaction Node.
@@ -96,46 +98,51 @@ public class OS_Risk_InsertTransactionNode implements Node {
 
     @Override
     public Action process(TreeContext context) {
-        logger.debug("OS_Risk_InsertTransactionNode started");
-        JsonValue sharedState = context.sharedState;
-        String tenantName = serviceConfig.tenantName().toLowerCase();
-        String environment = serviceConfig.environment().name();
-
-        boolean missAttr = false;
-        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
-        missAttr |= !usernameJsonValue.isString();
-        sharedState.put(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
-
-        StringBuilder attributesStringBuilder = new StringBuilder(1000);
-        Map<String, String> attributesMap = config.adaptiveAttributes();
-        for (Map.Entry<String, String> entrySet : attributesMap.entrySet()) {
-            JsonValue jsonValue = sharedState.get(entrySet.getValue());
-            if (jsonValue.isString()) {
-                attributesStringBuilder.append("\"").append(entrySet.getKey()).append("\":\"").append(jsonValue.asString()).append("\",");
-            } else {
-                missAttr = true;
-            }
-        }
-
-        String sessionID = sharedState.get(Constants.OSTID_SESSIONID).isString() ? sharedState.get(Constants.OSTID_SESSIONID).asString() : StringUtils.stringToHex(UUID.randomUUID().toString());
-
-        missAttr |= CollectionsUtils.hasAnyNullValues(ImmutableList.of(
-                sharedState.get(Constants.OSTID_CDDC_JSON),
-                sharedState.get(Constants.OSTID_CDDC_HASH),
-                sharedState.get(Constants.OSTID_CDDC_IP)
-        ));
-        String applicationRef = serviceConfig.applicationRef() != null ? serviceConfig.applicationRef() : "";
-
-        /**
-         * 1.attributes
-         * 2.CDDC IP
-         * 3.CDDC Hash
-         * 4.CDDC Json
-         * 5.session ID
-         * 6.application reference
-         * 7.relationship ID
-         **/
-        if (!missAttr) {
+    	try {
+	        logger.debug(loggerPrefix + "OS_Risk_InsertTransactionNode started");
+	        JsonValue sharedState = context.sharedState;
+	        String tenantName = serviceConfig.tenantName().toLowerCase();
+	        String environment = serviceConfig.environment().name();
+	
+	        boolean missAttr = false;
+	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
+	        missAttr |= !usernameJsonValue.isString();
+	        sharedState.put(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
+	
+	        StringBuilder attributesStringBuilder = new StringBuilder(1000);
+	        Map<String, String> attributesMap = config.adaptiveAttributes();
+	        for (Map.Entry<String, String> entrySet : attributesMap.entrySet()) {
+	            JsonValue jsonValue = sharedState.get(entrySet.getValue());
+	            if (jsonValue.isString()) {
+	                attributesStringBuilder.append("\"").append(entrySet.getKey()).append("\":\"").append(jsonValue.asString()).append("\",");
+	            } else {
+	                missAttr = true;
+	            }
+	        }
+	
+	        String sessionID = sharedState.get(Constants.OSTID_SESSIONID).isString() ? sharedState.get(Constants.OSTID_SESSIONID).asString() : StringUtils.stringToHex(UUID.randomUUID().toString());
+	
+	        missAttr |= CollectionsUtils.hasAnyNullValues(ImmutableList.of(
+	                sharedState.get(Constants.OSTID_CDDC_JSON),
+	                sharedState.get(Constants.OSTID_CDDC_HASH),
+	                sharedState.get(Constants.OSTID_CDDC_IP)
+	        ));
+	        String applicationRef = serviceConfig.applicationRef() != null ? serviceConfig.applicationRef() : "";
+	
+	        if(missAttr) { //missing data
+	            logger.debug(loggerPrefix + JSON.toJSONString(sharedState));
+	            throw new NodeProcessException("Oopts, there are missing data for OneSpan Risk Insert Transaction Node!");
+	        }
+	        
+	        /**
+	         * 1.attributes
+	         * 2.CDDC IP
+	         * 3.CDDC Hash
+	         * 4.CDDC Json
+	         * 5.session ID
+	         * 6.application reference
+	         * 7.relationship ID
+	         **/
             String sendTransactionJSON = String.format(Constants.OSTID_JSON_RISK_SEND_TRANSACTION,
                     attributesStringBuilder.toString(),                              //param1
                     sharedState.get(Constants.OSTID_CDDC_IP).asString(),             //param2
@@ -146,61 +153,52 @@ public class OS_Risk_InsertTransactionNode implements Node {
                     usernameJsonValue.asString()                                     //param7
             );
             String APIUrl = Constants.OSTID_API_RISK_SEND_TRANSACTION;
-            try {
-                HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, sendTransactionJSON);
-                JSONObject responseJSON = httpEntity.getResponseJSON();
+            HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, sendTransactionJSON);
+            JSONObject responseJSON = httpEntity.getResponseJSON();
 
-                if (httpEntity.isSuccess()) {
-                    int riskResponseCode = responseJSON.getIntValue("riskResponseCode");
-                    sharedState.put(Constants.OSTID_RISK_RESPONSE_CODE, riskResponseCode);
-                    sharedState.put(Constants.OSTID_RISK_RESPONSE_CODE2, riskResponseCode);
+            if (httpEntity.isSuccess()) {
+                int riskResponseCode = responseJSON.getIntValue("riskResponseCode");
+                sharedState.put(Constants.OSTID_RISK_RESPONSE_CODE, riskResponseCode);
+                sharedState.put(Constants.OSTID_RISK_RESPONSE_CODE2, riskResponseCode);
 
-                    RiskTransactionOutcome riskTransactionOutcome = RiskTransactionOutcome.Error;
-                    if (riskResponseCode == 0) {
-                        riskTransactionOutcome = RiskTransactionOutcome.Accept;
-                    } else if (riskResponseCode == 1) {
-                        riskTransactionOutcome = RiskTransactionOutcome.Decline;
-                        sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Risk Send Transaction: Request has been declined!");
-                    } else{
-                        riskTransactionOutcome = RiskTransactionOutcome.Challenge;
-                    }
-                    return goTo(riskTransactionOutcome)
-                            .replaceSharedState(sharedState)
-                            .build();
-                } else {
-                    String log_correction_id = httpEntity.getLog_correlation_id();
-                    String message = responseJSON.getString("message");
-                    String requestJSON = "POST " + StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl + " : " + sendTransactionJSON;
-
-                    if (Stream.of(log_correction_id, message).anyMatch(Objects::isNull)) {
-                        throw new NodeProcessException("Fail to parse response: " + JSON.toJSONString(responseJSON));
-                    } else {
-                        JSONArray validationErrors = responseJSON.getJSONArray("validationErrors");
-                        if (validationErrors != null && validationErrors.size() > 0 && validationErrors.getJSONObject(0).getString("message") != null) {
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithValidation(message, log_correction_id, validationErrors.getJSONObject(0).getString("message"), requestJSON));         //error return from IAA server
-                        } else {
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithoutValidation(message, log_correction_id, requestJSON));         //error return from IAA server
-                        }
-                        return goTo(RiskTransactionOutcome.Error)
-                                .replaceSharedState(sharedState)
-                                .build();
-                    }
+                RiskTransactionOutcome riskTransactionOutcome = RiskTransactionOutcome.Error;
+                if (riskResponseCode == 0) {
+                    riskTransactionOutcome = RiskTransactionOutcome.Accept;
+                } else if (riskResponseCode == 1) {
+                    riskTransactionOutcome = RiskTransactionOutcome.Decline;
+                    sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Risk Insert Transaction: Request has been declined!");
+                } else{
+                    riskTransactionOutcome = RiskTransactionOutcome.Challenge;
                 }
-            }catch(Exception e){
-                logger.debug("OS_Risk_InsertTransactionNode exception: " + e.getMessage());
-                sharedState.put(Constants.OSTID_ERROR_MESSAGE, "Fail to Insert Risk Transaction!");                            //general error msg
-                return goTo(RiskTransactionOutcome.Error)
+                return goTo(riskTransactionOutcome)
                         .replaceSharedState(sharedState)
                         .build();
+            } else {
+                String log_correction_id = httpEntity.getLog_correlation_id();
+                String message = responseJSON.getString("message");
+                String requestJSON = "POST " + StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl + " : " + sendTransactionJSON;
+
+                if (Stream.of(log_correction_id, message).anyMatch(Objects::isNull)) {
+                    throw new NodeProcessException("Fail to parse response: " + JSON.toJSONString(responseJSON));
+                } else {
+                    JSONArray validationErrors = responseJSON.getJSONArray("validationErrors");
+                    if(validationErrors != null && validationErrors.size() > 0 && validationErrors.getJSONObject(0).getString("message") != null){
+                    	String errorMsgNoRetCodeWithValidation = StringUtils.getErrorMsgNoRetCodeWithValidation(message,log_correction_id,validationErrors.getJSONObject(0).getString("message"),requestJSON);
+                        throw new NodeProcessException(errorMsgNoRetCodeWithValidation);
+                    }else{
+                    	String errorMsgNoRetCodeWithoutValidation = StringUtils.getErrorMsgNoRetCodeWithoutValidation(message,log_correction_id,requestJSON);
+                        throw new NodeProcessException(errorMsgNoRetCodeWithoutValidation);
+                    }
+                }
             }
-        }else{
-            logger.debug("OS_Risk_InsertTransactionNode exception: Oopts, there are missing data for OneSpan Risk Insert Transaction Node!");
-            logger.debug(JSON.toJSONString(sharedState));
-            sharedState.put(Constants.OSTID_ERROR_MESSAGE, "Oopts, there are missing data for OneSpan Risk Insert Transaction Node!");
-            return goTo(RiskTransactionOutcome.Error)
-                    .replaceSharedState(sharedState)
-                    .build();
-        }
+    	}catch (Exception ex) {
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
+			ex.printStackTrace();
+			context.getStateFor(this).putShared("OS_Risk_InsertTransactionNode Exception", new Date() + ": " + ex.getMessage())
+									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Risk Insert Transaction: " + ex.getMessage());
+			return goTo(RiskTransactionOutcome.Error).build();
+	    }
     }
 
     public enum RiskTransactionOutcome {

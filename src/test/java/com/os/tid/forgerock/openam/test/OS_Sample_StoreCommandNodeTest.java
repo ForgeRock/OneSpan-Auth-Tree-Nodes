@@ -44,7 +44,6 @@ public class OS_Sample_StoreCommandNodeTest {
     @BeforeMethod
     public void before() throws SMSException, SSOException {
         initMocks(this);
-        given(configurationsService.tenantNameToLowerCase()).willReturn(TestData.TENANT_NAME.toLowerCase());
         given(configurationsService.environment()).willReturn(TestData.ENVIRONMENT);
         given(configurationsService.applicationRef()).willReturn(TestData.APPLICATION_REF);
 
