@@ -67,6 +67,16 @@ public class OS_Sample_StoreCommandNode implements Node {
         default Map<String, String> placeholderMap() {
             return Collections.emptyMap();
         }
+        
+        
+        /**
+        *
+        */
+       @Attribute(order = 300)
+       default Map<String, String> requestHeaders() {
+           return Collections.emptyMap();
+       }
+        
     }
 
     @Inject
@@ -111,7 +121,7 @@ public class OS_Sample_StoreCommandNode implements Node {
             StrSubstitutor sub = new StrSubstitutor(placeholders, "{", "}");
             String commandURLFinal = sub.replace(commandURL);
 
-            HttpEntity httpEntity = RestUtils.doPostJSONWithoutResponse(commandURLFinal, demo_cmd_payload);
+            HttpEntity httpEntity = RestUtils.doPostJSONWithoutResponse(commandURLFinal, demo_cmd_payload,config.requestHeaders());
 
             if (httpEntity.isSuccess()) {
                 return goTo(OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome.Success)
