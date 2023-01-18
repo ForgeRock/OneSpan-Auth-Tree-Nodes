@@ -1,395 +1,440 @@
 {
-  "trees":{
-"OneSpan-XUI-Adapative-Authentication-Validate-Event-Sample-Tree":  
- {
-  "origin": "4188da2c4ac583f1fea3a6ff4eb25a45 -",
-  "innernodes": {
-    "f215c692-e77d-4b79-b023-923c912ee49e": {
-      "_id": "f215c692-e77d-4b79-b023-923c912ee49e",
-      "pushCDDCJsAsCallback": true,
-      "CDDCJsonHiddenValueId": "osstid_cddc_json",
-      "CDDCHashHiddenValueId": "osstid_cddc_hash",
-      "_type": {
-        "_id": "OS_Risk_CDDCNode",
-        "name": "OneSpan Risk CDDC",
-        "collection": true
-      },
-      "_outcomes": [
-        {
-          "id": "outcome",
-          "displayName": "Outcome"
-        }
-      ]
-    },
-    "69f49eeb-3645-44fd-94b8-3291068d61c2": {
-      "_id": "69f49eeb-3645-44fd-94b8-3291068d61c2",
-      "_type": {
-        "_id": "UsernameCollectorNode",
-        "name": "Username Collector",
-        "collection": true
-      },
-      "_outcomes": [
-        {
-          "id": "outcome",
-          "displayName": "Outcome"
-        }
-      ]
-    }
-  },
-  "nodes": {
-    "05735ee3-483c-4758-a5f2-5b89688f0d58": {
-      "_id": "05735ee3-483c-4758-a5f2-5b89688f0d58",
-      "_type": {
-        "_id": "OS_Auth_CheckSessionStatusNode",
-        "name": "OneSpan Auth Check Session Status",
-        "collection": true
-      },
-      "_outcomes": [
-        {
-          "id": "pending",
-          "displayName": "Pending"
-        },
-        {
-          "id": "accepted",
-          "displayName": "Accepted"
-        },
-        {
-          "id": "refused",
-          "displayName": "Refused"
-        },
-        {
-          "id": "failure",
-          "displayName": "Failure"
-        },
-        {
-          "id": "timeout",
-          "displayName": "Timeout"
-        },
-        {
-          "id": "unknown",
-          "displayName": "Unknown"
-        },
-        {
-          "id": "error",
-          "displayName": "Error"
-        }
-      ]
-    },
-    "06df0841-0772-4eeb-b685-402b12f245cd": {
-      "_id": "06df0841-0772-4eeb-b685-402b12f245cd",
-      "exitable": false,
-      "secondsToWait": 1,
-      "waitingMessage": {},
-      "spamDetectionTolerance": 3,
-      "spamDetectionEnabled": false,
-      "exitMessage": {},
-      "_type": {
-        "_id": "PollingWaitNode",
-        "name": "Polling Wait Node",
-        "collection": true
-      },
-      "_outcomes": [
-        {
-          "id": "DONE",
-          "displayName": "Done"
-        }
-      ]
-    },
-    "2b24e608-f584-4491-aa51-17698e1374d9": {
-      "_id": "2b24e608-f584-4491-aa51-17698e1374d9",
-      "visualCodeType": "Cronto",
-      "renderVisualCodeInCallback": true,
-      "visualCodeMessageOption": "DemoMobileApp",
-      "visualCodeHiddenValueId": "ostid_cronto",
-      "altTextOfVisualCode": "OneSpan TID Cronto Image",
-      "textForPleaseScan": "Please Scan the Visual Code within:",
-      "domIdRenderVisualCode": "callbacksPanel",
-      "textForExpired": "Your Activation Code has been expired!",
-      "sizeOfVisualCode": 210,
-      "_type": {
-        "_id": "OS_Auth_VisualCodeNode",
-        "name": "OneSpan Auth Visual Code",
-        "collection": true
-      },
-      "_outcomes": [
-        {
-          "id": "outcome",
-          "displayName": "Outcome"
-        }
-      ]
-    },
-    "4e98cbde-1703-4d0f-b083-380318f7b5d6": {
-      "_id": "4e98cbde-1703-4d0f-b083-380318f7b5d6",
-      "_type": {
-        "_id": "OS_Sample_ErrorDisplayNode",
-        "name": "OneSpan Sample Error Display",
-        "collection": true
-      },
-      "_outcomes": [
-        {
-          "id": "outcome",
-          "displayName": "Outcome"
-        }
-      ]
-    },
-    "4ef0a9d4-4731-4f61-8405-065fcc897656": {
-      "_id": "4ef0a9d4-4731-4f61-8405-065fcc897656",
-      "orchestrationDelivery": "both",
-      "credentialsType": "none",
-      "timeout": 55,
-      "visualCodeMessageOptions": "sessionID",
-      "eventType": "SpecifyBelow",
-      "specifyEventType": "LoginAttempt",
-      "userNameInSharedData": "username",
-      "passwordInTransientState": "password",
-      "optionalAttributes": {},
-      "_type": {
-        "_id": "OS_Auth_ValidateEventNode",
-        "name": "OneSpan Auth Validate Event",
-        "collection": true
-      },
-      "_outcomes": [
-        {
-          "id": "Accept",
-          "displayName": "Accept"
-        },
-        {
-          "id": "Decline",
-          "displayName": "Decline"
-        },
-        {
-          "id": "StepUp",
-          "displayName": "Step Up"
-        },
-        {
-          "id": "Error",
-          "displayName": "Error"
-        }
-      ]
-    },
-    "53f6cfe4-78a3-4842-8c79-80c93d5cd28a": {
-      "_id": "53f6cfe4-78a3-4842-8c79-80c93d5cd28a",
-      "pageHeader": {},
-      "pageDescription": {},
-      "nodes": [
-        {
-          "_id": "f215c692-e77d-4b79-b023-923c912ee49e",
-          "nodeType": "OS_Risk_CDDCNode",
-          "displayName": "OneSpan Risk CDDC"
-        },
-        {
-          "_id": "69f49eeb-3645-44fd-94b8-3291068d61c2",
-          "nodeType": "UsernameCollectorNode",
-          "displayName": "Username Collector"
-        }
-      ],
-      "_type": {
-        "_id": "PageNode",
-        "name": "Page Node",
-        "collection": true
-      },
-      "_outcomes": [
-        {
-          "id": "outcome",
-          "displayName": "Outcome"
-        }
-      ]
-    },
-    "57fc060f-e531-4afd-a546-4400abb09f5b": {
-      "_id": "57fc060f-e531-4afd-a546-4400abb09f5b",
-      "_type": {
-        "_id": "OS_Auth_VisualCodeStopNode",
-        "name": "OneSpan Auth Hide Visual Code",
-        "collection": true
-      },
-      "_outcomes": [
-        {
-          "id": "outcome",
-          "displayName": "Outcome"
-        }
-      ]
-    },
-    "803b6639-2e27-4d42-890a-50d901ecd68c": {
-      "_id": "803b6639-2e27-4d42-890a-50d901ecd68c",
-      "_type": {
-        "_id": "OS_Auth_VisualCodeStopNode",
-        "name": "OneSpan Auth Hide Visual Code",
-        "collection": true
-      },
-      "_outcomes": [
-        {
-          "id": "outcome",
-          "displayName": "Outcome"
-        }
-      ]
-    },
-    "80820657-e8c1-409a-a968-1c9373d5004c": {
-      "_id": "80820657-e8c1-409a-a968-1c9373d5004c",
-      "javascript": "https://osgs-firestore-to-rest.herokuapp.com/{tenantName}/{sessionID}/commands",
-      "placeholderMap": {},
-      "_type": {
-        "_id": "OS_Sample_StoreCommandNode",
-        "name": "OneSpan Sample Store Command",
-        "collection": true
-      },
-      "_outcomes": [
-        {
-          "id": "Success",
-          "displayName": "Success"
-        },
-        {
-          "id": "Error",
-          "displayName": "Error"
-        }
-      ]
-    },
-    "cb372df5-00d0-490f-bd3d-00715dc87a3c": {
-      "_id": "cb372df5-00d0-490f-bd3d-00715dc87a3c",
-      "incrementUserAttributeOnFailure": true,
-      "retryLimit": 3,
-      "_type": {
-        "_id": "RetryLimitDecisionNode",
-        "name": "Retry Limit Decision",
-        "collection": true
-      },
-      "_outcomes": [
-        {
-          "id": "Retry",
-          "displayName": "Retry"
-        },
-        {
-          "id": "Reject",
-          "displayName": "Reject"
-        }
-      ]
-    }
-  },
-  "scripts": {},
-  "emailTemplates": {},
-  "tree": {
-    "_id": "OneSpan-XUI-Adapative-Authentication-Validate-Event-Sample-Tree",
-    "entryNodeId": "53f6cfe4-78a3-4842-8c79-80c93d5cd28a",
-    "uiConfig": {},
-    "staticNodes": {
-      "startNode": {
-        "x": 26,
-        "y": 47
-      },
-      "70e691a5-1e33-4ac3-a356-e7b6d60d92e0": {
-        "x": 1725,
-        "y": 151
-      },
-      "e301438c-0bd0-429c-ab0c-66126501069a": {
-        "x": 1654,
-        "y": 599
-      }
-    },
-    "nodes": {
-      "53f6cfe4-78a3-4842-8c79-80c93d5cd28a": {
-        "displayName": "Page Node",
-        "nodeType": "PageNode",
-        "x": 78,
-        "y": 155,
-        "connections": {
-          "outcome": "4ef0a9d4-4731-4f61-8405-065fcc897656"
-        }
-      },
-      "4ef0a9d4-4731-4f61-8405-065fcc897656": {
-        "displayName": "OneSpan Auth Validate Event",
-        "nodeType": "OS_Auth_ValidateEventNode",
-        "x": 310,
-        "y": 159,
-        "connections": {
-          "Accept": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0",
-          "Error": "4e98cbde-1703-4d0f-b083-380318f7b5d6",
-          "Decline": "4e98cbde-1703-4d0f-b083-380318f7b5d6",
-          "StepUp": "80820657-e8c1-409a-a968-1c9373d5004c"
-        }
-      },
-      "4e98cbde-1703-4d0f-b083-380318f7b5d6": {
-        "displayName": "OneSpan Sample Error Display",
-        "nodeType": "OS_Sample_ErrorDisplayNode",
-        "x": 685,
-        "y": 554,
-        "connections": {
-          "outcome": "cb372df5-00d0-490f-bd3d-00715dc87a3c"
-        }
-      },
-      "cb372df5-00d0-490f-bd3d-00715dc87a3c": {
-        "displayName": "Retry Limit Decision",
-        "nodeType": "RetryLimitDecisionNode",
-        "x": 1043,
-        "y": 554,
-        "connections": {
-          "Retry": "53f6cfe4-78a3-4842-8c79-80c93d5cd28a",
-          "Reject": "e301438c-0bd0-429c-ab0c-66126501069a"
-        }
-      },
-      "80820657-e8c1-409a-a968-1c9373d5004c": {
-        "displayName": "OneSpan Sample Store Command",
-        "nodeType": "OS_Sample_StoreCommandNode",
-        "x": 571,
-        "y": 227,
-        "connections": {
-          "Error": "4e98cbde-1703-4d0f-b083-380318f7b5d6",
-          "Success": "2b24e608-f584-4491-aa51-17698e1374d9"
-        }
-      },
-      "2b24e608-f584-4491-aa51-17698e1374d9": {
-        "displayName": "OneSpan Auth Visual Code",
-        "nodeType": "OS_Auth_VisualCodeNode",
-        "x": 857,
-        "y": 254,
-        "connections": {
-          "outcome": "05735ee3-483c-4758-a5f2-5b89688f0d58"
-        }
-      },
-      "05735ee3-483c-4758-a5f2-5b89688f0d58": {
-        "displayName": "OneSpan Auth Check Session Status",
-        "nodeType": "OS_Auth_CheckSessionStatusNode",
-        "x": 1116,
-        "y": 246,
-        "connections": {
-          "pending": "06df0841-0772-4eeb-b685-402b12f245cd",
-          "accepted": "57fc060f-e531-4afd-a546-4400abb09f5b",
-          "failure": "803b6639-2e27-4d42-890a-50d901ecd68c",
-          "refused": "803b6639-2e27-4d42-890a-50d901ecd68c",
-          "timeout": "803b6639-2e27-4d42-890a-50d901ecd68c",
-          "error": "803b6639-2e27-4d42-890a-50d901ecd68c",
-          "unknown": "803b6639-2e27-4d42-890a-50d901ecd68c"
-        }
-      },
-      "06df0841-0772-4eeb-b685-402b12f245cd": {
-        "displayName": "Polling Wait Node",
-        "nodeType": "PollingWaitNode",
-        "x": 1179,
-        "y": 437,
-        "connections": {
-          "DONE": "05735ee3-483c-4758-a5f2-5b89688f0d58"
-        }
-      },
-      "57fc060f-e531-4afd-a546-4400abb09f5b": {
-        "displayName": "OneSpan Auth Hide Visual Code",
-        "nodeType": "OS_Auth_VisualCodeStopNode",
-        "x": 1424,
-        "y": 279,
-        "connections": {
-          "outcome": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0"
-        }
-      },
-      "803b6639-2e27-4d42-890a-50d901ecd68c": {
-        "displayName": "OneSpan Auth Hide Visual Code",
-        "nodeType": "OS_Auth_VisualCodeStopNode",
-        "x": 392,
-        "y": 553,
-        "connections": {
-          "outcome": "4e98cbde-1703-4d0f-b083-380318f7b5d6"
-        }
-      }
-    }
-  }
-}
-    
-  }
-}
+  "trees": {
+    "OneSpan-XUI-Adapative-Authentication-Validate-Event-Sample-Tree": {
+      "tree": {
+        "_id": "OneSpan-XUI-Adapative-Authentication-Validate-Event-Sample-Tree",
+        "_rev": "-1216522714",
+        "identityResource": "managed/alpha_user",
+        "uiConfig": {
 
+        },
+        "entryNodeId": "53f6cfe4-78a3-4842-8c79-80c93d5cd28a",
+        "nodes": {
+          "53f6cfe4-78a3-4842-8c79-80c93d5cd28a": {
+            "x": 78,
+            "y": 155,
+            "connections": {
+              "outcome": "4ef0a9d4-4731-4f61-8405-065fcc897656"
+            },
+            "nodeType": "PageNode",
+            "displayName": "Page Node"
+          },
+          "4ef0a9d4-4731-4f61-8405-065fcc897656": {
+            "x": 310,
+            "y": 159,
+            "connections": {
+              "Accept": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0",
+              "Error": "4e98cbde-1703-4d0f-b083-380318f7b5d6",
+              "Decline": "4e98cbde-1703-4d0f-b083-380318f7b5d6",
+              "StepUp": "a84546a5-5eba-43f1-8776-a1d895892123"
+            },
+            "nodeType": "OS_Auth_ValidateEventNode",
+            "displayName": "OneSpan Auth Validate Event"
+          },
+          "4e98cbde-1703-4d0f-b083-380318f7b5d6": {
+            "x": 685,
+            "y": 554,
+            "connections": {
+              "outcome": "cb372df5-00d0-490f-bd3d-00715dc87a3c"
+            },
+            "nodeType": "OS_Sample_ErrorDisplayNode",
+            "displayName": "OneSpan Sample Error Display"
+          },
+          "cb372df5-00d0-490f-bd3d-00715dc87a3c": {
+            "x": 1043,
+            "y": 554,
+            "connections": {
+              "Retry": "53f6cfe4-78a3-4842-8c79-80c93d5cd28a",
+              "Reject": "e301438c-0bd0-429c-ab0c-66126501069a"
+            },
+            "nodeType": "RetryLimitDecisionNode",
+            "displayName": "Retry Limit Decision"
+          },
+          "2b24e608-f584-4491-aa51-17698e1374d9": {
+            "x": 867,
+            "y": 260,
+            "connections": {
+              "outcome": "05735ee3-483c-4758-a5f2-5b89688f0d58"
+            },
+            "nodeType": "OS_Auth_VisualCodeNode",
+            "displayName": "OneSpan Auth Visual Code"
+          },
+          "05735ee3-483c-4758-a5f2-5b89688f0d58": {
+            "x": 1116,
+            "y": 246,
+            "connections": {
+              "pending": "06df0841-0772-4eeb-b685-402b12f245cd",
+              "accepted": "57fc060f-e531-4afd-a546-4400abb09f5b",
+              "failure": "803b6639-2e27-4d42-890a-50d901ecd68c",
+              "refused": "803b6639-2e27-4d42-890a-50d901ecd68c",
+              "timeout": "803b6639-2e27-4d42-890a-50d901ecd68c",
+              "error": "803b6639-2e27-4d42-890a-50d901ecd68c",
+              "unknown": "803b6639-2e27-4d42-890a-50d901ecd68c"
+            },
+            "nodeType": "OS_Auth_CheckSessionStatusNode",
+            "displayName": "OneSpan Auth Check Session Status"
+          },
+          "06df0841-0772-4eeb-b685-402b12f245cd": {
+            "x": 1179,
+            "y": 437,
+            "connections": {
+              "DONE": "05735ee3-483c-4758-a5f2-5b89688f0d58"
+            },
+            "nodeType": "PollingWaitNode",
+            "displayName": "Polling Wait Node"
+          },
+          "57fc060f-e531-4afd-a546-4400abb09f5b": {
+            "x": 1424,
+            "y": 279,
+            "connections": {
+              "outcome": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0"
+            },
+            "nodeType": "OS_Auth_VisualCodeStopNode",
+            "displayName": "OneSpan Auth Hide Visual Code"
+          },
+          "803b6639-2e27-4d42-890a-50d901ecd68c": {
+            "x": 392,
+            "y": 553,
+            "connections": {
+              "outcome": "4e98cbde-1703-4d0f-b083-380318f7b5d6"
+            },
+            "nodeType": "OS_Auth_VisualCodeStopNode",
+            "displayName": "OneSpan Auth Hide Visual Code"
+          },
+          "a84546a5-5eba-43f1-8776-a1d895892123": {
+            "x": 585.140625,
+            "y": 222.015625,
+            "connections": {
+              "Success": "2b24e608-f584-4491-aa51-17698e1374d9",
+              "Error": "4e98cbde-1703-4d0f-b083-380318f7b5d6"
+            },
+            "nodeType": "OS_Sample_StoreCommandNode",
+            "displayName": "OneSpan Sample Store Command"
+          }
+        },
+        "staticNodes": {
+          "startNode": {
+            "x": 26,
+            "y": 47
+          },
+          "70e691a5-1e33-4ac3-a356-e7b6d60d92e0": {
+            "x": 1725,
+            "y": 151
+          },
+          "e301438c-0bd0-429c-ab0c-66126501069a": {
+            "x": 1654,
+            "y": 599
+          }
+        },
+        "enabled": true
+      },
+      "nodes": {
+        "53f6cfe4-78a3-4842-8c79-80c93d5cd28a": {
+          "_id": "53f6cfe4-78a3-4842-8c79-80c93d5cd28a",
+          "_rev": "1616035275",
+          "nodes": [
+            {
+              "_id": "f215c692-e77d-4b79-b023-923c912ee49e",
+              "nodeType": "OS_Risk_CDDCNode",
+              "displayName": "OneSpan Risk CDDC"
+            },
+            {
+              "_id": "69f49eeb-3645-44fd-94b8-3291068d61c2",
+              "nodeType": "UsernameCollectorNode",
+              "displayName": "Username Collector"
+            }
+          ],
+          "pageDescription": {
+
+          },
+          "pageHeader": {
+
+          },
+          "_type": {
+            "_id": "PageNode",
+            "name": "Page Node",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "outcome",
+              "displayName": "Outcome"
+            }
+          ]
+        },
+        "4ef0a9d4-4731-4f61-8405-065fcc897656": {
+          "_id": "4ef0a9d4-4731-4f61-8405-065fcc897656",
+          "_rev": "-1678714499",
+          "optionalAttributes": {
+
+          },
+          "visualCodeMessageOptions": "sessionID",
+          "orchestrationDelivery": "both",
+          "eventType": "SpecifyBelow",
+          "userNameInSharedData": "username",
+          "eventTypeInSharedState": "",
+          "specifyEventType": "LoginAttempt",
+          "passwordInTransientState": "password",
+          "timeout": 55,
+          "credentialsType": "none",
+          "_type": {
+            "_id": "OS_Auth_ValidateEventNode",
+            "name": "OneSpan Auth Validate Event",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "Accept",
+              "displayName": "Accept"
+            },
+            {
+              "id": "Decline",
+              "displayName": "Decline"
+            },
+            {
+              "id": "StepUp",
+              "displayName": "Step Up"
+            },
+            {
+              "id": "Error",
+              "displayName": "Error"
+            }
+          ]
+        },
+        "4e98cbde-1703-4d0f-b083-380318f7b5d6": {
+          "_id": "4e98cbde-1703-4d0f-b083-380318f7b5d6",
+          "_rev": "1925605012",
+          "_type": {
+            "_id": "OS_Sample_ErrorDisplayNode",
+            "name": "OneSpan Sample Error Display",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "outcome",
+              "displayName": "Outcome"
+            }
+          ]
+        },
+        "cb372df5-00d0-490f-bd3d-00715dc87a3c": {
+          "_id": "cb372df5-00d0-490f-bd3d-00715dc87a3c",
+          "_rev": "-1229989661",
+          "incrementUserAttributeOnFailure": true,
+          "retryLimit": 3,
+          "_type": {
+            "_id": "RetryLimitDecisionNode",
+            "name": "Retry Limit Decision",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "Retry",
+              "displayName": "Retry"
+            },
+            {
+              "id": "Reject",
+              "displayName": "Reject"
+            }
+          ]
+        },
+        "2b24e608-f584-4491-aa51-17698e1374d9": {
+          "_id": "2b24e608-f584-4491-aa51-17698e1374d9",
+          "_rev": "-1077109530",
+          "sizeOfVisualCode": 210,
+          "textForPleaseScan": "Please Scan the Visual Code within:",
+          "textForExpired": "Your Activation Code has been expired!",
+          "renderVisualCodeInCallback": true,
+          "domIdRenderVisualCode": "callbacksPanel",
+          "visualCodeType": "Cronto",
+          "visualCodeMessageOption": "DemoMobileApp",
+          "altTextOfVisualCode": "OneSpan TID Cronto Image",
+          "visualCodeHiddenValueId": "ostid_cronto",
+          "_type": {
+            "_id": "OS_Auth_VisualCodeNode",
+            "name": "OneSpan Auth Visual Code",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "outcome",
+              "displayName": "Outcome"
+            }
+          ]
+        },
+        "05735ee3-483c-4758-a5f2-5b89688f0d58": {
+          "_id": "05735ee3-483c-4758-a5f2-5b89688f0d58",
+          "_rev": "1078900939",
+          "_type": {
+            "_id": "OS_Auth_CheckSessionStatusNode",
+            "name": "OneSpan Auth Check Session Status",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "pending",
+              "displayName": "Pending"
+            },
+            {
+              "id": "accepted",
+              "displayName": "Accepted"
+            },
+            {
+              "id": "refused",
+              "displayName": "Refused"
+            },
+            {
+              "id": "failure",
+              "displayName": "Failure"
+            },
+            {
+              "id": "timeout",
+              "displayName": "Timeout"
+            },
+            {
+              "id": "unknown",
+              "displayName": "Unknown"
+            },
+            {
+              "id": "error",
+              "displayName": "Error"
+            }
+          ]
+        },
+        "06df0841-0772-4eeb-b685-402b12f245cd": {
+          "_id": "06df0841-0772-4eeb-b685-402b12f245cd",
+          "_rev": "1907237644",
+          "spamDetectionTolerance": 3,
+          "spamDetectionEnabled": false,
+          "exitMessage": {
+
+          },
+          "waitingMessage": {
+
+          },
+          "secondsToWait": 1,
+          "exitable": false,
+          "_type": {
+            "_id": "PollingWaitNode",
+            "name": "Polling Wait Node",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "DONE",
+              "displayName": "Done"
+            }
+          ]
+        },
+        "57fc060f-e531-4afd-a546-4400abb09f5b": {
+          "_id": "57fc060f-e531-4afd-a546-4400abb09f5b",
+          "_rev": "802535156",
+          "_type": {
+            "_id": "OS_Auth_VisualCodeStopNode",
+            "name": "OneSpan Auth Hide Visual Code",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "outcome",
+              "displayName": "Outcome"
+            }
+          ]
+        },
+        "803b6639-2e27-4d42-890a-50d901ecd68c": {
+          "_id": "803b6639-2e27-4d42-890a-50d901ecd68c",
+          "_rev": "-1021281078",
+          "_type": {
+            "_id": "OS_Auth_VisualCodeStopNode",
+            "name": "OneSpan Auth Hide Visual Code",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "outcome",
+              "displayName": "Outcome"
+            }
+          ]
+        },
+        "a84546a5-5eba-43f1-8776-a1d895892123": {
+          "_id": "a84546a5-5eba-43f1-8776-a1d895892123",
+          "_rev": "-892480810",
+          "javascript": "https://gs.onespan.cloud/sc-resttofb/{tenantName}/{sessionID}/commands",
+          "placeholderMap": {
+
+          },
+          "requestHeaders": {
+            "Authorization": "Bearer 69f7a5fd-a57f-4408-9162-9760822e3380"
+          },
+          "_type": {
+            "_id": "OS_Sample_StoreCommandNode",
+            "name": "OneSpan Sample Store Command",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "Success",
+              "displayName": "Success"
+            },
+            {
+              "id": "Error",
+              "displayName": "Error"
+            }
+          ]
+        }
+      },
+      "innerNodes": {
+        "f215c692-e77d-4b79-b023-923c912ee49e": {
+          "_id": "f215c692-e77d-4b79-b023-923c912ee49e",
+          "_rev": "-430802309",
+          "CDDCHashHiddenValueId": "osstid_cddc_hash",
+          "CDDCJsonHiddenValueId": "osstid_cddc_json",
+          "pushCDDCJsAsCallback": true,
+          "_type": {
+            "_id": "OS_Risk_CDDCNode",
+            "name": "OneSpan Risk CDDC",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "outcome",
+              "displayName": "Outcome"
+            }
+          ]
+        },
+        "69f49eeb-3645-44fd-94b8-3291068d61c2": {
+          "_id": "69f49eeb-3645-44fd-94b8-3291068d61c2",
+          "_rev": "583388553",
+          "_type": {
+            "_id": "UsernameCollectorNode",
+            "name": "Username Collector",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "outcome",
+              "displayName": "Outcome"
+            }
+          ]
+        }
+      },
+      "scripts": {
+
+      },
+      "emailTemplates": {
+
+      },
+      "socialIdentityProviders": {
+
+      },
+      "themes": [
+
+      ],
+      "saml2Entities": {
+
+      },
+      "circlesOfTrust": {
+
+      }
+    }
+  }
+}
