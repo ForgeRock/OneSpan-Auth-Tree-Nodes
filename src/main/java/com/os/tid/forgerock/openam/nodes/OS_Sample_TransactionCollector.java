@@ -34,7 +34,7 @@ import java.util.*;
 
 @Node.Metadata( outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
                 configClass = OS_Sample_TransactionCollector.Config.class,
-                tags = {"OneSpan", "mfa", "utilities", "marketplace", "trustnetwork"})
+                tags = {"OneSpan", "multi-factor authentication", "marketplace", "trustnetwork"})
 public class OS_Sample_TransactionCollector extends SingleOutcomeNode {
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private final OS_Sample_TransactionCollector.Config config;

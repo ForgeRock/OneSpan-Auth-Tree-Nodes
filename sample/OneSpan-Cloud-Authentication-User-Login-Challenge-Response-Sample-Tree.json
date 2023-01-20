@@ -1,6 +1,6 @@
 {
   "trees":{
-"OneSpan-XUI-Cloud-Authentication-User-Login-Challenge-Response-Sample-Tree":  
+"OneSpan-Cloud-Authentication-User-Login-Challenge-Response-Sample-Tree":
  {
   "origin": "4188da2c4ac583f1fea3a6ff4eb25a45 -",
   "innernodes": {},
@@ -166,7 +166,7 @@
   "scripts": {},
   "emailTemplates": {},
   "tree": {
-    "_id": "OneSpan-XUI-Cloud-Authentication-User-Login-Challenge-Response-Sample-Tree",
+    "_id": "OneSpan-Cloud-Authentication-User-Login-Challenge-Response-Sample-Tree",
     "uiConfig": {},
     "entryNodeId": "3733fee7-1b04-422f-a295-d98ef17b2d50",
     "staticNodes": {

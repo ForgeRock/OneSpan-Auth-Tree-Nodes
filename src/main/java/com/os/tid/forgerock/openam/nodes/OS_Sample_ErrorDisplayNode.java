@@ -29,7 +29,7 @@ import java.util.List;
 
 @Node.Metadata( outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
                 configClass = OS_Sample_ErrorDisplayNode.Config.class,
-                tags = {"OneSpan", "mfa", "utilities", "marketplace", "trustnetwork"})
+                tags = {"OneSpan", "multi-factor authentication", "marketplace", "trustnetwork"})
 public class OS_Sample_ErrorDisplayNode extends SingleOutcomeNode {
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private static final String loggerPrefix = "[OneSpan Sample Error Display][Marketplace] ";

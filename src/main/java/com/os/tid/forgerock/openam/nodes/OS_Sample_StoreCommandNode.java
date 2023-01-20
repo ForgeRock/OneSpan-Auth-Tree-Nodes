@@ -40,7 +40,7 @@ import java.util.*;
 
 @Node.Metadata(outcomeProvider = OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_OutcomeProvider.class,
         configClass = OS_Sample_StoreCommandNode.Config.class,
-        tags = {"OneSpan", "mfa", "utilities", "marketplace", "trustnetwork"})
+        tags = {"OneSpan", "multi-factor authentication", "marketplace", "trustnetwork"})
 public class OS_Sample_StoreCommandNode implements Node {
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Sample_StoreCommandNode";
     private final Logger logger = LoggerFactory.getLogger("amAuth");
