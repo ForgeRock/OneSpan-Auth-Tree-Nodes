@@ -12,6 +12,9 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 public class RestUtils {
     private static final Logger logger = LoggerFactory.getLogger("amAuth");
@@ -61,13 +64,22 @@ public class RestUtils {
         }
     }
 
-    public static HttpEntity doPostJSONWithoutResponse(String url, String payload) throws IOException {
+    public static HttpEntity doPostJSONWithoutResponse(String url, String payload, Map<String, String> requestHeaders) throws IOException {
         logger.debug("RestUtils doPostJSON url: " + url);
         logger.debug("RestUtils doPostJSON payload: " + payload);
 
         URL client = new URL(url);
         HttpURLConnection conn = (HttpURLConnection) client.openConnection();
         conn.setRequestProperty("Content-Type", "application/json");
+        
+        if(requestHeaders != null && requestHeaders.size() > 0) {
+			for (Entry<String, String> entry : requestHeaders.entrySet()) {
+				String key = entry.getKey();
+				String value = entry.getValue();
+		        conn.setRequestProperty(key, value);
+			}
+        }
+        
         conn.setRequestMethod("POST");
         conn.setDoOutput(true);
         conn.setDoInput(true);

@@ -17,11 +17,13 @@ package com.os.tid.forgerock.openam.nodes;
 
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
+import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.utils.CollectionsUtils;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
+import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.slf4j.Logger;
@@ -34,10 +36,11 @@ import java.util.*;
 
 @Node.Metadata( outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
                 configClass = OS_Sample_AttributesCollector.Config.class,
-                tags = {"OneSpan", "mfa", "utilities"})
+                tags = {"OneSpan", "multi-factor authentication", "marketplace", "trustnetwork"})
 public class OS_Sample_AttributesCollector extends SingleOutcomeNode {
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private final OS_Sample_AttributesCollector.Config config;
+    private static final String loggerPrefix = "[OneSpan Sample Attributes Collector][Marketplace] ";
 
     /**
      * Configuration for the OS_Sample_AttributesCollector.
@@ -58,29 +61,38 @@ public class OS_Sample_AttributesCollector extends SingleOutcomeNode {
     }
 
     @Override
-    public Action process(TreeContext context){
-        logger.debug("OS_Sample_AttributesCollector started");
-        JsonValue sharedState = context.sharedState;
-
-        //1. if all attributes have value
-        Map<String, String> attrValueMap = new HashMap<>(); //attribute name in sharedState : callback value
-        config.attributes().forEach(attr -> attrValueMap.putIfAbsent(attr,null));
-
-        if (context.getCallbacks(NameCallback.class) != null && context.getCallbacks(NameCallback.class).size() >= 0) {
-            context.getCallbacks(NameCallback.class).forEach(nameCallback -> attrValueMap.put(nameCallback.getPrompt(), nameCallback.getName()));
-        }
-
-        if (!CollectionsUtils.hasAnyNullValues(attrValueMap)) {
-            //2. set shared state
-            attrValueMap.forEach((key, value) -> sharedState.put(key, value));
-            return goToNext()
-                    .replaceSharedState(sharedState)
-                    .build();
-        } else {
-            //3. return list of callbacks
-            List<Callback> callbackList = new ArrayList<>();
-            config.attributes().forEach(key -> callbackList.add(new NameCallback(key,key)));
-            return Action.send(callbackList).build();
-        }
+    public Action process(TreeContext context) throws NodeProcessException {
+    	try {
+	        logger.debug(loggerPrefix + "OS_Sample_AttributesCollector started");
+	        JsonValue sharedState = context.sharedState;
+	
+	        //1. if all attributes have value
+	        Map<String, String> attrValueMap = new HashMap<>(); //attribute name in sharedState : callback value
+	        config.attributes().forEach(attr -> attrValueMap.putIfAbsent(attr,null));
+	
+	        if (context.getCallbacks(NameCallback.class) != null && context.getCallbacks(NameCallback.class).size() >= 0) {
+	            context.getCallbacks(NameCallback.class).forEach(nameCallback -> attrValueMap.put(nameCallback.getPrompt(), nameCallback.getName()));
+	        }
+	
+	        if (!CollectionsUtils.hasAnyNullValues(attrValueMap)) {
+	            //2. set shared state
+	            attrValueMap.forEach((key, value) -> sharedState.put(key, value));
+	            return goToNext()
+	                    .replaceSharedState(sharedState)
+	                    .build();
+	        } else {
+	            //3. return list of callbacks
+	            List<Callback> callbackList = new ArrayList<>();
+	            config.attributes().forEach(key -> callbackList.add(new NameCallback(key,key)));
+	            return Action.send(callbackList).build();
+	        }
+    	}catch (Exception ex) {
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
+			ex.printStackTrace();
+			context.getStateFor(this).putShared("OS_Sample_AttributesCollector Exception", new Date() + ": " + ex.getMessage())
+									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Sample Attributes Collector: " + ex.getMessage());
+			throw new NodeProcessException(ex.getMessage());
+	    }
     }
 }

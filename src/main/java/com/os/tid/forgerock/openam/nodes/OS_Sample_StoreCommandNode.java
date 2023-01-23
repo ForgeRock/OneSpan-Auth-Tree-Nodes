@@ -21,6 +21,7 @@ import com.google.inject.assistedinject.Assisted;
 import com.iplanet.sso.SSOException;
 import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.models.HttpEntity;
+import com.os.tid.forgerock.openam.nodes.OS_Auth_UserLoginNode.UserLoginOutcome;
 import com.os.tid.forgerock.openam.utils.RestUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
 import com.sun.identity.sm.SMSException;
@@ -39,12 +40,13 @@ import java.util.*;
 
 @Node.Metadata(outcomeProvider = OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_OutcomeProvider.class,
         configClass = OS_Sample_StoreCommandNode.Config.class,
-        tags = {"OneSpan", "mfa", "utilities"})
+        tags = {"OneSpan", "multi-factor authentication", "marketplace", "trustnetwork"})
 public class OS_Sample_StoreCommandNode implements Node {
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Sample_StoreCommandNode";
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private final OS_Sample_StoreCommandNode.Config config;
     private final OSConfigurationsService serviceConfig;
+    private static final String loggerPrefix = "[OneSpan Sample Store Command][Marketplace] ";
 
     /**
      * Configuration for the OS_Sample_StoreCommandNode.
@@ -65,6 +67,16 @@ public class OS_Sample_StoreCommandNode implements Node {
         default Map<String, String> placeholderMap() {
             return Collections.emptyMap();
         }
+        
+        
+        /**
+        *
+        */
+       @Attribute(order = 300)
+       default Map<String, String> requestHeaders() {
+           return Collections.emptyMap();
+       }
+        
     }
 
     @Inject
@@ -78,16 +90,16 @@ public class OS_Sample_StoreCommandNode implements Node {
     }
 
     @Override
-    public Action process(TreeContext context) {
-        logger.debug("OSTID_DEMO_BackCommandsNode started");
-        JsonValue sharedState = context.sharedState;
-        String tenantName = serviceConfig.tenantName().toLowerCase();
-
-        JsonValue ostid_sessionid = sharedState.get(Constants.OSTID_SESSIONID);
-        JsonValue ostid_irm_response = sharedState.get(Constants.OSTID_IRM_RESPONSE);
-        JsonValue ostid_command = sharedState.get(Constants.OSTID_COMMAND);
-        String requestId = sharedState.get(Constants.OSTID_REQUEST_ID).isString() ? sharedState.get(Constants.OSTID_REQUEST_ID).asString() : ""; //temporary, the request ID is not mandatory
-        try {
+    public Action process(TreeContext context){
+    	try {
+	        logger.debug(loggerPrefix + "OSTID_DEMO_BackCommandsNode started");
+	        JsonValue sharedState = context.sharedState;
+	        String tenantName = serviceConfig.tenantName().toLowerCase();
+	
+	        JsonValue ostid_sessionid = sharedState.get(Constants.OSTID_SESSIONID);
+	        JsonValue ostid_irm_response = sharedState.get(Constants.OSTID_IRM_RESPONSE);
+	        JsonValue ostid_command = sharedState.get(Constants.OSTID_COMMAND);
+	        String requestId = sharedState.get(Constants.OSTID_REQUEST_ID).isString() ? sharedState.get(Constants.OSTID_REQUEST_ID).asString() : ""; //temporary, the request ID is not mandatory
             //build payload
             String demo_cmd_payload = String.format(Constants.OSTID_JSON_DEMO_COMMANDS, ostid_command.asString(), ostid_irm_response.asInteger() + "", ostid_sessionid.asString());
 
@@ -109,7 +121,7 @@ public class OS_Sample_StoreCommandNode implements Node {
             StrSubstitutor sub = new StrSubstitutor(placeholders, "{", "}");
             String commandURLFinal = sub.replace(commandURL);
 
-            HttpEntity httpEntity = RestUtils.doPostJSONWithoutResponse(commandURLFinal, demo_cmd_payload);
+            HttpEntity httpEntity = RestUtils.doPostJSONWithoutResponse(commandURLFinal, demo_cmd_payload,config.requestHeaders());
 
             if (httpEntity.isSuccess()) {
                 return goTo(OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome.Success)
@@ -118,13 +130,14 @@ public class OS_Sample_StoreCommandNode implements Node {
             } else {
                 throw new NodeProcessException(httpEntity.getResponseJSON().toJSONString());
             }
-        } catch (Exception e) {
-            logger.debug("OSTID_DEMO_BackCommandsNode exception: " + ExceptionUtils.getStackTrace(e));
-            sharedState.put(Constants.OSTID_ERROR_MESSAGE, "Fail to Store Command in backoffice!");
-            return goTo(OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome.Error)
-                    .replaceSharedState(sharedState)
-                    .build();
-        }
+    	}catch (Exception ex) {
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
+			ex.printStackTrace();
+			context.getStateFor(this).putShared("OSTID_DEMO_BackCommandsNode Exception", new Date() + ": " + ex.getMessage())
+									 .putShared(Constants.OSTID_ERROR_MESSAGE, "Fail to Store Command in backoffice: " + ex.getMessage());
+			return goTo(OSTID_DEMO_StoreCommandNode_Outcome.Error).build();
+	    }
     }
 
     private Action.ActionBuilder goTo(OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome outcome) {

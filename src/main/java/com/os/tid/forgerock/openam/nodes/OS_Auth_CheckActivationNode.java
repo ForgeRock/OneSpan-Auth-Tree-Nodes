@@ -23,6 +23,7 @@ import com.google.inject.assistedinject.Assisted;
 import com.iplanet.sso.SSOException;
 import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.models.HttpEntity;
+import com.os.tid.forgerock.openam.nodes.OS_Auth_ActivateDeviceNode.OSTIDActivateDeviceOutcome;
 import com.os.tid.forgerock.openam.utils.DateUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
@@ -35,6 +36,7 @@ import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Date;
 import java.util.List;
 import java.util.ResourceBundle;
 
@@ -44,11 +46,12 @@ import java.util.ResourceBundle;
  */
 @Node.Metadata( outcomeProvider = OS_Auth_CheckActivationNode.OSTIDCheckActivateOutcomeProvider.class,
                 configClass = OS_Auth_CheckActivationNode.Config.class,
-                tags = {"OneSpan", "basic authentication", "mfa", "risk"})
+                tags = {"OneSpan", "basic-authentication", "multi-factor authentication", "marketplace", "trustnetwork"})
 public class OS_Auth_CheckActivationNode implements Node {
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_CheckActivationNode";
     private final OSConfigurationsService serviceConfig;
+    private static final String loggerPrefix = "[OneSpan Auth Check Activation][Marketplace] ";
 
     /**
      * Configuration for the OS Auth Check Activate Node.
@@ -67,37 +70,36 @@ public class OS_Auth_CheckActivationNode implements Node {
 
     @Override
     public Action process(TreeContext context) {
-        logger.debug("OS_Auth_CheckActivationNode started");
-        JsonValue sharedState = context.sharedState;
-        String tenantName = serviceConfig.tenantName().toLowerCase();
-        String environment = serviceConfig.environment().name();
-
-        //1. go to next
-        JsonValue ostid_cronto_status = sharedState.get(Constants.OSTID_CRONTO_STATUS);
-        if(ostid_cronto_status.isString()){
-            ActivationStatusOutcome ostid_cronto_status_enum = ActivationStatusOutcome.valueOf(ostid_cronto_status.asString());
-            sharedState.remove(Constants.OSTID_CRONTO_STATUS);
-            return goTo(ostid_cronto_status_enum)
-                    .replaceSharedState(sharedState)
-                    .build();
-        }
-
-        //2. call API and send script to remove visual code
-        JsonValue usernameJsonValue = sharedState.get(sharedState.get(Constants.OSTID_USERNAME_IN_SHARED_STATE).asString());
-        JsonValue eventExpiryJsonValue = sharedState.get(Constants.OSTID_EVENT_EXPIRY_DATE);
-        ActivationStatusOutcome activationStatusEnum;
-        if (!usernameJsonValue.isString() || usernameJsonValue.asString().isEmpty()) {
-            activationStatusEnum = ActivationStatusOutcome.error;
-            sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Activation: username is missing!");
-        } else if(DateUtils.hasExpired(eventExpiryJsonValue.asString())){
-            activationStatusEnum = ActivationStatusOutcome.timeout;
-            sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Activation: Your session has timed out!");
-        } else {
-            String checkActivationJSON = String.format(Constants.OSTID_JSON_CHECK_ACTIVATION,
-                    usernameJsonValue.asString(),                            //param1
-                    Constants.OSTID_DEFAULT_CHECK_ACTIVATION_TIMEOUT         //param2
-            );
-            try {
+    	try {
+	        logger.debug(loggerPrefix + "OS_Auth_CheckActivationNode started");
+	        JsonValue sharedState = context.sharedState;
+	        String tenantName = serviceConfig.tenantName().toLowerCase();
+	        String environment = serviceConfig.environment().name();
+	
+	        //1. go to next
+	        JsonValue ostid_cronto_status = sharedState.get(Constants.OSTID_CRONTO_STATUS);
+	        if(ostid_cronto_status.isString()){
+	            ActivationStatusOutcome ostid_cronto_status_enum = ActivationStatusOutcome.valueOf(ostid_cronto_status.asString());
+	            sharedState.remove(Constants.OSTID_CRONTO_STATUS);
+	            return goTo(ostid_cronto_status_enum)
+	                    .replaceSharedState(sharedState)
+	                    .build();
+	        }
+	
+	        //2. call API and send script to remove visual code
+	        JsonValue usernameJsonValue = sharedState.get(sharedState.get(Constants.OSTID_USERNAME_IN_SHARED_STATE).asString());
+	        JsonValue eventExpiryJsonValue = sharedState.get(Constants.OSTID_EVENT_EXPIRY_DATE);
+	        ActivationStatusOutcome activationStatusEnum;
+	        if (!usernameJsonValue.isString() || usernameJsonValue.asString().isEmpty()) {
+	            throw new NodeProcessException("Username is missing!");
+	        } else if(DateUtils.hasExpired(eventExpiryJsonValue.asString())){
+	            activationStatusEnum = ActivationStatusOutcome.timeout;
+	            sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Activation: Your session has timed out!");
+	        } else {
+	            String checkActivationJSON = String.format(Constants.OSTID_JSON_CHECK_ACTIVATION,
+	                    usernameJsonValue.asString(),                            //param1
+	                    Constants.OSTID_DEFAULT_CHECK_ACTIVATION_TIMEOUT         //param2
+	            );
                 HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName,environment) + Constants.OSTID_API_CHECK_ACTIVATION, checkActivationJSON);
                 JSONObject checkActivationResponseJSON = httpEntity.getResponseJSON();
                 if(httpEntity.isSuccess()){
@@ -107,33 +109,34 @@ public class OS_Auth_CheckActivationNode implements Node {
                     String message = checkActivationResponseJSON.getString("message");
                     if(message == null){
                         throw new NodeProcessException("Fail to parse response: " + JSON.toJSONString(checkActivationResponseJSON));
+                    }else {
+                        throw new NodeProcessException(message);
                     }
-                    activationStatusEnum = ActivationStatusOutcome.error;
-                    sharedState.put(Constants.OSTID_ERROR_MESSAGE,message);
                 }
-            } catch (Exception e) {
-                logger.debug("OS_Auth_CheckActivationNode exception: " + e.getMessage());
-                activationStatusEnum = ActivationStatusOutcome.error;
-                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Activation: Fail to check user's activation status!");
-            }
-        }
-
-        switch (activationStatusEnum) {
-            case pending:
-                return goTo(ActivationStatusOutcome.pending).build();
-            case activated:
-                return goTo(ActivationStatusOutcome.activated).build();
-            case error:
-                return goTo(ActivationStatusOutcome.error).replaceSharedState(sharedState).build();
-            case timeout:
-                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Activation: Your session has timed out!");
-                return goTo(ActivationStatusOutcome.timeout).replaceSharedState(sharedState).build();
-            case unknown:
-                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Activation: Status Unknown!");
-                return goTo(ActivationStatusOutcome.unknown).replaceSharedState(sharedState).build();
-            default:
-                return goTo(ActivationStatusOutcome.pending).build();
-        }
+	        }
+	
+	        switch (activationStatusEnum) {
+	            case pending:
+	                return goTo(ActivationStatusOutcome.pending).build();
+	            case activated:
+	                return goTo(ActivationStatusOutcome.activated).build();
+	            case timeout:
+	                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Activation: Your session has timed out!");
+	                return goTo(ActivationStatusOutcome.timeout).replaceSharedState(sharedState).build();
+	            case unknown:
+	                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Activation: Status Unknown!");
+	                return goTo(ActivationStatusOutcome.unknown).replaceSharedState(sharedState).build();
+	            default:
+	                return goTo(ActivationStatusOutcome.pending).build();
+	        }
+    	}catch (Exception ex) {
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
+			ex.printStackTrace();
+			context.getStateFor(this).putShared("OS_Auth_CheckActivationNode Exception", new Date() + ": " + ex.getMessage())
+									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Check Activation: " + ex.getMessage());
+			return goTo(ActivationStatusOutcome.error).build();
+	    }
     }
 
     private Action.ActionBuilder goTo(ActivationStatusOutcome outcome) {

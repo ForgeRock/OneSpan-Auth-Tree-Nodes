@@ -45,7 +45,6 @@ public class OS_Auth_ValidateTransactionNodeTest {
     @BeforeMethod
     public void before() throws SMSException, SSOException {
         initMocks(this);
-        given(configurationsService.tenantNameToLowerCase()).willReturn(TestData.TENANT_NAME.toLowerCase());
         given(configurationsService.environment()).willReturn(TestData.ENVIRONMENT);
         given(configurationsService.applicationRef()).willReturn(TestData.APPLICATION_REF);
 

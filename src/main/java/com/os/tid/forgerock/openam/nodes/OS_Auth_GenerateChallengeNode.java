@@ -25,6 +25,7 @@ import com.iplanet.sso.SSOException;
 import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.models.GenerateChallengeOutput;
 import com.os.tid.forgerock.openam.models.HttpEntity;
+import com.os.tid.forgerock.openam.nodes.OS_Auth_CheckActivationNode.ActivationStatusOutcome;
 import com.os.tid.forgerock.openam.utils.RestUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
 import com.sun.identity.sm.RequiredValueValidator;
@@ -47,12 +48,13 @@ import java.util.stream.Stream;
  */
 @Node.Metadata( outcomeProvider = OS_Auth_GenerateChallengeNode.OSTIDGenerateChallengeOutcomeProvider.class,
                 configClass = OS_Auth_GenerateChallengeNode.Config.class,
-                tags = {"OneSpan", "mfa", "basic authentication"})
+                tags = {"OneSpan", "multi-factor authentication", "basic-authentication", "marketplace", "trustnetwork"})
 public class OS_Auth_GenerateChallengeNode implements Node {
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_GenerateChallengeNode";
     private final OSConfigurationsService serviceConfig;
     private final OS_Auth_GenerateChallengeNode.Config config;
+    private static final String loggerPrefix = "[OneSpan Auth Generate Challenge][Marketplace] ";
 
     /**
      * Configuration for the OS Auth Generate Challenge Node.
@@ -94,17 +96,17 @@ public class OS_Auth_GenerateChallengeNode implements Node {
 
     @Override
     public Action process(TreeContext context) {
-        logger.debug("OS_Auth_GenerateChallengeNode started");
-        JsonValue sharedState = context.sharedState;
-        String tenantName = serviceConfig.tenantName().toLowerCase();
-        String environment = serviceConfig.environment().name();
-        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
-
-        String generateChallengeJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_GENERATE_CHALLENGE,
-                config.length(),                                    //param1
-                config.checkDigit()                                 //param2
-        );
-        try {
+    	try {
+	        logger.debug(loggerPrefix + "OS_Auth_GenerateChallengeNode started");
+	        JsonValue sharedState = context.sharedState;
+	        String tenantName = serviceConfig.tenantName().toLowerCase();
+	        String environment = serviceConfig.environment().name();
+	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
+	
+	        String generateChallengeJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_GENERATE_CHALLENGE,
+	                config.length(),                                    //param1
+	                config.checkDigit()                                 //param2
+	        );
             String url = StringUtils.getAPIEndpoint(tenantName, environment) + String.format(Constants.OSTID_API_ADAPTIVE_GENERATE_CHALLENGE, usernameJsonValue.asString(), tenantName);
             HttpEntity httpEntity = RestUtils.doPostJSON(url, generateChallengeJSON);
             JSONObject responseJSON = httpEntity.getResponseJSON();
@@ -128,22 +130,22 @@ public class OS_Auth_GenerateChallengeNode implements Node {
                 } else {
                     JSONArray validationErrors = responseJSON.getJSONArray("validationErrors");
                     if(validationErrors != null && validationErrors.size() > 0 && validationErrors.getJSONObject(0).getString("message") != null){
-                        sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithValidation(message,log_correction_id,validationErrors.getJSONObject(0).getString("message"),requestJSON));         //error return from IAA server
+                    	String errorMsgNoRetCodeWithValidation = StringUtils.getErrorMsgNoRetCodeWithValidation(message,log_correction_id,validationErrors.getJSONObject(0).getString("message"),requestJSON);
+                        throw new NodeProcessException(errorMsgNoRetCodeWithValidation);
                     }else{
-                        sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithoutValidation(message,log_correction_id,requestJSON));         //error return from IAA server
+                    	String errorMsgNoRetCodeWithoutValidation = StringUtils.getErrorMsgNoRetCodeWithoutValidation(message,log_correction_id,requestJSON);
+                        throw new NodeProcessException(errorMsgNoRetCodeWithoutValidation);
                     }
-                    return goTo(OS_Auth_GenerateChallengeNode.GenerateChallengeOutcome.error)
-                            .replaceSharedState(sharedState)
-                            .build();
                 }
             }
-        } catch (IOException | NodeProcessException e) {
-            logger.debug("OS_Auth_GenerateChallengeNode exception: " + e.getMessage());
-            sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan OCA Generate Challenge process: " + e.getMessage());     //general error msg
-            return goTo(OS_Auth_GenerateChallengeNode.GenerateChallengeOutcome.error)
-                    .replaceSharedState(sharedState)
-                    .build();
-        }
+    	}catch (Exception ex) {
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
+			ex.printStackTrace();
+			context.getStateFor(this).putShared("OS_Auth_GenerateChallengeNode Exception", new Date() + ": " + ex.getMessage())
+									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan OCA Generate Challenge: " + ex.getMessage());
+			return goTo(GenerateChallengeOutcome.error).build();
+	    }
     }
 
     private Action.ActionBuilder goTo(OS_Auth_GenerateChallengeNode.GenerateChallengeOutcome outcome) {

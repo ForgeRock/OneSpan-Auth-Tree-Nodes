@@ -25,6 +25,7 @@ import com.iplanet.sso.SSOException;
 import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.models.AddDeviceOutput;
 import com.os.tid.forgerock.openam.models.HttpEntity;
+import com.os.tid.forgerock.openam.nodes.OS_Auth_ActivateDeviceNode.OSTIDActivateDeviceOutcome;
 import com.os.tid.forgerock.openam.utils.CollectionsUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
@@ -38,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.ResourceBundle;
@@ -49,11 +51,12 @@ import java.util.stream.Stream;
  */
 @Node.Metadata( outcomeProvider = OS_Auth_AddDeviceNode.OSTIDAddDeviceOutcomeProvider.class,
                 configClass = OS_Auth_AddDeviceNode.Config.class,
-                tags = {"OneSpan", "mfa", "basic authentication"})
+                tags = {"OneSpan", "multi-factor authentication", "basic-authentication", "marketplace", "trustnetwork"})
 public class OS_Auth_AddDeviceNode implements Node {
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_AddDeviceNode";
     private final OSConfigurationsService serviceConfig;
+    private static final String loggerPrefix = "[OneSpan Auth Add Device][Marketplace] ";
 
     /**
      * Configuration for the OS Auth Add Device Node.
@@ -72,70 +75,65 @@ public class OS_Auth_AddDeviceNode implements Node {
 
     @Override
     public Action process(TreeContext context) {
-        logger.debug("OS_Auth_AddDeviceNode started");
-        JsonValue sharedState = context.sharedState;
-        String tenantName = serviceConfig.tenantName().toLowerCase();
-        String environment = serviceConfig.environment().name();
-
-        JsonValue registration_id = sharedState.get(Constants.OSTID_REGISTRATION_ID);
-        JsonValue device_code = sharedState.get(Constants.OSTID_DEVICE_CODE);
-
-        if(CollectionsUtils.hasAnyNullValues(ImmutableList.of(
-                registration_id,
-                device_code
-        ))){
-            logger.debug("OS_Auth_AddDeviceNode has missing data!");
-            sharedState.put(Constants.OSTID_ERROR_MESSAGE,"Oopts, there are missing data for OneSpan OCA Add Device call!");
-            return goTo(OS_Auth_AddDeviceNode.AddDeviceOutcome.error)
-                    .replaceSharedState(sharedState)
-                    .build();
-        }else{
-            String deviceCodeJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_ADD_DEVICE,
-                    device_code.asString()                                //param1
-            );
-
-            try {
-                String url = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_ADAPTIVE_ADD_DEVICE,registration_id.asString());
-                HttpEntity httpEntity = RestUtils.doPostJSON(url, deviceCodeJSON);
-                JSONObject responseJSON = httpEntity.getResponseJSON();
-                if(httpEntity.isSuccess()) {
-                    AddDeviceOutput addDeviceOutput = JSON.toJavaObject(responseJSON, AddDeviceOutput.class);
-                    sharedState.put(Constants.OSTID_CRONTO_MSG, addDeviceOutput.getActivationMessage2());
-                    sharedState.put(Constants.OSTID_ACTIVATION_MESSAGE2, addDeviceOutput.getActivationMessage2());
-
-                    return goTo(AddDeviceOutcome.success)
-                            .replaceSharedState(sharedState)
-                            .build();
-                }else{
-                    String error = responseJSON.getString("error");
-                    String message = responseJSON.getString("message");
-                    String requestJSON = "POST "+ url + " : " + deviceCodeJSON;
-
-                    String log_correction_id = httpEntity.getLog_correlation_id();
-
-                    if(Stream.of(message, error, log_correction_id).anyMatch(Objects::isNull)){
-                        throw new NodeProcessException(JSON.toJSONString(responseJSON));
-                    }else {
-                        JSONArray validationErrors = responseJSON.getJSONArray("validationErrors");
-                        if(validationErrors != null && validationErrors.size() > 0 && validationErrors.getJSONObject(0).getString("message") != null){
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithValidation(message,log_correction_id,validationErrors.getJSONObject(0).getString("message"),requestJSON));         //error return from IAA server
-                        }else{
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithoutValidation(message,log_correction_id,requestJSON));         //error return from IAA server
-                        }
-                        return goTo(AddDeviceOutcome.error)
-                                .replaceSharedState(sharedState)
-                                .build();
-                    }
-                }
-            } catch (IOException | NodeProcessException e) {
-                logger.debug("OS_Auth_AddDeviceNode exception: " + e.getMessage());
-                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan OCA Add Device process: " + e.getMessage());     //general error msg
-                return goTo(AddDeviceOutcome.error)
-                        .replaceSharedState(sharedState)
-                        .build();
-            }
-
-        }
+    	try {
+	        logger.debug(loggerPrefix + "OS_Auth_AddDeviceNode started");
+	        JsonValue sharedState = context.sharedState;
+	        String tenantName = serviceConfig.tenantName().toLowerCase();
+	        String environment = serviceConfig.environment().name();
+	
+	        JsonValue registration_id = sharedState.get(Constants.OSTID_REGISTRATION_ID);
+	        JsonValue device_code = sharedState.get(Constants.OSTID_DEVICE_CODE);
+	
+	        if(CollectionsUtils.hasAnyNullValues(ImmutableList.of(
+	                registration_id,
+	                device_code
+	        ))){
+	            throw new NodeProcessException("OS_Auth_AddDeviceNode has missing data!");
+	        }else{
+	            String deviceCodeJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_ADD_DEVICE,
+	                    device_code.asString()                                //param1
+	            );
+	
+	            String url = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_ADAPTIVE_ADD_DEVICE,registration_id.asString());
+	            HttpEntity httpEntity = RestUtils.doPostJSON(url, deviceCodeJSON);
+	            JSONObject responseJSON = httpEntity.getResponseJSON();
+	            if(httpEntity.isSuccess()) {
+	                AddDeviceOutput addDeviceOutput = JSON.toJavaObject(responseJSON, AddDeviceOutput.class);
+	                sharedState.put(Constants.OSTID_CRONTO_MSG, addDeviceOutput.getActivationMessage2());
+	                sharedState.put(Constants.OSTID_ACTIVATION_MESSAGE2, addDeviceOutput.getActivationMessage2());
+	
+	                return goTo(AddDeviceOutcome.success)
+	                        .replaceSharedState(sharedState)
+	                        .build();
+	            }else{
+	                String error = responseJSON.getString("error");
+	                String message = responseJSON.getString("message");
+	                String requestJSON = "POST "+ url + " : " + deviceCodeJSON;
+	
+	                String log_correction_id = httpEntity.getLog_correlation_id();
+	
+	                if(Stream.of(message, error, log_correction_id).anyMatch(Objects::isNull)){
+	                    throw new NodeProcessException(JSON.toJSONString(responseJSON));
+	                }else {
+	                    JSONArray validationErrors = responseJSON.getJSONArray("validationErrors");
+	                    if(validationErrors != null && validationErrors.size() > 0 && validationErrors.getJSONObject(0).getString("message") != null){
+	                    	String errorMsgNoRetCodeWithValidation = StringUtils.getErrorMsgNoRetCodeWithValidation(message,log_correction_id,validationErrors.getJSONObject(0).getString("message"),requestJSON);
+	                        throw new NodeProcessException(errorMsgNoRetCodeWithValidation);
+	                    }else{
+	                    	String errorMsgNoRetCodeWithoutValidation = StringUtils.getErrorMsgNoRetCodeWithoutValidation(message,log_correction_id,requestJSON);
+	                        throw new NodeProcessException(errorMsgNoRetCodeWithoutValidation);
+	                    }
+	                }
+	            }
+	        }
+    	}catch (Exception ex) {
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
+			ex.printStackTrace();
+			context.getStateFor(this).putShared("OS_Auth_AddDeviceNode Exception", new Date() + ": " + ex.getMessage())
+									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan OCA Add Device process " + ex.getMessage());
+			return goTo(AddDeviceOutcome.error).build();
+	    }
     }
 
     private Action.ActionBuilder goTo(AddDeviceOutcome outcome) {

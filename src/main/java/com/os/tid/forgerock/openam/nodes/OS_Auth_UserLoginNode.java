@@ -23,6 +23,7 @@ import com.google.inject.assistedinject.Assisted;
 import com.iplanet.sso.SSOException;
 import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.models.HttpEntity;
+import com.os.tid.forgerock.openam.nodes.OS_Auth_ActivateDeviceNode.OSTIDActivateDeviceOutcome;
 import com.os.tid.forgerock.openam.models.GeneralResponseOutput;
 import com.os.tid.forgerock.openam.utils.CollectionsUtils;
 import com.os.tid.forgerock.openam.utils.DateUtils;
@@ -46,14 +47,15 @@ import java.util.stream.Stream;
 /**
  * This node invokes the User Login API, which validates and processes the login request.
  */
-@Node.Metadata( outcomeProvider = OS_Auth_UserLoginNode.OSTID_Adaptive_UserLoginNode3OutcomeProvider.class,
+@Node.Metadata( outcomeProvider = OS_Auth_UserLoginNode.OSTID_Adaptive_UserLoginNodeOutcomeProvider.class,
                 configClass = OS_Auth_UserLoginNode.Config.class,
-                tags = {"OneSpan", "basic authentication", "mfa", "risk"})
+                tags = {"OneSpan", "basic-authentication", "multi-factor authentication", "marketplace", "trustnetwork"})
 public class OS_Auth_UserLoginNode implements Node {
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_UserLoginNode";
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private final OS_Auth_UserLoginNode.Config config;
     private final OSConfigurationsService serviceConfig;
+    private static final String loggerPrefix = "[OneSpan Auth User Login][Marketplace] ";
 
     /**
      * Configuration for the OS Auth User Login Node.
@@ -136,42 +138,40 @@ public class OS_Auth_UserLoginNode implements Node {
 
     @Override
     public Action process(TreeContext context) {
-        logger.debug("OS_Auth_UserLoginNode started");
-        JsonValue sharedState = context.sharedState;
-        JsonValue transientState = context.transientState;
-        String tenantName = serviceConfig.tenantName().toLowerCase();
-        String environment = serviceConfig.environment().name();
-
-        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
-        JsonValue cddcJsonJsonValue = sharedState.get(Constants.OSTID_CDDC_JSON);
-        JsonValue cddcHashJsonValue = sharedState.get(Constants.OSTID_CDDC_HASH);
-        JsonValue cddcIpJsonValue = sharedState.get(Constants.OSTID_CDDC_IP);
-        sharedState.put(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
-
-        boolean missOptionalAttr = false;
-        StringBuilder optionalAttributesStringBuilder = new StringBuilder(1000);
-        Map<String, String> optionalAttributesMap = config.optionalAttributes();
-        for (Map.Entry<String, String> entrySet : optionalAttributesMap.entrySet()) {
-            JsonValue jsonValue = sharedState.get(entrySet.getValue());
-            if (jsonValue.isString()) {
-                optionalAttributesStringBuilder.append("\"").append(entrySet.getKey()).append("\":\"").append(jsonValue.asString()).append("\",");
-            } else {
-                missOptionalAttr = true;
-            }
-        }
-
-        if (usernameJsonValue.isNull() || missOptionalAttr || (config.objectType() == ObjectType.AdaptiveLoginInput && CollectionsUtils.hasAnyNullValues(ImmutableList.of(
-                cddcJsonJsonValue,
-                cddcHashJsonValue,
-                cddcIpJsonValue
-        )))
-        ) {  //missing data
-            logger.debug("OS_Auth_UserLoginNode exception: Oopts, there are missing data for OneSpan Auth User Login Process!");
-            sharedState.put(Constants.OSTID_ERROR_MESSAGE, "Oopts, there are missing data for OneSpan Auth User Login Process!");
-            return goTo(UserLoginOutcome.Error)
-                    .replaceSharedState(sharedState)
-                    .build();
-        } else {
+    	try {
+	        logger.debug(loggerPrefix + "OS_Auth_UserLoginNode started");
+	        JsonValue sharedState = context.sharedState;
+	        JsonValue transientState = context.transientState;
+	        String tenantName = serviceConfig.tenantName().toLowerCase();
+	        String environment = serviceConfig.environment().name();
+	
+	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
+	        JsonValue cddcJsonJsonValue = sharedState.get(Constants.OSTID_CDDC_JSON);
+	        JsonValue cddcHashJsonValue = sharedState.get(Constants.OSTID_CDDC_HASH);
+	        JsonValue cddcIpJsonValue = sharedState.get(Constants.OSTID_CDDC_IP);
+	        sharedState.put(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
+	
+	        boolean missOptionalAttr = false;
+	        StringBuilder optionalAttributesStringBuilder = new StringBuilder(1000);
+	        Map<String, String> optionalAttributesMap = config.optionalAttributes();
+	        for (Map.Entry<String, String> entrySet : optionalAttributesMap.entrySet()) {
+	            JsonValue jsonValue = sharedState.get(entrySet.getValue());
+	            if (jsonValue.isString()) {
+	                optionalAttributesStringBuilder.append("\"").append(entrySet.getKey()).append("\":\"").append(jsonValue.asString()).append("\",");
+	            } else {
+	                missOptionalAttr = true;
+	            }
+	        }
+	
+	        if (usernameJsonValue.isNull() || missOptionalAttr || (config.objectType() == ObjectType.AdaptiveLoginInput && CollectionsUtils.hasAnyNullValues(ImmutableList.of(
+	                cddcJsonJsonValue,
+	                cddcHashJsonValue,
+	                cddcIpJsonValue
+	        )))
+	        ) {  //missing data
+	            throw new NodeProcessException("Oopts, there are missing data for OneSpan Auth User Login Process!");
+	        } 
+	        
             String APIUrl = String.format(Constants.OSTID_API_ADAPTIVE_USER_LOGIN, usernameJsonValue.asString(), tenantName);
             /**
              * 1.objectType
@@ -245,92 +245,90 @@ public class OS_Auth_UserLoginNode implements Node {
                     optionalAttributesStringBuilder.toString(),                     //param7
                     fido                                                            //param8
             );
-            logger.debug("OS_Auth_UserLoginNode user login JSON:" + userLoginJSON);
+            logger.debug(loggerPrefix + "OS_Auth_UserLoginNode user login JSON:" + userLoginJSON);
 
-            try {
-                HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, userLoginJSON);
-                JSONObject responseJSON = httpEntity.getResponseJSON();
+            HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, userLoginJSON);
+            JSONObject responseJSON = httpEntity.getResponseJSON();
 
-                if (httpEntity.isSuccess()) {
-                    GeneralResponseOutput loginOutput = JSON.toJavaObject(responseJSON, GeneralResponseOutput.class);
-                    int irmResponse = loginOutput.getRiskResponseCode();
-                    sharedState.put(Constants.OSTID_IRM_RESPONSE,irmResponse);
-                    sharedState.put(Constants.OSTID_SESSIONID,sessionID);
-                    sharedState.put(Constants.OSTID_REQUEST_ID, org.apache.commons.lang.StringUtils.isEmpty(loginOutput.getRequestID())? requestID : loginOutput.getRequestID());
-                    sharedState.put(Constants.OSTID_COMMAND,loginOutput.getRequestMessage());
-                    sharedState.put(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.timeout()));
+            if (httpEntity.isSuccess()) {
+                GeneralResponseOutput loginOutput = JSON.toJavaObject(responseJSON, GeneralResponseOutput.class);
+                int irmResponse = loginOutput.getRiskResponseCode();
+                sharedState.put(Constants.OSTID_IRM_RESPONSE,irmResponse);
+                sharedState.put(Constants.OSTID_SESSIONID,sessionID);
+                sharedState.put(Constants.OSTID_REQUEST_ID, org.apache.commons.lang.StringUtils.isEmpty(loginOutput.getRequestID())? requestID : loginOutput.getRequestID());
+                sharedState.put(Constants.OSTID_COMMAND,loginOutput.getRequestMessage());
+                sharedState.put(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.timeout()));
 
-                    UserLoginOutcome userLoginOutcome = UserLoginOutcome.Error;
+                UserLoginOutcome userLoginOutcome = UserLoginOutcome.Error;
 
-                    if(irmResponse > -1) {
-                        sharedState.put(Constants.OSTID_IRM_RESPONSE, irmResponse);
-                        if(irmResponse == 0){
-                            userLoginOutcome = UserLoginOutcome.Accept;
-                        }else if(irmResponse == 1){
-                            userLoginOutcome = UserLoginOutcome.Decline;
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth User Login: Request been declined!");
-                        }else if(Constants.OSTID_API_CHALLANGE_MAP.containsKey(irmResponse)){
-                            userLoginOutcome = UserLoginOutcome.StepUp;
-                        }
-                        switch (config.visualCodeMessageOptions()) {
-                            case sessionID:
-                                sharedState.put(Constants.OSTID_CRONTO_MSG, StringUtils.stringToHex(sessionID));
-                                break;
-                            case requestID:
-                                String crontoMsg = StringUtils.stringToHex(loginOutput.getRequestID() == null ? "" : loginOutput.getRequestID());
-                                sharedState.put(Constants.OSTID_CRONTO_MSG, crontoMsg);
-                                break;
-                        }
-                    }else{
-                        switch (UserLoginSessionStatus.valueOf(loginOutput.getSessionStatus())){
-                            case accepted:
-                                userLoginOutcome = UserLoginOutcome.Accept;
-                                break;
-                            case failed:
-                                userLoginOutcome = UserLoginOutcome.Error;
-                                sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth User Login: User failed to authenticate!");
-                                break;
-                            case refused:
-                                userLoginOutcome = UserLoginOutcome.Decline;
-                                sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth User Login: User declined to authenticate!");
-                                break;
-                        }
+                if(irmResponse > -1) {
+                    sharedState.put(Constants.OSTID_IRM_RESPONSE, irmResponse);
+                    if(irmResponse == 0){
+                        userLoginOutcome = UserLoginOutcome.Accept;
+                    }else if(irmResponse == 1){
+                        userLoginOutcome = UserLoginOutcome.Decline;
+                        sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth User Login: Request been declined!");
+                    }else if(Constants.OSTID_API_CHALLANGE_MAP.containsKey(irmResponse)){
+                        userLoginOutcome = UserLoginOutcome.StepUp;
                     }
-
-                    logger.debug("OS_Auth_UserLoginNode user login outcome:" + userLoginOutcome.name());
-                    return goTo(userLoginOutcome)
-                            .replaceSharedState(sharedState)
-                            .build();
-                } else {
-                    String log_correction_id = httpEntity.getLog_correlation_id();
-                    String message = responseJSON.getString("message");
-                    String requestJSON = "POST " + StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl + " : " + userLoginJSON;
-
-                    if (Stream.of(log_correction_id, message).anyMatch(Objects::isNull)) {
-                        throw new NodeProcessException("Fail to parse response: " + JSON.toJSONString(responseJSON));
-                    } else {
-                        JSONArray validationErrors = responseJSON.getJSONArray("validationErrors");
-                        if(validationErrors != null && validationErrors.size() > 0 && validationErrors.getJSONObject(0).getString("message") != null){
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithValidation(message,log_correction_id,validationErrors.getJSONObject(0).getString("message"),requestJSON));         //error return from IAA server
-                        }else{
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, StringUtils.getErrorMsgNoRetCodeWithoutValidation(message,log_correction_id,requestJSON));         //error return from IAA server
-                        }
-
-                        logger.debug("OS_Auth_UserLoginNode user login outcome:" + UserLoginOutcome.Error.name());
-
-                        return goTo(UserLoginOutcome.Error)
-                                .replaceSharedState(sharedState)
-                                .build();
+                    switch (config.visualCodeMessageOptions()) {
+                        case sessionID:
+                            sharedState.put(Constants.OSTID_CRONTO_MSG, StringUtils.stringToHex(sessionID));
+                            break;
+                        case requestID:
+                            String crontoMsg = StringUtils.stringToHex(loginOutput.getRequestID() == null ? "" : loginOutput.getRequestID());
+                            sharedState.put(Constants.OSTID_CRONTO_MSG, crontoMsg);
+                            break;
+                    }
+                }else{
+                    switch (UserLoginSessionStatus.valueOf(loginOutput.getSessionStatus())){
+                        case accepted:
+                            userLoginOutcome = UserLoginOutcome.Accept;
+                            break;
+                        case failed:
+                            userLoginOutcome = UserLoginOutcome.Error;
+                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth User Login: User failed to authenticate!");
+                            break;
+                        case refused:
+                            userLoginOutcome = UserLoginOutcome.Decline;
+                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth User Login: User declined to authenticate!");
+                            break;
                     }
                 }
-            } catch (Exception e) {
-                logger.debug("OS_Auth_UserLoginNode exception: " + e.getMessage());
-                sharedState.put(Constants.OSTID_ERROR_MESSAGE, "Fail to Login!");                            //general error msg
-                return goTo(UserLoginOutcome.Error)
+
+                logger.debug(loggerPrefix + "OS_Auth_UserLoginNode user login outcome:" + userLoginOutcome.name());
+                return goTo(userLoginOutcome)
                         .replaceSharedState(sharedState)
                         .build();
+            } else {
+                String log_correction_id = httpEntity.getLog_correlation_id();
+                String message = responseJSON.getString("message");
+                String requestJSON = "POST " + StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl + " : " + userLoginJSON;
+
+                if (Stream.of(log_correction_id, message).anyMatch(Objects::isNull)) {
+                    throw new NodeProcessException("Fail to parse response: " + JSON.toJSONString(responseJSON));
+                } else {
+                    JSONArray validationErrors = responseJSON.getJSONArray("validationErrors");
+                    if(validationErrors != null && validationErrors.size() > 0 && validationErrors.getJSONObject(0).getString("message") != null){
+                    	String errorMsgNoRetCodeWithValidation = StringUtils.getErrorMsgNoRetCodeWithValidation(message,log_correction_id,validationErrors.getJSONObject(0).getString("message"),requestJSON);
+                        throw new NodeProcessException(errorMsgNoRetCodeWithValidation);
+                    }else{
+                    	String errorMsgNoRetCodeWithoutValidation = StringUtils.getErrorMsgNoRetCodeWithoutValidation(message,log_correction_id,requestJSON);
+                        throw new NodeProcessException(errorMsgNoRetCodeWithoutValidation);
+                    }
+                }
             }
-        }
+	        
+    	}catch (Exception ex) {
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
+			ex.printStackTrace();
+			context.getStateFor(this).putShared("OS_Auth_UserLoginNode Exception", new Date() + ": " + ex.getMessage())
+									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth User Login: " + ex.getMessage());
+			return goTo(UserLoginOutcome.Error).build();
+	    }
+
+        
     }
 
     public enum ObjectType {
@@ -364,11 +362,11 @@ public class OS_Auth_UserLoginNode implements Node {
     /**
      * Defines the possible outcomes.
      */
-    public static class OSTID_Adaptive_UserLoginNode3OutcomeProvider implements OutcomeProvider {
+    public static class OSTID_Adaptive_UserLoginNodeOutcomeProvider implements OutcomeProvider {
         @Override
         public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes) {
             ResourceBundle bundle = locales.getBundleInPreferredLocale(OS_Auth_UserLoginNode.BUNDLE,
-                    OS_Auth_UserLoginNode.OSTID_Adaptive_UserLoginNode3OutcomeProvider.class.getClassLoader());
+                    OS_Auth_UserLoginNode.OSTID_Adaptive_UserLoginNodeOutcomeProvider.class.getClassLoader());
             return ImmutableList.of(
                     new Outcome(UserLoginOutcome.Accept.name(), bundle.getString("acceptOutcome")),
                     new Outcome(UserLoginOutcome.Decline.name(), bundle.getString("declineOutcome")),

@@ -83,7 +83,7 @@ Below sections only give you a brief introduction to get started. For more detai
 
 2. Once logged in the community portal, you'll be able to create an OneSpan [IAA Sandbox account](https://community.onespan.com/tid-sandbox-registration).
  
-3. Set up a mobile application integrated with the [Mobile Security Suite](http://community.onespan.com/documentation/mobile-security-suite). As an easy start up, you can install the OneSpan IAA [Demo App](https://sdb.tid.onespan.cloud/devportal/InstallingVAASDemoApp) on your phone. 
+3. Set up a mobile application integrated with the [Mobile Security Suite](http://community.onespan.com/documentation/mobile-security-suite). As an easy start up, you can install the OneSpan IAA [Demo App](https://gs.onespan.cloud/downloads) on your phone. 
 
 4. Configure the [Risk Analytics Presentation Service](https://sdb.tid.onespan.cloud/riskui/Login) service. 
 
@@ -168,7 +168,7 @@ In this section, we will use the OneSpan IAA user register authentication for ex
 
 To start off the authentication process, hit below link in your browser:
 
-*https://{your_instance_url}/openam/XUI/?realm=/&service=OneSpan-XUI-Adapative-Authentication-User-Register-Sample-Tree#login*
+*https://{your_instance_url}/am/XUI/?realm=alpha&authIndexType=service&authIndexValue=OneSpan-XUI-Adapative-Authentication-User-Register-Sample-Tree*
 
 You will be prompt to input the username and password. (Password should include at least one lowercase, one uppercase, one number, 8 digits in length, and doesn't include part of the username for any 3 characters)
  
