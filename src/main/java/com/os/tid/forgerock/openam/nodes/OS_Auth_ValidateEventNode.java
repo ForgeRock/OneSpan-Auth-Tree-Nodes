@@ -49,7 +49,7 @@ import java.util.stream.Stream;
  */
 @Node.Metadata( outcomeProvider = OS_Auth_ValidateEventNode.OS_Auth_EventValidationNodeOutcomeProvider.class,
                 configClass = OS_Auth_ValidateEventNode.Config.class,
-                tags = {"OneSpan", "basic-authentication", "multi-factor authentication", "marketplace", "trustnetwork"})
+                tags = {"OneSpan", "multi-factor authentication", "marketplace", "trustnetwork"})
 public class OS_Auth_ValidateEventNode implements Node {
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_ValidateEventNode";
     private final Logger logger = LoggerFactory.getLogger("amAuth");

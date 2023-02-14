@@ -48,7 +48,7 @@ import java.util.stream.Stream;
  */
 @Node.Metadata( outcomeProvider = OS_Risk_InsertTransactionNode.OSTID_Risk_InsertTransactionNodeOutcomeProvider.class,
                 configClass = OS_Risk_InsertTransactionNode.Config.class,
-                tags = {"OneSpan", "basic-authentication", "multi-factor authentication", "marketplace", "trustnetwork"})
+                tags = {"OneSpan", "multi-factor authentication", "marketplace", "trustnetwork"})
 public class OS_Risk_InsertTransactionNode implements Node {
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Risk_InsertTransactionNode";
     private final Logger logger = LoggerFactory.getLogger("amAuth");
