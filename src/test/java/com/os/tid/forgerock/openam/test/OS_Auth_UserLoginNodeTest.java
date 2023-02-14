@@ -53,30 +53,30 @@ public class OS_Auth_UserLoginNodeTest {
         given(annotatedServiceRegistry.getRealmSingleton(OSConfigurationsService.class, realm)).willReturn(Optional.of(configurationsService));
     }
 
-//    @Test
-//    public void testProcessMissingData() throws NodeProcessException{
-//        // Given
-//        //config
-//        given(config.userNameInSharedData()).willReturn(Constants.OSTID_DEFAULT_USERNAME);
-//        given(config.passwordInTransientState()).willReturn(Constants.OSTID_DEFAULT_PASSKEY);
-//        given(config.orchestrationDelivery()).willReturn(OS_Auth_UserLoginNode.OrchestrationDelivery.none);
-//        given(config.visualCodeMessageOptions()).willReturn(OS_Auth_UserLoginNode.VisualCodeMessageOptions.sessionID);
-//        given(config.objectType()).willReturn(OS_Auth_UserLoginNode.ObjectType.AdaptiveLoginInput);
-//
-//        OS_Auth_UserLoginNode node = new OS_Auth_UserLoginNode(config, realm, annotatedServiceRegistry);
-//
-//        //tree context
-//        JsonValue sharedState = json(object(1));
-//        JsonValue transientState = json(object(1));
-//        TreeContext context = getContext(sharedState,transientState,Collections.emptyList());
-//
-//        // When
-//        Action result = node.process(context);
-//        // Then
-//        assertThat(result.outcome).isEqualTo("Error");
-//        assertThat(result.callbacks.isEmpty());
-//        assertThat(result.sharedState.keys()).contains(Constants.OSTID_ERROR_MESSAGE);
-//    }
+    @Test
+    public void testProcessMissingData() throws NodeProcessException{
+        // Given
+        //config
+        given(config.userNameInSharedData()).willReturn("tyler2");
+        given(config.passwordInTransientState()).willReturn("Testing@123");
+        given(config.orchestrationDelivery()).willReturn(OS_Auth_UserLoginNode.OrchestrationDelivery.none);
+        given(config.visualCodeMessageOptions()).willReturn(OS_Auth_UserLoginNode.VisualCodeMessageOptions.sessionID);
+        given(config.objectType()).willReturn(OS_Auth_UserLoginNode.ObjectType.AdaptiveLoginInput);
+
+        OS_Auth_UserLoginNode node = new OS_Auth_UserLoginNode(config, realm, annotatedServiceRegistry);
+
+        //tree context
+        JsonValue sharedState = json(object(1));
+        JsonValue transientState = json(object(1));
+        TreeContext context = getContext(sharedState,transientState,Collections.emptyList());
+
+        // When
+        Action result = node.process(context);
+        // Then
+        assertThat(result.outcome).isEqualTo("Error");
+        assertThat(result.callbacks.isEmpty());
+        assertThat(result.sharedState.keys()).contains(Constants.OSTID_ERROR_MESSAGE);
+    }
 
     @Test
     public Action testProcessSuccess() throws NodeProcessException{
