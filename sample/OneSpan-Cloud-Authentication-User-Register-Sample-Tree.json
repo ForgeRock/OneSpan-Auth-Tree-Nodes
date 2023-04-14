@@ -1,6 +1,6 @@
 {
   "trees":{
-"OneSpan-XUI-Cloud-Authentication-User-Register-Sample-Tree":  
+"OneSpan-Cloud-Authentication-User-Register-Sample-Tree":
  
     {
   "origin": "4188da2c4ac583f1fea3a6ff4eb25a45 -",
@@ -292,7 +292,7 @@
   "scripts": {},
   "emailTemplates": {},
   "tree": {
-    "_id": "OneSpan-XUI-Cloud-Authentication-User-Register-Sample-Tree",
+    "_id": "OneSpan-Cloud-Authentication-User-Register-Sample-Tree",
     "entryNodeId": "18bcdaa1-95e6-46b9-9e45-92e40b19c892",
     "uiConfig": {},
     "staticNodes": {

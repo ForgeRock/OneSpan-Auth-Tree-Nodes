@@ -1,8 +1,8 @@
 {
   "trees": {
-    "OneSpan-XUI-Adapative-Authentication-Validate-Transaction-Sample-Tree": {
+    "OneSpan-Adapative-Authentication-Validate-Transaction-Sample-Tree": {
       "tree": {
-        "_id": "OneSpan-XUI-Adapative-Authentication-Validate-Transaction-Sample-Tree",
+        "_id": "OneSpan-Adapative-Authentication-Validate-Transaction-Sample-Tree",
         "_rev": "-40645912",
         "identityResource": "managed/alpha_user",
         "uiConfig": {

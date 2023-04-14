@@ -1,6 +1,6 @@
 {
   "trees":{
-"OneSpan-XUI-Adapative-Authentication-User-Register-Sample-Tree":  
+"OneSpan-Adapative-Authentication-User-Register-Sample-Tree":
  {
   "origin": "4188da2c4ac583f1fea3a6ff4eb25a45 -",
   "innernodes": {
@@ -248,7 +248,7 @@
   "scripts": {},
   "emailTemplates": {},
   "tree": {
-    "_id": "OneSpan-XUI-Adapative-Authentication-User-Register-Sample-Tree",
+    "_id": "OneSpan-Adapative-Authentication-User-Register-Sample-Tree",
     "staticNodes": {
       "startNode": {
         "x": 45,

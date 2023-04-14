@@ -168,7 +168,7 @@ In this section, we will use the OneSpan IAA user register authentication for ex
 
 To start off the authentication process, hit below link in your browser:
 
-*https://{your_instance_url}/openam/XUI/?realm=/&service=OneSpan-XUI-Adapative-Authentication-User-Register-Sample-Tree#login*
+*https://{your_instance_url}/am/XUI/?realm=alpha&authIndexType=service&authIndexValue=OneSpan-XUI-Adapative-Authentication-User-Register-Sample-Tree*
 
 You will be prompt to input the username and password. (Password should include at least one lowercase, one uppercase, one number, 8 digits in length, and doesn't include part of the username for any 3 characters)
  

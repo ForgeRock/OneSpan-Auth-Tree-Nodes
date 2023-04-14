@@ -49,7 +49,7 @@ import java.util.stream.Stream;
  */
 @Node.Metadata( outcomeProvider = OS_Auth_UserLoginNode.OSTID_Adaptive_UserLoginNodeOutcomeProvider.class,
                 configClass = OS_Auth_UserLoginNode.Config.class,
-                tags = {"OneSpan", "basic authentication", "mfa", "risk", "marketplace", "trustnetwork"})
+                tags = {"OneSpan", "multi-factor authentication", "marketplace", "trustnetwork"})
 public class OS_Auth_UserLoginNode implements Node {
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_UserLoginNode";
     private final Logger logger = LoggerFactory.getLogger("amAuth");
