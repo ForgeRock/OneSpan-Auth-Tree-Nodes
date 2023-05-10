@@ -36,6 +36,8 @@ import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Date;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -75,7 +77,7 @@ public class OS_Auth_CheckSessionStatusNode implements Node {
 	        logger.debug(loggerPrefix + "OS_Auth_CheckSessionStatusNode started");
 	        JsonValue sharedState = context.sharedState;
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
-	        String environment = serviceConfig.environment().name();
+	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
 	        JsonValue eventExpiryJsonValue = sharedState.get(Constants.OSTID_EVENT_EXPIRY_DATE);
 	        JsonValue requestIdJsonValue = sharedState.get(Constants.OSTID_REQUEST_ID);
@@ -122,12 +124,16 @@ public class OS_Auth_CheckSessionStatusNode implements Node {
 	                return goTo(CheckSessionStatusOutcome.pending).build();
 	        }
     	}catch (Exception ex) {
-			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
-			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
-			ex.printStackTrace();
-			context.getStateFor(this).putShared("OS_Auth_CheckSessionStatusNode Exception", new Date() + ": " + ex.getMessage())
-									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Check Session Status: " + ex.getMessage());
-			return goTo(CheckSessionStatusOutcome.error).build();
+	   		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
+			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
+			JsonValue sharedState = context.sharedState;
+		    JsonValue transientState = context.transientState;
+			sharedState.put("OS_Auth_CheckSessionStatusNode Exception", new Date() + ": " + ex.getMessage());
+			sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Check Session Status: " + ex.getMessage());
+			return goTo(CheckSessionStatusOutcome.error)
+                     .replaceSharedState(sharedState)
+                     .replaceTransientState(transientState)
+                     .build();	
 	    }
     }
 

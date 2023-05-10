@@ -31,6 +31,9 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.security.auth.callback.Callback;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -166,11 +169,10 @@ public class OS_Risk_CDDCNode extends SingleOutcomeNode {
 	        }
         
     	}catch (Exception ex) {
-			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
-			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
-			ex.printStackTrace();
-			context.getStateFor(this).putShared("OS_Risk_CDDCNode Exception", new Date() + ": " + ex.getMessage())
-									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Risk CDDC: " + ex.getMessage());
+    		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
+			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
+			context.getStateFor(this).putShared("OS_Risk_CDDCNode Exception", new Date() + ": " + stackTrace)
+									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Risk CDDC: " + stackTrace);
 			throw new NodeProcessException(ex.getMessage());
 	    }
     }

@@ -39,6 +39,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -79,7 +81,7 @@ public class OS_Auth_AddDeviceNode implements Node {
 	        logger.debug(loggerPrefix + "OS_Auth_AddDeviceNode started");
 	        JsonValue sharedState = context.sharedState;
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
-	        String environment = serviceConfig.environment().name();
+	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
 	        JsonValue registration_id = sharedState.get(Constants.OSTID_REGISTRATION_ID);
 	        JsonValue device_code = sharedState.get(Constants.OSTID_DEVICE_CODE);
@@ -127,12 +129,16 @@ public class OS_Auth_AddDeviceNode implements Node {
 	            }
 	        }
     	}catch (Exception ex) {
-			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
-			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
-			ex.printStackTrace();
-			context.getStateFor(this).putShared("OS_Auth_AddDeviceNode Exception", new Date() + ": " + ex.getMessage())
-									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan OCA Add Device process " + ex.getMessage());
-			return goTo(AddDeviceOutcome.error).build();
+    		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
+			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
+			JsonValue sharedState = context.sharedState;
+		    JsonValue transientState = context.transientState;
+			sharedState.put("OS_Auth_AddDeviceNode Exception", new Date() + ": " + ex.getMessage());
+			sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan OCA Add Device process: " + ex.getMessage());
+			return goTo(AddDeviceOutcome.error)
+                     .replaceSharedState(sharedState)
+                     .replaceTransientState(transientState)
+                     .build();	 
 	    }
     }
 
@@ -158,5 +164,6 @@ public class OS_Auth_AddDeviceNode implements Node {
                     new Outcome(AddDeviceOutcome.error.name(), bundle.getString("errorOutcome")));
         }
     }
+    
 }
 

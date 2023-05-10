@@ -15,6 +15,32 @@
  */
 package com.os.tid.forgerock.openam.nodes;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.ResourceBundle;
+import java.util.UUID;
+import java.util.stream.Stream;
+
+import javax.inject.Inject;
+
+import org.forgerock.json.JsonValue;
+import org.forgerock.openam.annotations.sm.Attribute;
+import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.Node;
+import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.OutcomeProvider;
+import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.sm.AnnotatedServiceRegistry;
+import org.forgerock.util.i18n.PreferredLocales;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -24,25 +50,13 @@ import com.iplanet.sso.SSOException;
 import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.models.GeneralResponseOutput;
 import com.os.tid.forgerock.openam.models.HttpEntity;
-import com.os.tid.forgerock.openam.nodes.OS_Auth_UserLoginNode.UserLoginOutcome;
+import com.os.tid.forgerock.openam.nodes.OS_Auth_UserRegisterNode.UserRegisterOutcome;
 import com.os.tid.forgerock.openam.utils.CollectionsUtils;
 import com.os.tid.forgerock.openam.utils.DateUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
 import com.sun.identity.sm.RequiredValueValidator;
 import com.sun.identity.sm.SMSException;
-import org.forgerock.json.JsonValue;
-import org.forgerock.openam.annotations.sm.Attribute;
-import org.forgerock.openam.auth.node.api.*;
-import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.sm.AnnotatedServiceRegistry;
-import org.forgerock.util.i18n.PreferredLocales;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
-import java.util.*;
-import java.util.stream.Stream;
 
 /**
  * This node invokes the Validate Event API, which validates and processes the authentication for a non-monetary request.
@@ -101,18 +115,11 @@ public class OS_Auth_ValidateEventNode implements Node {
             return Constants.OSTID_DEFAULT_USERNAME;
         }
 
-        /**
-         * The key name in Shared State which represents the IAA/OCA password. Static password for the user or keyword to trigger out-of-band authentication.
-         */
-        @Attribute(order = 600, validators = RequiredValueValidator.class)
-        default String passwordInTransientState() {
-            return Constants.OSTID_DEFAULT_PASSKEY;
-        }
 
         /**
          * Configurable attributes in request JSON payload
          */
-        @Attribute(order = 700)
+        @Attribute(order = 600)
         default Map<String, String> optionalAttributes() {
             return Collections.emptyMap();
         }
@@ -120,7 +127,7 @@ public class OS_Auth_ValidateEventNode implements Node {
         /**
          * Indicates whether a push notification should be sent, and/or if the orchestration command should be included in the response requestMessage.
          */
-        @Attribute(order = 800)
+        @Attribute(order = 700)
         default OrchestrationDelivery orchestrationDelivery() {
             return OrchestrationDelivery.both;
         }
@@ -128,7 +135,7 @@ public class OS_Auth_ValidateEventNode implements Node {
         /**
          * Timeout in seconds.
          */
-        @Attribute(order = 900)
+        @Attribute(order = 800)
         default int timeout() {
             return Constants.OSTID_DEFAULT_EVENT_EXPIRY;
         }
@@ -136,7 +143,7 @@ public class OS_Auth_ValidateEventNode implements Node {
         /**
          * How to build and store visual code message in SharedState
          */
-        @Attribute(order = 1000)
+        @Attribute(order = 900)
         default VisualCodeMessageOptions visualCodeMessageOptions() {
             return VisualCodeMessageOptions.sessionID;
         }
@@ -159,7 +166,7 @@ public class OS_Auth_ValidateEventNode implements Node {
 	        JsonValue sharedState = context.sharedState;
 	        JsonValue transientState = context.transientState;
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
-	        String environment = serviceConfig.environment().name();
+	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
 	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
 	        JsonValue cddcJsonJsonValue = sharedState.get(Constants.OSTID_CDDC_JSON);
@@ -227,7 +234,7 @@ public class OS_Auth_ValidateEventNode implements Node {
                     credentials = String.format(Constants.OSTID_JSON_ADAPTIVE_CREDENTIALS_AUTHENTICATOR, sharedState.get("OTP").asString());
                     break;
                 case passKey:
-                    credentials = String.format(Constants.OSTID_JSON_ADAPTIVE_CREDENTIALS_PASSKEY, transientState.get(config.passwordInTransientState()).asString());
+                    credentials = String.format(Constants.OSTID_JSON_ADAPTIVE_CREDENTIALS_PASSKEY, transientState.get("password").asString());
                     break;
             }
             //param3
@@ -251,11 +258,13 @@ public class OS_Auth_ValidateEventNode implements Node {
             String timeout = String.format(Constants.OSTID_JSON_ADAPTIVE_TIMEOUT, 0);
             //param6
             String sessionID = sharedState.get(Constants.OSTID_SESSIONID).isString() ? sharedState.get(Constants.OSTID_SESSIONID).asString() : StringUtils.stringToHex(UUID.randomUUID().toString());
+            String relationshipRef = sharedState.get("relationshipRef").isString() ? sharedState.get("relationshipRef").asString():usernameJsonValue.asString();
+
             String IAA = String.format(Constants.OSTID_JSON_ADAPTIVE_USER_LOGIN_IAA,
                     cddcIpJsonValue.asString(),                         //param6.1
                     cddcHashJsonValue.asString(),                       //param6.2
                     cddcJsonJsonValue.asString(),                       //param6.3
-                    sharedState.get("relationshipRef").asString(),      //param6.4
+                    relationshipRef,      								//param6.4
                     sessionID,                                          //param6.5
                     serviceConfig.applicationRef()                      //param6.6
             );
@@ -286,42 +295,54 @@ public class OS_Auth_ValidateEventNode implements Node {
 
                 EventValidationOutcome eventValidationOutcome = EventValidationOutcome.Error;
 
-                if(irmResponse > -1) {
-                    sharedState.put(Constants.OSTID_IRM_RESPONSE, irmResponse);
-                    if(irmResponse == 0){
-                        eventValidationOutcome = EventValidationOutcome.Accept;
-                    }else if(irmResponse == 1){
-                        eventValidationOutcome = EventValidationOutcome.Decline;
-                        sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Event Validation process: Request has been declined!");
-                    }else if(Constants.OSTID_API_CHALLANGE_MAP.containsKey(irmResponse)){
-                        eventValidationOutcome = EventValidationOutcome.StepUp;
-                    }
-                    switch (config.visualCodeMessageOptions()) {
-                        case sessionID:
-                            sharedState.put(Constants.OSTID_CRONTO_MSG, StringUtils.stringToHex(sessionID));
-                            break;
-                        case requestID:
-                            String crontoMsg = StringUtils.stringToHex(responseOutput.getRequestID() == null ? "" : responseOutput.getRequestID());
-                            sharedState.put(Constants.OSTID_CRONTO_MSG, crontoMsg);
-                            break;
-                    }
-                }else{
-                    switch (EventValidationSessionStatus.valueOf(responseOutput.getSessionStatus())){
-                        case accepted:
+                switch (EventValidationSessionStatus.valueOf(responseOutput.getSessionStatus())){
+                case accepted:
+                    eventValidationOutcome = EventValidationOutcome.Accept;
+                    break;
+                case failed:
+                    eventValidationOutcome = EventValidationOutcome.Error;
+                    sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Event: User failed to authenticate!");
+                    break;
+                case refused:
+                    eventValidationOutcome = EventValidationOutcome.Decline;
+                    sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Event: User declined to authenticate!");
+                    break;
+                case timeout:
+                	eventValidationOutcome = EventValidationOutcome.Error;
+                    sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Event: Request times out!");
+                    break;
+                case unknown:
+                	eventValidationOutcome = EventValidationOutcome.Error;
+                    sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Event: Request status unknown!");
+                    break;
+                case pending:
+                    if(irmResponse > -1) {
+                        sharedState.put(Constants.OSTID_IRM_RESPONSE, irmResponse);
+                        if(irmResponse == 0){
                             eventValidationOutcome = EventValidationOutcome.Accept;
-                            break;
-                        case failed:
-                            eventValidationOutcome = EventValidationOutcome.Error;
-                            break;
-                        case refused:
+                        }else if(irmResponse == 1){
                             eventValidationOutcome = EventValidationOutcome.Decline;
-                            break;
+                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Event Validation process: Request has been declined!");
+                        }else if(Constants.OSTID_API_CHALLANGE_MAP.containsKey(irmResponse)){
+                            eventValidationOutcome = EventValidationOutcome.StepUp;
+                        }
+                        switch (config.visualCodeMessageOptions()) {
+                            case sessionID:
+                                sharedState.put(Constants.OSTID_CRONTO_MSG, StringUtils.stringToHex(sessionID));
+                                break;
+                            case requestID:
+                                String crontoMsg = StringUtils.stringToHex(responseOutput.getRequestID() == null ? "" : responseOutput.getRequestID());
+                                sharedState.put(Constants.OSTID_CRONTO_MSG, crontoMsg);
+                                break;
+                        }
                     }
-                }
-                logger.debug(loggerPrefix + "OS_Auth_ValidateEventNode user login outcome:" + eventValidationOutcome.name());
-                return goTo(eventValidationOutcome)
-                        .replaceSharedState(sharedState)
-                        .build();
+                    break;
+	            }
+	                
+	            logger.debug(loggerPrefix + "OS_Auth_ValidateEventNode user login outcome:" + eventValidationOutcome.name());
+	            return goTo(eventValidationOutcome)
+	                    .replaceSharedState(sharedState)
+	                    .build();
             } else {
                 String log_correction_id = httpEntity.getLog_correlation_id();
                 String message = responseJSON.getString("message");
@@ -341,12 +362,16 @@ public class OS_Auth_ValidateEventNode implements Node {
                 }
             }
     	}catch (Exception ex) {
-			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
-			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
-			ex.printStackTrace();
-			context.getStateFor(this).putShared("OS_Auth_ValidateEventNode Exception", new Date() + ": " + ex.getMessage())
-									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Event Validation process: " + ex.getMessage());
-			return goTo(EventValidationOutcome.Error).build();
+	   		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
+			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
+			JsonValue sharedState = context.sharedState;
+		    JsonValue transientState = context.transientState;
+			sharedState.put("OS_Auth_ValidateEventNode Exception", new Date() + ": " + ex.getMessage());
+			sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Event Validation process: " + ex.getMessage());
+			return goTo(EventValidationOutcome.Error)
+                     .replaceSharedState(sharedState)
+                     .replaceTransientState(transientState)
+                     .build();	
 	    }
         
     }

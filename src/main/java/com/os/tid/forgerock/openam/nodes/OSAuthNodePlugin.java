@@ -27,11 +27,14 @@ import com.iplanet.sso.SSOToken;
 import com.sun.identity.security.AdminTokenAction;
 import com.sun.identity.sm.SMSException;
 import com.sun.identity.sm.ServiceManager;
+import com.sun.identity.sm.ServiceSchemaManager;
+
 import org.forgerock.openam.auth.node.api.AbstractNodeAmPlugin;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.plugins.PluginException;
 import org.forgerock.openam.plugins.PluginTools;
 import org.forgerock.openam.plugins.StartupType;
+import org.forgerock.openam.sm.ServiceSchemaManagerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +71,7 @@ import org.slf4j.LoggerFactory;
  * @since AM 5.5.0
  */
 public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
-	static private String currentVersion = "1.2.3";
+	static private String currentVersion = "1.2.4";
     private final Logger logger = LoggerFactory.getLogger(OSAuthNodePlugin.class);
 
 	private final List<Class<? extends Node>> nodeList = ImmutableList.of(
@@ -84,7 +87,12 @@ public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
 			OS_Auth_UserLoginNode.class,
 			OS_Auth_ValidateTransactionNode.class,
 			OS_Auth_ValidateEventNode.class,
-
+			
+			//VDP
+			OS_Auth_VDPAssignAuthenticatorNode.class,
+			OS_Auth_VDPGenerateVOTPNode.class,
+			OS_Auth_VDPUserRegisterNode.class,
+			
 			//Risk
 			OS_Risk_CDDCNode.class,
 			OS_Risk_InsertTransactionNode.class,
@@ -95,7 +103,6 @@ public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
 
 			//Sample
 			OS_Sample_ErrorDisplayNode.class,
-			OS_Sample_TransactionCollector.class,
 			OS_Sample_StoreCommandNode.class,
 			OS_Sample_AttributesCollector.class	
 	);
@@ -156,19 +163,20 @@ public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
 	@Override
 	public void upgrade(String fromVersion) throws PluginException {
 		try {
+	        for (Class<? extends Node> nodeClass : this.nodeList) {
+		        pluginTools.upgradeAuthNode(nodeClass);
+			}
+	        
 		    SSOToken adminToken = AccessController.doPrivileged(AdminTokenAction.getInstance());
-		    if (fromVersion.equals(PluginTools.DEVELOPMENT_VERSION)) {
-		        ServiceManager sm = new ServiceManager(adminToken);
-		        if (sm.getServiceNames().contains("OSConfigurationsService")) {
-		            sm.removeService("OSConfigurationsService", fromVersion);
-		        }
-		        pluginTools.installService(OSConfigurationsService.class);
-		    }
+	        ServiceManager sm = new ServiceManager(adminToken);
+	        if (sm.getServiceNames().contains("OSConfigurationsService")) {
+	            sm.removeService("OSConfigurationsService",fromVersion);
+	        }
+	        pluginTools.installService(OSConfigurationsService.class);
 		} catch(SSOException | SMSException e) {
 	    	e.printStackTrace();
 	    }
 		super.upgrade(fromVersion);
-
 	}
 
     /** 

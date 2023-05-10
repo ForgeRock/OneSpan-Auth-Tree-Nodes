@@ -25,6 +25,7 @@ import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.models.HttpEntity;
 import com.os.tid.forgerock.openam.models.UserRegisterOutputEx;
 import com.os.tid.forgerock.openam.nodes.OS_Auth_ActivateDeviceNode.OSTIDActivateDeviceOutcome;
+import com.os.tid.forgerock.openam.nodes.OS_Auth_UserLoginNode.UserLoginOutcome;
 import com.os.tid.forgerock.openam.utils.CollectionsUtils;
 import com.os.tid.forgerock.openam.utils.DateUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
@@ -41,6 +42,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -84,17 +88,9 @@ public class OS_Auth_UserRegisterNode implements Node {
         }
 
         /**
-         * The key name in Shared State which represents the IAA/OCA password. Static password for the user or keyword to trigger out-of-band authentication.
-         */
-        @Attribute(order = 400, validators = RequiredValueValidator.class)
-        default String passwordInTransientState() {
-            return Constants.OSTID_DEFAULT_PASSKEY;
-        }
-
-        /**
          * Indicates if the authenticator assigned to the user must be activated using online or offline multi-device licensing (MDL) activation.
          */
-        @Attribute(order = 500, validators = RequiredValueValidator.class)
+        @Attribute(order = 400, validators = RequiredValueValidator.class)
         default ActivationType activationType() {
             return ActivationType.onlineMDL;
         }
@@ -102,7 +98,7 @@ public class OS_Auth_UserRegisterNode implements Node {
         /**
          * Configurable attributes in request JSON payload
          */
-        @Attribute(order = 600)
+        @Attribute(order = 500)
         default Map<String, String> optionalAttributes() {
             return Collections.emptyMap();
         }
@@ -110,7 +106,7 @@ public class OS_Auth_UserRegisterNode implements Node {
         /**
          * Timeout in seconds.
          */
-        @Attribute(order = 700, validators = RequiredValueValidator.class)
+        @Attribute(order = 600, validators = RequiredValueValidator.class)
         default int activationTokenExpiry() {
             return Constants.OSTID_DEFAULT_EVENT_EXPIRY;
         }
@@ -133,7 +129,7 @@ public class OS_Auth_UserRegisterNode implements Node {
 	        JsonValue sharedState = context.sharedState;
 	        JsonValue transientState = context.transientState;
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
-	        String environment = serviceConfig.environment().name();
+	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
 	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
 	        JsonValue cddcJsonJsonValue = sharedState.get(Constants.OSTID_CDDC_JSON);
@@ -142,22 +138,16 @@ public class OS_Auth_UserRegisterNode implements Node {
 	
 	        sharedState.put(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
 	
-	        boolean isPasskeyIncluded = true;
-	        String passKey = "";
-	        if (config.nodeFunction() == NodeFunction.UserRegister) {
-	            JsonValue passwordJsonValue = transientState.get(config.passwordInTransientState());
-	            if (!passwordJsonValue.isString()) {
-	                isPasskeyIncluded = false;
-	            } else {
-	                passKey = String.format(Constants.OSTID_JSON_ADAPTIVE_STATICPWD, passwordJsonValue.asString());
-	            }
-	        }
-	
 	        boolean allOptionalFieldsIncluded = true;
 	        StringBuilder optionalAttributesStringBuilder = new StringBuilder(1000);
 	        Map<String, String> optionalAttributesMap = config.optionalAttributes();
 	        for (Map.Entry<String, String> entrySet : optionalAttributesMap.entrySet()) {
-	            JsonValue jsonValue = sharedState.get(entrySet.getValue());
+	        	JsonValue jsonValue;
+	        	if(Constants.OSTID_STATIC_PASSWORD.equalsIgnoreCase(entrySet.getKey())) {
+	        		jsonValue = transientState.get(entrySet.getValue());
+	        	}else {
+	        		jsonValue = sharedState.get(entrySet.getValue());
+	        	} 
 	            if (jsonValue.isString()) {
 	                optionalAttributesStringBuilder.append("\"").append(entrySet.getKey()).append("\":\"").append(jsonValue.asString()).append("\",");
 	            } else {
@@ -165,8 +155,7 @@ public class OS_Auth_UserRegisterNode implements Node {
 	            }
 	        }
 	
-	        if (!isPasskeyIncluded || !allOptionalFieldsIncluded ||
-	                CollectionsUtils.hasAnyNullValues(ImmutableList.of(
+	        if (!allOptionalFieldsIncluded || CollectionsUtils.hasAnyNullValues(ImmutableList.of(
 	                        usernameJsonValue,
 	                        cddcJsonJsonValue,
 	                        cddcHashJsonValue,
@@ -194,7 +183,7 @@ public class OS_Auth_UserRegisterNode implements Node {
             String applicationRef = config.objectType() == ObjectType.IAA ? String.format(Constants.OSTID_JSON_ADAPTIVE_APPLICATIONREF, serviceConfig.applicationRef()) : "";
             //param 8
             String sessionId = sharedState.get(Constants.OSTID_SESSIONID).isString() ? sharedState.get(Constants.OSTID_SESSIONID).asString() : StringUtils.stringToHex(UUID.randomUUID().toString());
-            sessionId = config.objectType() == ObjectType.IAA ? String.format(Constants.OSTID_JSON_ADAPTIVE_SESSIONID, sessionId) : "";
+            String sessionIdJSON = config.objectType() == ObjectType.IAA ? String.format(Constants.OSTID_JSON_ADAPTIVE_SESSIONID, sessionId) : "";
             //param 9
             String relationshipRef = sharedState.get("relationshipRef").isString() ? sharedState.get("relationshipRef").asString():usernameJsonValue.asString();
             relationshipRef = config.objectType() == ObjectType.IAA ? String.format(Constants.OSTID_JSON_ADAPTIVE_USER_REGISTER_RELATIONSHIPREF, relationshipRef) : "";
@@ -204,15 +193,14 @@ public class OS_Auth_UserRegisterNode implements Node {
             String userRegisterJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_USER_REGISTER,
                     objectType,                                                                      //param1
                     usernameJsonValue.asString(),                                                    //param2
-                    passKey,                                                                         //param3
-                    cddcIpJsonValue.asString(),                                                      //param4
-                    cddcHashJsonValue.asString(),                                                    //param5
-                    cddcJsonJsonValue.asString(),                                                    //param6
-                    applicationRef,                                                                  //param7
-                    sessionId,                                                                       //param8
-                    relationshipRef,                                                                 //param9
-                    activationType,                                                                  //param10
-                    optionalAttributesStringBuilder.toString()                                       //param11
+                    cddcIpJsonValue.asString(),                                                      //param3
+                    cddcHashJsonValue.asString(),                                                    //param4
+                    cddcJsonJsonValue.asString(),                                                    //param5
+                    applicationRef,                                                                  //param6
+                    sessionIdJSON,                                                                   //param7
+                    relationshipRef,                                                                 //param8
+                    activationType,                                                                  //param9
+                    optionalAttributesStringBuilder.toString()                                       //param10
             );
             logger.debug(loggerPrefix + "OS_Auth_UserRegisterNode userRegisterJSON:" + userRegisterJSON);
 
@@ -273,12 +261,16 @@ public class OS_Auth_UserRegisterNode implements Node {
                 }
             }
     	}catch (Exception ex) {
-			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
-			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
-			ex.printStackTrace();
-			context.getStateFor(this).putShared("OS_Auth_UserRegisterNode Exception", new Date() + ": " + ex.getMessage())
-									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan User Register process: " + ex.getMessage());
-			return goTo(UserRegisterOutcome.Error).build();
+	   		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
+			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
+			JsonValue sharedState = context.sharedState;
+		    JsonValue transientState = context.transientState;
+			sharedState.put("OS_Auth_UserRegisterNode Exception", new Date() + ": " + ex.getMessage());
+			sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan User Register process: " + ex.getMessage());
+			return goTo(UserRegisterOutcome.Error)
+                     .replaceSharedState(sharedState)
+                     .replaceTransientState(transientState)
+                     .build();	
 	    }
     }
 

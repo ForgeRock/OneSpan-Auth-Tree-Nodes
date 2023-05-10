@@ -33,8 +33,17 @@ public interface OSConfigurationsService {
     @Attribute(order = 3)
     String applicationRef();
 
+    
     public enum EnvOptions {
-        sdb, prod
+        Sandbox,
+        Production_NA1,
+        Production_EU1,
+        Production_EU2,
+        Staging_NA1,
+        Staging_EU1,
+        Staging_EU2,
+        UAT_EU1;
     }
+    
 }
 
