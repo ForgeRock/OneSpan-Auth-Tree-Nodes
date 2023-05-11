@@ -166,6 +166,11 @@ public class OS_Auth_VDPGenerateVOTPNode implements Node {
             
             //API2: GET /v1/authenticators?serialNumber=VDP4938800&domain=duoliang-onespan&type=VIR10&assigned=true&offset=0&limit=20
             JSONArray authenticatorsJsonArray = getUserResponseJSON.getJSONArray("authenticators");
+            
+            if(authenticatorsJsonArray == null || authenticatorsJsonArray.size() < 1) {
+	            throw new NodeProcessException("Can't find VIR10 authenticator for User " + usernameJsonValue.asString() +"!");
+            }
+            
             List<String> authenticatorsList = authenticatorsJsonArray.toJavaList(String.class);
             String vir10SerialNumber = null;
             for (String authenticator : authenticatorsList) {
