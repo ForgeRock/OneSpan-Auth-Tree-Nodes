@@ -123,36 +123,36 @@ public class OS_Auth_VDPAssignAuthenticatorNode implements Node {
             
             //API2: GET /v1/authenticators?serialNumber=VDP4938800&domain=duoliang-onespan&type=VIR10&assigned=true&offset=0&limit=20
             JSONArray authenticatorsJsonArray = getUserResponseJSON.getJSONArray("authenticators");
-            List<String> authenticatorsList = authenticatorsJsonArray.toJavaList(String.class);
-            String vir10SerialNumber = null;
-            for (String authenticator : authenticatorsList) {
-                String getAuthenticatorURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_VDP_GET_AUTHENTICATOR,authenticator,tenantName);
-                HttpEntity getAuthenticatorHttpEntity = RestUtils.doGet(getAuthenticatorURL);
-                JSONObject getAuthenticatorResponseJSON = getAuthenticatorHttpEntity.getResponseJSON();
-                if(getAuthenticatorHttpEntity.isSuccess()) {
-                	Integer total = getAuthenticatorResponseJSON.getInteger("total");
-                	if(total !=null && total > 0) {
-                		JSONArray userAuthenticatorsJsonArray = getAuthenticatorResponseJSON.getJSONArray("authenticators");
-                		for(int i = 0; i < userAuthenticatorsJsonArray.size(); i++) {
-                			JSONObject userAuthenticatorJsonObject = userAuthenticatorsJsonArray.getJSONObject(i);
-                			if(userAuthenticatorJsonObject.getString("serialNumber").equals(authenticator) &&
-            				   userAuthenticatorJsonObject.getString("authenticatorType").equals("VIR10")
-                			) {
-                				vir10SerialNumber = authenticator;
-                				break;
-                			}
-                		}
-                	}
-                }
-			}
-            
-            if(!StringUtils.isEmpty(vir10SerialNumber)) {
-                return goTo(OS_Auth_VDPAssignAuthenticatorNode.VDPAssignAuthenticatorOutcome.success)
-                        .replaceSharedState(sharedState)
-                        .build();
+            if(authenticatorsJsonArray != null && authenticatorsJsonArray.size() > 0) {
+	            List<String> authenticatorsList = authenticatorsJsonArray.toJavaList(String.class);
+	            String vir10SerialNumber = null;
+	            for (String authenticator : authenticatorsList) {
+	                String getAuthenticatorURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_VDP_GET_AUTHENTICATOR,authenticator,tenantName);
+	                HttpEntity getAuthenticatorHttpEntity = RestUtils.doGet(getAuthenticatorURL);
+	                JSONObject getAuthenticatorResponseJSON = getAuthenticatorHttpEntity.getResponseJSON();
+	                if(getAuthenticatorHttpEntity.isSuccess()) {
+	                	Integer total = getAuthenticatorResponseJSON.getInteger("total");
+	                	if(total !=null && total > 0) {
+	                		JSONArray userAuthenticatorsJsonArray = getAuthenticatorResponseJSON.getJSONArray("authenticators");
+	                		for(int i = 0; i < userAuthenticatorsJsonArray.size(); i++) {
+	                			JSONObject userAuthenticatorJsonObject = userAuthenticatorsJsonArray.getJSONObject(i);
+	                			if(userAuthenticatorJsonObject.getString("serialNumber").equals(authenticator) &&
+	            				   userAuthenticatorJsonObject.getString("authenticatorType").equals("VIR10")
+	                			) {
+	                				vir10SerialNumber = authenticator;
+	                				break;
+	                			}
+	                		}
+	                	}
+	                }
+				}
+	            
+	            if(!StringUtils.isEmpty(vir10SerialNumber)) {
+	                return goTo(OS_Auth_VDPAssignAuthenticatorNode.VDPAssignAuthenticatorOutcome.success)
+	                        .replaceSharedState(sharedState)
+	                        .build();
+	            }
             }
-            	        
-	        
 	        
 	        //API3: GET /v1/authenticators?type=VIR10&assigned=false&offset=0&limit=20
             String getVIR10AuthenticatorsURL = StringUtils.getAPIEndpoint(tenantName,environment) + Constants.OSTID_API_VDP_GET_VIR10_AUTHENTICATORS;
