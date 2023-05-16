@@ -15,8 +15,6 @@
  */
 package com.os.tid.forgerock.openam.nodes;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -26,6 +24,7 @@ import java.util.stream.Stream;
 import javax.security.auth.callback.Callback;
 
 import org.forgerock.json.JsonValue;
+import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
@@ -46,11 +45,12 @@ import com.google.inject.assistedinject.Assisted;
 import com.iplanet.sso.SSOException;
 import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.models.HttpEntity;
-import com.os.tid.forgerock.openam.nodes.OS_Auth_VDPUserRegisterNode.VDPUserRegisterOutcome;
 import com.os.tid.forgerock.openam.utils.CollectionsUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
+import com.os.tid.forgerock.openam.utils.SslUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
 import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
+import com.sun.identity.sm.RequiredValueValidator;
 import com.sun.identity.sm.SMSException;
 
 /**
@@ -104,7 +104,7 @@ public class OS_Auth_ActivateDeviceNode implements Node {
 	            );
 	
                 String url = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_ADAPTIVE_ACTIVATE_DEVICE,registration_id.asString());
-                HttpEntity httpEntity = RestUtils.doPostJSON(url, activateDeviceJSON);
+                HttpEntity httpEntity = RestUtils.doPostJSON(url, activateDeviceJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
                 JSONObject responseJSON = httpEntity.getResponseJSON();
                 if(httpEntity.isSuccess()) {
                     return goTo(OSTIDActivateDeviceOutcome.success).replaceSharedState(sharedState).build();

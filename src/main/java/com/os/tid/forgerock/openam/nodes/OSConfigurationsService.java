@@ -31,8 +31,13 @@ public interface OSConfigurationsService {
     EnvOptions environment();
 
     @Attribute(order = 3)
-    String applicationRef();
+    String publicKey();
 
+    @Attribute(order = 4)
+    String privateKey();
+    
+    @Attribute(order = 5)
+    String applicationRef();
     
     public enum EnvOptions {
         Sandbox,

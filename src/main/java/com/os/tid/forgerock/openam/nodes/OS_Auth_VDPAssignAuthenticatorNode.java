@@ -15,6 +15,25 @@
  */
 package com.os.tid.forgerock.openam.nodes;
 
+import java.util.Date;
+import java.util.List;
+import java.util.Objects;
+import java.util.ResourceBundle;
+import java.util.stream.Stream;
+
+import org.forgerock.json.JsonValue;
+import org.forgerock.openam.annotations.sm.Attribute;
+import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.Node;
+import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.OutcomeProvider;
+import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.sm.AnnotatedServiceRegistry;
+import org.forgerock.util.i18n.PreferredLocales;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -23,32 +42,13 @@ import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import com.iplanet.sso.SSOException;
 import com.os.tid.forgerock.openam.config.Constants;
-import com.os.tid.forgerock.openam.models.AddDeviceOutput;
 import com.os.tid.forgerock.openam.models.HttpEntity;
-import com.os.tid.forgerock.openam.nodes.OS_Auth_ActivateDeviceNode.OSTIDActivateDeviceOutcome;
-import com.os.tid.forgerock.openam.nodes.OS_Auth_ValidateTransactionNode.SendTransactionOutcome;
 import com.os.tid.forgerock.openam.utils.CollectionsUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
+import com.os.tid.forgerock.openam.utils.SslUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
 import com.sun.identity.sm.RequiredValueValidator;
 import com.sun.identity.sm.SMSException;
-import org.forgerock.json.JsonValue;
-import org.forgerock.openam.annotations.sm.Attribute;
-import org.forgerock.openam.auth.node.api.*;
-import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.sm.AnnotatedServiceRegistry;
-import org.forgerock.util.i18n.PreferredLocales;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
-import java.util.ResourceBundle;
-import java.util.stream.Stream;
 
 /**
  * This node invokes the Add Device API, which continues and proceeds the OCA provisioning process.
@@ -62,15 +62,24 @@ public class OS_Auth_VDPAssignAuthenticatorNode implements Node {
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_VDPAssignAuthenticatorNode";
     private final OSConfigurationsService serviceConfig;
     private static final String loggerPrefix = "[OneSpan Auth VDP Assign Authenticator][Marketplace] ";
+    private final OS_Auth_VDPAssignAuthenticatorNode.Config config;
 
     /**
      * Configuration for the OS Auth Add Device Node.
      */
     public interface Config {
+        /**
+         * Domain wherein to search for user accounts.
+         */
+        @Attribute(order = 100, validators = RequiredValueValidator.class)
+        default String domain() {
+            return Constants.OSTID_DEFAULT_DOMAIN;
+        }
     }
 
     @Inject
-    public OS_Auth_VDPAssignAuthenticatorNode(@Assisted Realm realm, AnnotatedServiceRegistry serviceRegistry) throws NodeProcessException {
+    public OS_Auth_VDPAssignAuthenticatorNode(@Assisted Config config, @Assisted Realm realm, AnnotatedServiceRegistry serviceRegistry) throws NodeProcessException {
+        this.config = config;
         try {
             this.serviceConfig = serviceRegistry.getRealmSingleton(OSConfigurationsService.class, realm).get();
         } catch (SSOException | SMSException e) {
@@ -96,8 +105,8 @@ public class OS_Auth_VDPAssignAuthenticatorNode implements Node {
 	        
     		
 	        //API1: GET /v1/users/duotest2305011@duoliang-onespan
-            String getUserURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_VDP_GET_USER,usernameJsonValue.asString(),tenantName);
-            HttpEntity getUserHttpEntity = RestUtils.doGet(getUserURL);
+            String getUserURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_VDP_GET_USER,usernameJsonValue.asString(),config.domain());
+            HttpEntity getUserHttpEntity = RestUtils.doGet(getUserURL,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
             JSONObject getUserResponseJSON = getUserHttpEntity.getResponseJSON();
             if(!getUserHttpEntity.isSuccess()) {
                 String error = getUserResponseJSON.getString("error");
@@ -127,8 +136,8 @@ public class OS_Auth_VDPAssignAuthenticatorNode implements Node {
 	            List<String> authenticatorsList = authenticatorsJsonArray.toJavaList(String.class);
 	            String vir10SerialNumber = null;
 	            for (String authenticator : authenticatorsList) {
-	                String getAuthenticatorURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_VDP_GET_AUTHENTICATOR,authenticator,tenantName);
-	                HttpEntity getAuthenticatorHttpEntity = RestUtils.doGet(getAuthenticatorURL);
+	                String getAuthenticatorURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_VDP_GET_AUTHENTICATOR,authenticator,config.domain());
+	                HttpEntity getAuthenticatorHttpEntity = RestUtils.doGet(getAuthenticatorURL,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
 	                JSONObject getAuthenticatorResponseJSON = getAuthenticatorHttpEntity.getResponseJSON();
 	                if(getAuthenticatorHttpEntity.isSuccess()) {
 	                	Integer total = getAuthenticatorResponseJSON.getInteger("total");
@@ -156,7 +165,7 @@ public class OS_Auth_VDPAssignAuthenticatorNode implements Node {
 	        
 	        //API3: GET /v1/authenticators?type=VIR10&assigned=false&offset=0&limit=20
             String getVIR10AuthenticatorsURL = StringUtils.getAPIEndpoint(tenantName,environment) + Constants.OSTID_API_VDP_GET_VIR10_AUTHENTICATORS;
-            HttpEntity getVIR10AuthenticatorsHttpEntity = RestUtils.doGet(getVIR10AuthenticatorsURL);
+            HttpEntity getVIR10AuthenticatorsHttpEntity = RestUtils.doGet(getVIR10AuthenticatorsURL,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
             JSONObject getVIR10AuthenticatorsResponseJSON = getVIR10AuthenticatorsHttpEntity.getResponseJSON();
             if(!getVIR10AuthenticatorsHttpEntity.isSuccess()) {
                 String error = getVIR10AuthenticatorsResponseJSON.getString("error");
@@ -190,12 +199,12 @@ public class OS_Auth_VDPAssignAuthenticatorNode implements Node {
         	String serialNumber = vir10AuthenticatorJsonObject.getString("serialNumber");
         	
             String assignAuthenticatorJSON = String.format(Constants.OSTID_JSON_VDP_ASSIGN_AUTHENTICATOR,
-            		tenantName,                               			  		//param1
+            		config.domain(),                               			  		//param1
             		usernameJsonValue.asString()                                //param2
             );
 
             String assignAuthenticatorURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_VDP_ASSIGN_AUTHENTICATOR,serialNumber);
-            HttpEntity assignAuthenticatorHttpEntity = RestUtils.doPostJSON(assignAuthenticatorURL, assignAuthenticatorJSON);
+            HttpEntity assignAuthenticatorHttpEntity = RestUtils.doPostJSON(assignAuthenticatorURL, assignAuthenticatorJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
             JSONObject assignAuthenticatorResponseJSON = assignAuthenticatorHttpEntity.getResponseJSON();
             if(!assignAuthenticatorHttpEntity.isSuccess()) {
                 String error = assignAuthenticatorResponseJSON.getString("error");

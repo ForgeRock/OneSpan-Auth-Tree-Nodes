@@ -30,6 +30,7 @@ import com.os.tid.forgerock.openam.models.GeneralResponseOutput;
 import com.os.tid.forgerock.openam.utils.CollectionsUtils;
 import com.os.tid.forgerock.openam.utils.DateUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
+import com.os.tid.forgerock.openam.utils.SslUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
 import com.sun.identity.sm.RequiredValueValidator;
 import com.sun.identity.sm.SMSException;
@@ -67,9 +68,17 @@ public class OS_Auth_ValidateTransactionNode implements Node {
      */
     public interface Config {
         /**
-         * Input payload object type.
+         * Domain wherein to search for user accounts.
          */
         @Attribute(order = 100, validators = RequiredValueValidator.class)
+        default String domain() {
+            return Constants.OSTID_DEFAULT_DOMAIN;
+        }
+        
+        /**
+         * Input payload object type.
+         */
+        @Attribute(order = 200, validators = RequiredValueValidator.class)
         default ObjectType objectType() {
             return ObjectType.AdaptiveTransactionValidationInput;
         }
@@ -77,7 +86,7 @@ public class OS_Auth_ValidateTransactionNode implements Node {
         /**
          * The key name in Shared State which represents the IAA/OCA username
          */
-        @Attribute(order = 200, validators = RequiredValueValidator.class)
+        @Attribute(order = 300, validators = RequiredValueValidator.class)
         default String userNameInSharedData() {
             return Constants.OSTID_DEFAULT_USERNAME;
         }
@@ -85,13 +94,13 @@ public class OS_Auth_ValidateTransactionNode implements Node {
         /**
          * Which signature validation data to use
          */
-        @Attribute(order = 300, validators = RequiredValueValidator.class)
+        @Attribute(order = 400, validators = RequiredValueValidator.class)
         default DataToSign dataToSign() { return DataToSign.transactionMessage; }
 
         /**
          * Configurable attributes in request JSON payload
          */
-        @Attribute(order = 400)
+        @Attribute(order = 500)
         default List<String> standardDataToSign() {
             return ImmutableList.of("sourceAccount","destinationAccount","amountToTransfer");
         }
@@ -99,7 +108,7 @@ public class OS_Auth_ValidateTransactionNode implements Node {
         /**
          * Signature for the transaction data.
          */
-        @Attribute(order = 500, validators = RequiredValueValidator.class)
+        @Attribute(order = 600, validators = RequiredValueValidator.class)
         default String signatureInSharedData() {
             return "signature";
         }
@@ -107,7 +116,7 @@ public class OS_Auth_ValidateTransactionNode implements Node {
         /**
          * Object used to transfer FIDO AuthenticationResponse.
          */
-        @Attribute(order = 600)
+        @Attribute(order = 700)
         default Map<String, String> fidoDataToSign() {
             return ImmutableMap.<String, String>builder()
                     .put("fidoProtocol", "fidoProtocol")
@@ -118,7 +127,7 @@ public class OS_Auth_ValidateTransactionNode implements Node {
         /**
          * Array of key/value pairs representing the data fields of the transaction context.
          */
-        @Attribute(order = 700)
+        @Attribute(order = 800)
         default Map<String, String> adaptiveDataToSign() {
             return Collections.emptyMap();
         }
@@ -126,7 +135,7 @@ public class OS_Auth_ValidateTransactionNode implements Node {
         /**
          * Orchestration transaction data signing input. Delivery method for this transaction message is specified in the orchestrationDelivery field.
          */
-        @Attribute(order = 800)
+        @Attribute(order = 900)
         default Map<String, String> adaptiveAttributes() {
             return ImmutableMap.<String, String>builder()
                     .put("accountRef", "accountRef")
@@ -143,7 +152,7 @@ public class OS_Auth_ValidateTransactionNode implements Node {
         /**
          * Configurable attributes in request JSON payload
          */
-        @Attribute(order = 900)
+        @Attribute(order = 1000)
         default Map<String, String> optionalAttributes() {
             return Collections.emptyMap();
         }
@@ -151,7 +160,7 @@ public class OS_Auth_ValidateTransactionNode implements Node {
         /**
          * Indicates whether a push notification should be sent, and/or if the orchestration command should be included in the response requestMessage.
          */
-        @Attribute(order = 1000)
+        @Attribute(order = 1100)
         default OrchestrationDelivery orchestrationDelivery() {
             return OrchestrationDelivery.both;
         }
@@ -159,7 +168,7 @@ public class OS_Auth_ValidateTransactionNode implements Node {
         /**
          * Timeout in seconds.
          */
-        @Attribute(order = 1100)
+        @Attribute(order = 1200)
         default int timeout() {
             return Constants.OSTID_DEFAULT_EVENT_EXPIRY;
         }
@@ -167,7 +176,7 @@ public class OS_Auth_ValidateTransactionNode implements Node {
         /**
          * How to build and store visual code message in SharedState
          */
-        @Attribute(order = 1200)
+        @Attribute(order = 1300)
         default VisualCodeMessageOptions visualCodeMessageOptions() {
             return VisualCodeMessageOptions.sessionID;
         }
@@ -322,7 +331,7 @@ public class OS_Auth_ValidateTransactionNode implements Node {
 	            throw new NodeProcessException("Oopts, there are missing data for OneSpan Auth Validate Transaction Process!");
 	        } 
 	        
-            String APIUrl = String.format(Constants.OSTID_API_ADAPTIVE_SEND_TRANSACTION, usernameJsonValue.asString(), tenantName);
+            String APIUrl = String.format(Constants.OSTID_API_ADAPTIVE_SEND_TRANSACTION, usernameJsonValue.asString(), config.domain());
             /**
              * 1.objectType
              * 2.dataToSign
@@ -359,7 +368,7 @@ public class OS_Auth_ValidateTransactionNode implements Node {
             );
             logger.debug(loggerPrefix + "OS_Auth_ValidateTransactionNode JSON:" + sendTransactionJSON);
 
-            HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, sendTransactionJSON);
+            HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, sendTransactionJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
             JSONObject responseJSON = httpEntity.getResponseJSON();
 
             if (httpEntity.isSuccess()) {

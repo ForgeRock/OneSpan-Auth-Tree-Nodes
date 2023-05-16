@@ -31,7 +31,7 @@ public class Constants {
     public static final String OSTID_API_VDP_ASSIGN_AUTHENTICATOR = "/v1/authenticators/%1$s/assign";
     public static final String OSTID_API_VDP_GET_USER = "/v1/users/%1$s@%2$s";
     public static final String OSTID_API_VDP_GET_AUTHENTICATOR = "/v1/authenticators?serialNumber=%1$s&domain=%2$s&type=VIR10&assigned=true&offset=0&limit=20";
-    public static final String OSTID_API_VDP_GENERATE_VOTP = "/v1/authenticators/%1$s/applications/PASSWORD/generate-votp";
+    public static final String OSTID_API_VDP_GENERATE_VOTP = "/v1/authenticators/%1$s/applications/%2$s/generate-votp";
 
     //deprecated API Endpoints
     public static final String OSTID_API_USER_REGISTER = "/userregister/v1/";
@@ -165,6 +165,8 @@ public class Constants {
     public static final String OSTID_DEFAULT_CREDITORBANK = "creditorBank";
     public static final String OSTID_DEFAULT_DEBTORIBAN = "debtorIBAN";
     public static final String OSTID_STATIC_PASSWORD = "staticPassword";
+    public static final String OSTID_KEYSTORE_ALIAS = "os_asp";
+    public static final String OSTID_DEFAULT_DOMAIN = "master";
 
     public static final int OSTID_DEFAULT_CHECK_ACTIVATION_TIMEOUT = 0;
     public static final int OSTID_DEFAULT_EVENT_EXPIRY = 60;

@@ -27,9 +27,12 @@ import com.os.tid.forgerock.openam.nodes.OS_Auth_ActivateDeviceNode.OSTIDActivat
 import com.os.tid.forgerock.openam.nodes.OS_Auth_AddDeviceNode.AddDeviceOutcome;
 import com.os.tid.forgerock.openam.utils.DateUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
+import com.os.tid.forgerock.openam.utils.SslUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
+import com.sun.identity.sm.RequiredValueValidator;
 import com.sun.identity.sm.SMSException;
 import org.forgerock.json.JsonValue;
+import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.*;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.sm.AnnotatedServiceRegistry;
@@ -103,7 +106,7 @@ public class OS_Auth_CheckActivationNode implements Node {
 	                    usernameJsonValue.asString(),                            //param1
 	                    Constants.OSTID_DEFAULT_CHECK_ACTIVATION_TIMEOUT         //param2
 	            );
-                HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName,environment) + Constants.OSTID_API_CHECK_ACTIVATION, checkActivationJSON);
+                HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName,environment) + Constants.OSTID_API_CHECK_ACTIVATION, checkActivationJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
                 JSONObject checkActivationResponseJSON = httpEntity.getResponseJSON();
                 if(httpEntity.isSuccess()){
                     String activationStatus = checkActivationResponseJSON.getString(Constants.OSTID_RESPONSE_CHECK_ACTIVATION_STATUS);

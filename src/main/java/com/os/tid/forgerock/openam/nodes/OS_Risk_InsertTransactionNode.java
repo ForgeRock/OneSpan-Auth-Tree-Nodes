@@ -28,6 +28,7 @@ import com.os.tid.forgerock.openam.nodes.OS_Auth_UserLoginNode.UserLoginOutcome;
 import com.os.tid.forgerock.openam.nodes.OS_Auth_VDPGenerateVOTPNode.GenerateVOTPOutcome;
 import com.os.tid.forgerock.openam.utils.CollectionsUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
+import com.os.tid.forgerock.openam.utils.SslUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
@@ -65,9 +66,17 @@ public class OS_Risk_InsertTransactionNode implements Node {
      */
     public interface Config {
         /**
-         * The key name in Shared State which represents the IAA/OCA username
+         * Domain wherein to search for user accounts.
          */
         @Attribute(order = 100, validators = RequiredValueValidator.class)
+        default String domain() {
+            return Constants.OSTID_DEFAULT_DOMAIN;
+        }
+        
+        /**
+         * The key name in Shared State which represents the IAA/OCA username
+         */
+        @Attribute(order = 200, validators = RequiredValueValidator.class)
         default String userNameInSharedData() {
             return Constants.OSTID_DEFAULT_USERNAME;
         }
@@ -75,7 +84,7 @@ public class OS_Risk_InsertTransactionNode implements Node {
         /**
          * Orchestration transaction data signing input. Delivery method for this transaction message is specified in the orchestrationDelivery field.
          */
-        @Attribute(order = 200)
+        @Attribute(order = 300)
         default Map<String, String> adaptiveAttributes() {
             return ImmutableMap.<String, String>builder()
                     .put("accountRef", "accountRef")
@@ -160,7 +169,7 @@ public class OS_Risk_InsertTransactionNode implements Node {
                     relationshipRef                                     			 //param7
             );
             String APIUrl = Constants.OSTID_API_RISK_SEND_TRANSACTION;
-            HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, sendTransactionJSON);
+            HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, sendTransactionJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
             JSONObject responseJSON = httpEntity.getResponseJSON();
 
             if (httpEntity.isSuccess()) {

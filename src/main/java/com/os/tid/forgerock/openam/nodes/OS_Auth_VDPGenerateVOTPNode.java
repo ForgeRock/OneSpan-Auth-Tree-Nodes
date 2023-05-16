@@ -50,6 +50,7 @@ import com.os.tid.forgerock.openam.models.HttpEntity;
 import com.os.tid.forgerock.openam.nodes.OS_Auth_VDPAssignAuthenticatorNode.VDPAssignAuthenticatorOutcome;
 import com.os.tid.forgerock.openam.utils.CollectionsUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
+import com.os.tid.forgerock.openam.utils.SslUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
 import com.sun.identity.sm.RequiredValueValidator;
 import com.sun.identity.sm.SMSException;
@@ -71,10 +72,18 @@ public class OS_Auth_VDPGenerateVOTPNode implements Node {
      * Configuration for the OS Auth Generate Challenge Node.
      */
     public interface Config {
+        /**
+         * Domain wherein to search for user accounts.
+         */
+        @Attribute(order = 100, validators = RequiredValueValidator.class)
+        default String domain() {
+            return Constants.OSTID_DEFAULT_DOMAIN;
+        }
+        
     	  /**
          * The key name in Shared State which represents the OCA username
          */
-        @Attribute(order = 100, validators = RequiredValueValidator.class)
+        @Attribute(order = 200, validators = RequiredValueValidator.class)
         default String userNameInSharedData() {
             return Constants.OSTID_DEFAULT_USERNAME;
         }
@@ -82,7 +91,7 @@ public class OS_Auth_VDPGenerateVOTPNode implements Node {
         /**
          * Indicates if the authenticator assigned to the user must be activated using online or offline multi-device licensing (MDL) activation.
          */
-        @Attribute(order = 200, validators = RequiredValueValidator.class)
+        @Attribute(order = 300, validators = RequiredValueValidator.class)
         default DeliveryMethod vdpDeliveryMethod() {
             return DeliveryMethod.Email;
         }
@@ -90,7 +99,7 @@ public class OS_Auth_VDPGenerateVOTPNode implements Node {
         /**
          * Configurable attributes in request JSON payload
          */
-        @Attribute(order = 300)
+        @Attribute(order = 400)
         default Map<String, String> optionalAttributes() {
             return ImmutableMap.of("emailAddress", "emailAddress");
         }
@@ -139,8 +148,8 @@ public class OS_Auth_VDPGenerateVOTPNode implements Node {
 	        
     		
 	        //API1: GET /v1/users/duotest2305011@duoliang-onespan
-            String getUserURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_VDP_GET_USER,usernameJsonValue.asString(),tenantName);
-            HttpEntity getUserHttpEntity = RestUtils.doGet(getUserURL);
+            String getUserURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_VDP_GET_USER,usernameJsonValue.asString(),config.domain());
+            HttpEntity getUserHttpEntity = RestUtils.doGet(getUserURL,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
             JSONObject getUserResponseJSON = getUserHttpEntity.getResponseJSON();
             if(!getUserHttpEntity.isSuccess()) {
                 String error = getUserResponseJSON.getString("error");
@@ -173,13 +182,14 @@ public class OS_Auth_VDPGenerateVOTPNode implements Node {
             
             List<String> authenticatorsList = authenticatorsJsonArray.toJavaList(String.class);
             String vir10SerialNumber = null;
+            String applicationName = null;
             for (String authenticator : authenticatorsList) {
-                String getAuthenticatorURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_VDP_GET_AUTHENTICATOR,authenticator,tenantName);
-                HttpEntity getAuthenticatorHttpEntity = RestUtils.doGet(getAuthenticatorURL);
+                String getAuthenticatorURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_VDP_GET_AUTHENTICATOR,authenticator,config.domain());
+                HttpEntity getAuthenticatorHttpEntity = RestUtils.doGet(getAuthenticatorURL,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
                 JSONObject getAuthenticatorResponseJSON = getAuthenticatorHttpEntity.getResponseJSON();
                 if(getAuthenticatorHttpEntity.isSuccess()) {
                 	Integer total = getAuthenticatorResponseJSON.getInteger("total");
-                	if(total !=null && total > 0) {
+                	if(total != null && total > 0) {
                 		JSONArray userAuthenticatorsJsonArray = getAuthenticatorResponseJSON.getJSONArray("authenticators");
                 		for(int i = 0; i < userAuthenticatorsJsonArray.size(); i++) {
                 			JSONObject userAuthenticatorJsonObject = userAuthenticatorsJsonArray.getJSONObject(i);
@@ -187,6 +197,16 @@ public class OS_Auth_VDPGenerateVOTPNode implements Node {
             				   userAuthenticatorJsonObject.getString("authenticatorType").equals("VIR10")
                 			) {
                 				vir10SerialNumber = authenticator;
+                				JSONArray applicationsJsonArray = userAuthenticatorJsonObject.getJSONArray("applications");
+                				if(applicationsJsonArray != null && applicationsJsonArray.size() > 0) {
+                					for(int j = 0; j < applicationsJsonArray.size(); j++) {
+                						JSONObject applicationJsonObject = applicationsJsonArray.getJSONObject(j);
+                						if(applicationJsonObject.containsKey("type") && "RO".equals(applicationJsonObject.getString("type"))) {
+            								applicationName = applicationJsonObject.containsKey("name") ? applicationJsonObject.getString("name") : "";
+            								break;
+                						}
+                					}
+                				}
                 				break;
                 			}
                 		}
@@ -198,10 +218,8 @@ public class OS_Auth_VDPGenerateVOTPNode implements Node {
 	            throw new NodeProcessException("Can't find VIR10 authenticator for User " + usernameJsonValue.asString() +"!");
             }
             
-            
-            
             //API3: POST /v1/authenticators/VDP4957024/applications/PASSWORD/generate-votp
-            String generateVotpURL = StringUtils.getAPIEndpoint(tenantName, environment) + String.format(Constants.OSTID_API_VDP_GENERATE_VOTP,vir10SerialNumber);
+            String generateVotpURL = StringUtils.getAPIEndpoint(tenantName, environment) + String.format(Constants.OSTID_API_VDP_GENERATE_VOTP,vir10SerialNumber,applicationName);
 
             String generateVotpJSON = String.format(Constants.OSTID_JSON_VDP_GENERATE_VOTP,
                     optionalAttributesStringBuilder.toString(),                              //param1
@@ -209,7 +227,7 @@ public class OS_Auth_VDPGenerateVOTPNode implements Node {
             );
             logger.debug(loggerPrefix + "OS_Auth_VDPGenerateVOTPNode generateVotpJSON:" + generateVotpJSON);
 
-            HttpEntity generateVotpHttpEntity = RestUtils.doPostJSON(generateVotpURL, generateVotpJSON);
+            HttpEntity generateVotpHttpEntity = RestUtils.doPostJSON(generateVotpURL, generateVotpJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
             JSONObject generateVotpResponseJSON = generateVotpHttpEntity.getResponseJSON();
 
             if (!generateVotpHttpEntity.isSuccess()) {

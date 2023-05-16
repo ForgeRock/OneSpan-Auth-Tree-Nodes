@@ -9,8 +9,10 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
@@ -28,7 +30,7 @@ public class RestUtils {
     private RestUtils() {
     }
 
-    public static HttpEntity doPostJSON(String url, String payload) throws IOException {
+    public static HttpEntity doPostJSON(String url, String payload, SSLConnectionSocketFactory sslConSocFactory) throws IOException {
         logger.debug("RestUtils doPostJSON url: " + url);
         logger.debug("RestUtils doPostJSON payload: " + payload);
 
@@ -39,7 +41,12 @@ public class RestUtils {
         httpDynamicMethod.setHeader("Content-Type", "application/json");
         httpDynamicMethod.setHeader("Accept", "application/json");
 
-        try (CloseableHttpClient httpClient = HttpClients.createDefault();
+	    HttpClientBuilder clientbuilder = HttpClients.custom();
+	    if(sslConSocFactory != null) {
+	    	clientbuilder.setSSLSocketFactory(sslConSocFactory);
+	    }
+        try (     
+    	     CloseableHttpClient httpClient = clientbuilder.build();
              CloseableHttpResponse response = httpClient.execute(httpDynamicMethod)) {
         	int sourceResponseCode = response.getStatusLine().getStatusCode();
         	logger.debug("RestUtils doPostJSON response status: " + sourceResponseCode);
@@ -49,7 +56,7 @@ public class RestUtils {
 	            logger.debug("RestUtils doPostJSON response: " + responseBody);
         	}
             Header headerField = response.getFirstHeader(Constants.OSTID_LOG_CORRELATION_ID);
-            String log_correlation_id = StringUtils.isEmpty(headerField.getValue()) ? "" : headerField.getValue();
+            String log_correlation_id = headerField != null && !StringUtils.isEmpty(headerField.getValue()) ? headerField.getValue() : "";
             try {
                 return new HttpEntity(JSON.parseObject(responseBody), sourceResponseCode, log_correlation_id);
             } catch (Exception e) {
@@ -59,7 +66,7 @@ public class RestUtils {
     }
     
     
-    public static HttpEntity doPutJSON(String url, String payload) throws IOException {
+    public static HttpEntity doPutJSON(String url, String payload, SSLConnectionSocketFactory sslConSocFactory) throws IOException {
         logger.debug("RestUtils doPutJSON url: " + url);
         logger.debug("RestUtils doPutJSON payload: " + payload);
 
@@ -70,7 +77,12 @@ public class RestUtils {
         httpDynamicMethod.setHeader("Content-Type", "application/json");
         httpDynamicMethod.setHeader("Accept", "application/json");
 
-        try (CloseableHttpClient httpClient = HttpClients.createDefault();
+	    HttpClientBuilder clientbuilder = HttpClients.custom();
+	    if(sslConSocFactory != null) {
+	    	clientbuilder.setSSLSocketFactory(sslConSocFactory);
+	    }
+        try (     
+    	     CloseableHttpClient httpClient = clientbuilder.build();
                 CloseableHttpResponse response = httpClient.execute(httpDynamicMethod)) {
            	int sourceResponseCode = response.getStatusLine().getStatusCode();
            	logger.debug("RestUtils doPutJSON response status: " + sourceResponseCode);
@@ -79,19 +91,19 @@ public class RestUtils {
            		responseBody = EntityUtils.toString(response.getEntity());
    	            logger.debug("RestUtils doPutJSON response: " + responseBody);
            	}
-               Header headerField = response.getFirstHeader(Constants.OSTID_LOG_CORRELATION_ID);
-               String log_correlation_id = StringUtils.isEmpty(headerField.getValue()) ? "" : headerField.getValue();
-               try {
-                   return new HttpEntity(JSON.parseObject(responseBody), sourceResponseCode, log_correlation_id);
-               } catch (Exception e) {
-                   return new HttpEntity(new JSONObject(ImmutableMap.of("response",responseBody)), sourceResponseCode, log_correlation_id);
-               }
+           Header headerField = response.getFirstHeader(Constants.OSTID_LOG_CORRELATION_ID);
+           String log_correlation_id = headerField != null && !StringUtils.isEmpty(headerField.getValue()) ? headerField.getValue() : "";
+           try {
+               return new HttpEntity(JSON.parseObject(responseBody), sourceResponseCode, log_correlation_id);
+           } catch (Exception e) {
+               return new HttpEntity(new JSONObject(ImmutableMap.of("response",responseBody)), sourceResponseCode, log_correlation_id);
            }
+       }
     }
     
     
     
-    public static HttpEntity doPatchJSON(String url, String payload) throws IOException {
+    public static HttpEntity doPatchJSON(String url, String payload, SSLConnectionSocketFactory sslConSocFactory) throws IOException {
         logger.debug("RestUtils doPatchJSON url: " + url);
         logger.debug("RestUtils doPatchJSON payload: " + payload);
 
@@ -102,7 +114,12 @@ public class RestUtils {
         httpDynamicMethod.setHeader("Content-Type", "application/json");
         httpDynamicMethod.setHeader("Accept", "application/json");
 
-        try (CloseableHttpClient httpClient = HttpClients.createDefault();
+	    HttpClientBuilder clientbuilder = HttpClients.custom();
+	    if(sslConSocFactory != null) {
+	    	clientbuilder.setSSLSocketFactory(sslConSocFactory);
+	    }
+        try (     
+    	     CloseableHttpClient httpClient = clientbuilder.build();
                 CloseableHttpResponse response = httpClient.execute(httpDynamicMethod)) {
            	int sourceResponseCode = response.getStatusLine().getStatusCode();
            	logger.debug("RestUtils doPatchJSON response status: " + sourceResponseCode);
@@ -111,17 +128,17 @@ public class RestUtils {
            		responseBody = EntityUtils.toString(response.getEntity());
    	            logger.debug("RestUtils doPatchJSON response: " + responseBody);
            	}
-               Header headerField = response.getFirstHeader(Constants.OSTID_LOG_CORRELATION_ID);
-               String log_correlation_id = StringUtils.isEmpty(headerField.getValue()) ? "" : headerField.getValue();
-               try {
-                   return new HttpEntity(JSON.parseObject(responseBody), sourceResponseCode, log_correlation_id);
-               } catch (Exception e) {
-                   return new HttpEntity(new JSONObject(ImmutableMap.of("response",responseBody)), sourceResponseCode, log_correlation_id);
-               }
+           Header headerField = response.getFirstHeader(Constants.OSTID_LOG_CORRELATION_ID);
+           String log_correlation_id = headerField != null && !StringUtils.isEmpty(headerField.getValue()) ? headerField.getValue() : "";
+           try {
+               return new HttpEntity(JSON.parseObject(responseBody), sourceResponseCode, log_correlation_id);
+           } catch (Exception e) {
+               return new HttpEntity(new JSONObject(ImmutableMap.of("response",responseBody)), sourceResponseCode, log_correlation_id);
            }
+       }
     }
 
-    public static HttpEntity doHttpRequestWithoutResponse(String url, String payload, String httpmethod, Map<String, String> requestHeaders) throws IOException {
+    public static HttpEntity doHttpRequestWithoutResponse(String url, String payload, String httpmethod, Map<String, String> requestHeaders, SSLConnectionSocketFactory sslConSocFactory) throws IOException {
         logger.debug("RestUtils doHttpRequestWithoutResponse url: " + url);
         logger.debug("RestUtils doHttpRequestWithoutResponse payload: " + payload);
 
@@ -139,7 +156,12 @@ public class RestUtils {
 			}
         }
         
-        try (CloseableHttpClient httpClient = HttpClients.createDefault();
+	    HttpClientBuilder clientbuilder = HttpClients.custom();
+	    if(sslConSocFactory != null) {
+	    	clientbuilder.setSSLSocketFactory(sslConSocFactory);
+	    }
+        try (     
+    	     CloseableHttpClient httpClient = clientbuilder.build();
                 CloseableHttpResponse response = httpClient.execute(httpDynamicMethod)) {
            	int sourceResponseCode = response.getStatusLine().getStatusCode();
            	logger.debug("RestUtils doHttpRequestWithoutResponse response status: " + sourceResponseCode);
@@ -148,24 +170,29 @@ public class RestUtils {
            		responseBody = EntityUtils.toString(response.getEntity());
    	            logger.debug("RestUtils doHttpRequestWithoutResponse response: " + responseBody);
            	}
-               Header headerField = response.getFirstHeader(Constants.OSTID_LOG_CORRELATION_ID);
-               String log_correlation_id = StringUtils.isEmpty(headerField.getValue()) ? "" : headerField.getValue();
-               try {
-                   return new HttpEntity(JSON.parseObject(responseBody), sourceResponseCode, log_correlation_id);
-               } catch (Exception e) {
-                   return new HttpEntity(new JSONObject(ImmutableMap.of("response",responseBody)), sourceResponseCode, log_correlation_id);
-               }
+           Header headerField = response.getFirstHeader(Constants.OSTID_LOG_CORRELATION_ID);
+           String log_correlation_id = headerField != null && !StringUtils.isEmpty(headerField.getValue()) ? headerField.getValue() : "";
+           try {
+               return new HttpEntity(JSON.parseObject(responseBody), sourceResponseCode, log_correlation_id);
+           } catch (Exception e) {
+               return new HttpEntity(new JSONObject(ImmutableMap.of("response",responseBody)), sourceResponseCode, log_correlation_id);
            }
+       }
     }
 
     
-    public static HttpEntity doGet(String url) throws IOException {
+    public static HttpEntity doGet(String url, SSLConnectionSocketFactory sslConSocFactory) throws IOException {
         logger.debug("RestUtils doGet url: " + url);
         
         HttpDynamicMethod httpDynamicMethod = new HttpDynamicMethod("GET", url);
         httpDynamicMethod.setHeader("Accept", "application/json");
         
-        try (CloseableHttpClient httpClient = HttpClients.createDefault();
+	    HttpClientBuilder clientbuilder = HttpClients.custom();
+	    if(sslConSocFactory != null) {
+	    	clientbuilder.setSSLSocketFactory(sslConSocFactory);
+	    }
+        try (     
+    	     CloseableHttpClient httpClient = clientbuilder.build();
                 CloseableHttpResponse response = httpClient.execute(httpDynamicMethod)) {
            	int sourceResponseCode = response.getStatusLine().getStatusCode();
            	logger.debug("RestUtils doGet response status: " + sourceResponseCode);
@@ -174,14 +201,14 @@ public class RestUtils {
            		responseBody = EntityUtils.toString(response.getEntity());
    	            logger.debug("RestUtils doGet response: " + responseBody);
            	}
-               Header headerField = response.getFirstHeader(Constants.OSTID_LOG_CORRELATION_ID);
-               String log_correlation_id = StringUtils.isEmpty(headerField.getValue()) ? "" : headerField.getValue();
-               try {
-                   return new HttpEntity(JSON.parseObject(responseBody), sourceResponseCode, log_correlation_id);
-               } catch (Exception e) {
-                   return new HttpEntity(new JSONObject(ImmutableMap.of("response",responseBody)), sourceResponseCode, log_correlation_id);
-               }
+           Header headerField = response.getFirstHeader(Constants.OSTID_LOG_CORRELATION_ID);
+           String log_correlation_id = headerField != null && !StringUtils.isEmpty(headerField.getValue()) ? headerField.getValue() : "";
+           try {
+               return new HttpEntity(JSON.parseObject(responseBody), sourceResponseCode, log_correlation_id);
+           } catch (Exception e) {
+               return new HttpEntity(new JSONObject(ImmutableMap.of("response",responseBody)), sourceResponseCode, log_correlation_id);
            }
+       }
     }
     
 

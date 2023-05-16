@@ -141,7 +141,7 @@ public class OS_Sample_StoreCommandNode implements Node {
             StrSubstitutor sub = new StrSubstitutor(placeholders, "{", "}");
             String commandURLFinal = sub.replace(commandURL);
 
-            HttpEntity httpEntity = RestUtils.doHttpRequestWithoutResponse(commandURLFinal, demo_cmd_payload,config.httpmethod().name(),config.requestHeaders());
+            HttpEntity httpEntity = RestUtils.doHttpRequestWithoutResponse(commandURLFinal, demo_cmd_payload,config.httpmethod().name(),config.requestHeaders(),null);
 
             if (httpEntity.isSuccess()) {
                 return goTo(OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome.Success)

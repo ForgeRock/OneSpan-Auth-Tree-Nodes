@@ -28,6 +28,7 @@ import com.os.tid.forgerock.openam.models.HttpEntity;
 import com.os.tid.forgerock.openam.nodes.OS_Auth_CheckActivationNode.ActivationStatusOutcome;
 import com.os.tid.forgerock.openam.nodes.OS_Auth_CheckSessionStatusNode.CheckSessionStatusOutcome;
 import com.os.tid.forgerock.openam.utils.RestUtils;
+import com.os.tid.forgerock.openam.utils.SslUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
 import com.sun.identity.sm.RequiredValueValidator;
 import com.sun.identity.sm.SMSException;
@@ -64,9 +65,17 @@ public class OS_Auth_GenerateChallengeNode implements Node {
      */
     public interface Config {
         /**
-         * Length of the challenge excluding the optional check digit.
+         * Domain wherein to search for user accounts.
          */
         @Attribute(order = 100, validators = RequiredValueValidator.class)
+        default String domain() {
+            return Constants.OSTID_DEFAULT_DOMAIN;
+        }
+        
+        /**
+         * Length of the challenge excluding the optional check digit.
+         */
+        @Attribute(order = 200, validators = RequiredValueValidator.class)
         default int length() {
             return 6;
         }
@@ -74,14 +83,14 @@ public class OS_Auth_GenerateChallengeNode implements Node {
         /**
          * Signifies if a check digit must be appended to the challenge.
          */
-        @Attribute(order = 200, validators = RequiredValueValidator.class)
+        @Attribute(order = 300, validators = RequiredValueValidator.class)
         default boolean checkDigit() {
             return false;
         }
         /**
          * The key name in Shared State which represents the OCA username
          */
-        @Attribute(order = 300, validators = RequiredValueValidator.class)
+        @Attribute(order = 400, validators = RequiredValueValidator.class)
         default String userNameInSharedData() {
             return Constants.OSTID_DEFAULT_USERNAME;
         }
@@ -110,8 +119,8 @@ public class OS_Auth_GenerateChallengeNode implements Node {
 	                config.length(),                                    //param1
 	                config.checkDigit()                                 //param2
 	        );
-            String url = StringUtils.getAPIEndpoint(tenantName, environment) + String.format(Constants.OSTID_API_ADAPTIVE_GENERATE_CHALLENGE, usernameJsonValue.asString(), tenantName);
-            HttpEntity httpEntity = RestUtils.doPostJSON(url, generateChallengeJSON);
+            String url = StringUtils.getAPIEndpoint(tenantName, environment) + String.format(Constants.OSTID_API_ADAPTIVE_GENERATE_CHALLENGE, usernameJsonValue.asString(), config.domain());
+            HttpEntity httpEntity = RestUtils.doPostJSON(url, generateChallengeJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
             JSONObject responseJSON = httpEntity.getResponseJSON();
             if (httpEntity.isSuccess()) {
                 GenerateChallengeOutput generateChallengeOutput = JSON.toJavaObject(responseJSON, GenerateChallengeOutput.class);

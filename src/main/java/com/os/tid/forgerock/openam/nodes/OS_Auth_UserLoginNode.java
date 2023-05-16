@@ -29,6 +29,7 @@ import com.os.tid.forgerock.openam.models.GeneralResponseOutput;
 import com.os.tid.forgerock.openam.utils.CollectionsUtils;
 import com.os.tid.forgerock.openam.utils.DateUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
+import com.os.tid.forgerock.openam.utils.SslUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
 import com.sun.identity.sm.RequiredValueValidator;
 import com.sun.identity.sm.SMSException;
@@ -66,9 +67,17 @@ public class OS_Auth_UserLoginNode implements Node {
      */
     public interface Config {
         /**
-         * Input payload object type.
+         * Domain wherein to search for user accounts.
          */
         @Attribute(order = 100, validators = RequiredValueValidator.class)
+        default String domain() {
+            return Constants.OSTID_DEFAULT_DOMAIN;
+        }
+        
+        /**
+         * Input payload object type.
+         */
+        @Attribute(order = 200, validators = RequiredValueValidator.class)
         default ObjectType objectType() {
             return ObjectType.AdaptiveLoginInput;
         }
@@ -76,7 +85,7 @@ public class OS_Auth_UserLoginNode implements Node {
         /**
          * Credentials to authenticate the user.
          */
-        @Attribute(order = 200, validators = RequiredValueValidator.class)
+        @Attribute(order = 300, validators = RequiredValueValidator.class)
         default CredentialsType credentialsType() {
             return CredentialsType.none;
         }
@@ -84,7 +93,7 @@ public class OS_Auth_UserLoginNode implements Node {
         /**
          * The key name in Shared State which represents the IAA/OCA username
          */
-        @Attribute(order = 300, validators = RequiredValueValidator.class)
+        @Attribute(order = 400, validators = RequiredValueValidator.class)
         default String userNameInSharedData() {
             return Constants.OSTID_DEFAULT_USERNAME;
         }
@@ -92,7 +101,7 @@ public class OS_Auth_UserLoginNode implements Node {
         /**
          * Configurable attributes in request JSON payload
          */
-        @Attribute(order = 400)
+        @Attribute(order = 500)
         default Map<String, String> optionalAttributes() {
             return Collections.emptyMap();
         }
@@ -100,7 +109,7 @@ public class OS_Auth_UserLoginNode implements Node {
         /**
          * Indicates whether a push notification should be sent, and/or if the orchestration command should be included in the response requestMessage.
          */
-        @Attribute(order = 500)
+        @Attribute(order = 600)
         default OrchestrationDelivery orchestrationDelivery() {
             return OrchestrationDelivery.both;
         }
@@ -108,7 +117,7 @@ public class OS_Auth_UserLoginNode implements Node {
         /**
          * Timeout in seconds.
          */
-        @Attribute(order = 600)
+        @Attribute(order = 700)
         default int timeout() {
             return Constants.OSTID_DEFAULT_EVENT_EXPIRY;
         }
@@ -116,7 +125,7 @@ public class OS_Auth_UserLoginNode implements Node {
         /**
          * How to build and store visual code message in SharedState
          */
-        @Attribute(order = 700)
+        @Attribute(order = 800)
         default VisualCodeMessageOptions visualCodeMessageOptions() {
             return VisualCodeMessageOptions.sessionID;
         }
@@ -168,7 +177,7 @@ public class OS_Auth_UserLoginNode implements Node {
 	            throw new NodeProcessException("Oopts, there are missing data for OneSpan Auth User Login Process!");
 	        } 
 	        
-            String APIUrl = String.format(Constants.OSTID_API_ADAPTIVE_USER_LOGIN, usernameJsonValue.asString(), tenantName);
+            String APIUrl = String.format(Constants.OSTID_API_ADAPTIVE_USER_LOGIN, usernameJsonValue.asString(), config.domain());
             /**
              * 1.objectType
              * 2.credentials
@@ -245,7 +254,7 @@ public class OS_Auth_UserLoginNode implements Node {
             );
             logger.debug(loggerPrefix + "OS_Auth_UserLoginNode user login JSON:" + userLoginJSON);
 
-            HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, userLoginJSON);
+            HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, userLoginJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
             JSONObject responseJSON = httpEntity.getResponseJSON();
 
             if (httpEntity.isSuccess()) {

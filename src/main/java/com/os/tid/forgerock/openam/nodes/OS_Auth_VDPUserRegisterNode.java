@@ -29,6 +29,7 @@ import com.os.tid.forgerock.openam.nodes.OS_Auth_ActivateDeviceNode.OSTIDActivat
 import com.os.tid.forgerock.openam.utils.CollectionsUtils;
 import com.os.tid.forgerock.openam.utils.DateUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
+import com.os.tid.forgerock.openam.utils.SslUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
 import com.sun.identity.sm.RequiredValueValidator;
 import com.sun.identity.sm.SMSException;
@@ -66,9 +67,17 @@ public class OS_Auth_VDPUserRegisterNode implements Node {
      */
     public interface Config {
         /**
-         * The key name in Shared State which represents the IAA/OCA username
+         * Domain wherein to search for user accounts.
          */
         @Attribute(order = 100, validators = RequiredValueValidator.class)
+        default String domain() {
+            return Constants.OSTID_DEFAULT_DOMAIN;
+        }
+        
+        /**
+         * The key name in Shared State which represents the IAA/OCA username
+         */
+        @Attribute(order = 200, validators = RequiredValueValidator.class)
         default String userNameInSharedData() {
             return Constants.OSTID_DEFAULT_USERNAME;
         }
@@ -76,7 +85,7 @@ public class OS_Auth_VDPUserRegisterNode implements Node {
         /**
          * Indicates if the authenticator assigned to the user must be activated using online or offline multi-device licensing (MDL) activation.
          */
-        @Attribute(order = 200, validators = RequiredValueValidator.class)
+        @Attribute(order = 300, validators = RequiredValueValidator.class)
         default DeliveryMethod vdpDeliveryMethod() {
             return DeliveryMethod.Email;
         }
@@ -84,7 +93,7 @@ public class OS_Auth_VDPUserRegisterNode implements Node {
         /**
          * Configurable attributes in request JSON payload
          */
-        @Attribute(order = 300)
+        @Attribute(order = 400)
         default Map<String, String> optionalAttributes() {
             return ImmutableMap.of("emailAddress", "emailAddress");
         }
@@ -136,10 +145,10 @@ public class OS_Auth_VDPUserRegisterNode implements Node {
 	            throw new NodeProcessException("Oopts, there are missing data for OneSpan Auth VDP User Register Process!");
 	        } 
 	        
-            String APIUrl = String.format(Constants.OSTID_API_VDP_USER_REGISTER,usernameJsonValue.asString(),tenantName);
+            String APIUrl = String.format(Constants.OSTID_API_VDP_USER_REGISTER,usernameJsonValue.asString(),config.domain());
 
             //step1: GET /v1/users/user1@duoliang-onespan
-            HttpEntity getUserHttpEntity = RestUtils.doGet(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl);
+            HttpEntity getUserHttpEntity = RestUtils.doGet(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
 
             
             //if exist: PATCH /v1/users/user1@duoliang-onespan
@@ -150,7 +159,7 @@ public class OS_Auth_VDPUserRegisterNode implements Node {
                 );
                 logger.debug(loggerPrefix + "OS_Auth_VDPUserRegisterNode vdpUserRegisterJSON:" + vdpUserRegisterJSON);
 
-                HttpEntity httpEntity = RestUtils.doPatchJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, vdpUserRegisterJSON);
+                HttpEntity httpEntity = RestUtils.doPatchJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, vdpUserRegisterJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
                 JSONObject responseJSON = httpEntity.getResponseJSON();
 
                 if (httpEntity.isSuccess()) {
@@ -184,7 +193,7 @@ public class OS_Auth_VDPUserRegisterNode implements Node {
                 );
                 logger.debug(loggerPrefix + "OS_Auth_VDPUserRegisterNode vdpUserRegisterJSON:" + vdpUserRegisterJSON);
 
-                HttpEntity httpEntity = RestUtils.doPutJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, vdpUserRegisterJSON);
+                HttpEntity httpEntity = RestUtils.doPutJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, vdpUserRegisterJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
                 JSONObject responseJSON = httpEntity.getResponseJSON();
 
                 if (httpEntity.isSuccess()) {

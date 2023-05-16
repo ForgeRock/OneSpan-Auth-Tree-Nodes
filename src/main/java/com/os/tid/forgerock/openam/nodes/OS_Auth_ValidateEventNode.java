@@ -54,6 +54,7 @@ import com.os.tid.forgerock.openam.nodes.OS_Auth_UserRegisterNode.UserRegisterOu
 import com.os.tid.forgerock.openam.utils.CollectionsUtils;
 import com.os.tid.forgerock.openam.utils.DateUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
+import com.os.tid.forgerock.openam.utils.SslUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
 import com.sun.identity.sm.RequiredValueValidator;
 import com.sun.identity.sm.SMSException;
@@ -76,9 +77,17 @@ public class OS_Auth_ValidateEventNode implements Node {
      */
     public interface Config {
         /**
-         * Name of the non-monetary event type. String values for numeric keys related to custom event types are additionally accepted.
+         * Domain wherein to search for user accounts.
          */
         @Attribute(order = 100, validators = RequiredValueValidator.class)
+        default String domain() {
+            return Constants.OSTID_DEFAULT_DOMAIN;
+        }
+        
+        /**
+         * Name of the non-monetary event type. String values for numeric keys related to custom event types are additionally accepted.
+         */
+        @Attribute(order = 200, validators = RequiredValueValidator.class)
         default OS_Auth_ValidateEventNode.EventType eventType() {
             return OS_Auth_ValidateEventNode.EventType.SpecifyBelow;
         }
@@ -86,7 +95,7 @@ public class OS_Auth_ValidateEventNode implements Node {
         /**
          * The hardcoded value of the event type.
          */
-        @Attribute(order = 200)
+        @Attribute(order = 300)
         default String specifyEventType() {
             return "";
         }
@@ -94,7 +103,7 @@ public class OS_Auth_ValidateEventNode implements Node {
         /**
          * The key name of the event type in SharedState.
          */
-        @Attribute(order = 300)
+        @Attribute(order = 400)
         default String eventTypeInSharedState() {
             return "";
         }
@@ -102,7 +111,7 @@ public class OS_Auth_ValidateEventNode implements Node {
         /**
          * Credentials to authenticate the user.
          */
-        @Attribute(order = 400, validators = RequiredValueValidator.class)
+        @Attribute(order = 500, validators = RequiredValueValidator.class)
         default CredentialsType credentialsType() {
             return CredentialsType.none;
         }
@@ -110,7 +119,7 @@ public class OS_Auth_ValidateEventNode implements Node {
         /**
          * The key name in Shared State which represents the IAA username
          */
-        @Attribute(order = 500, validators = RequiredValueValidator.class)
+        @Attribute(order = 600, validators = RequiredValueValidator.class)
         default String userNameInSharedData() {
             return Constants.OSTID_DEFAULT_USERNAME;
         }
@@ -119,7 +128,7 @@ public class OS_Auth_ValidateEventNode implements Node {
         /**
          * Configurable attributes in request JSON payload
          */
-        @Attribute(order = 600)
+        @Attribute(order = 700)
         default Map<String, String> optionalAttributes() {
             return Collections.emptyMap();
         }
@@ -127,7 +136,7 @@ public class OS_Auth_ValidateEventNode implements Node {
         /**
          * Indicates whether a push notification should be sent, and/or if the orchestration command should be included in the response requestMessage.
          */
-        @Attribute(order = 700)
+        @Attribute(order = 800)
         default OrchestrationDelivery orchestrationDelivery() {
             return OrchestrationDelivery.both;
         }
@@ -135,7 +144,7 @@ public class OS_Auth_ValidateEventNode implements Node {
         /**
          * Timeout in seconds.
          */
-        @Attribute(order = 800)
+        @Attribute(order = 900)
         default int timeout() {
             return Constants.OSTID_DEFAULT_EVENT_EXPIRY;
         }
@@ -143,7 +152,7 @@ public class OS_Auth_ValidateEventNode implements Node {
         /**
          * How to build and store visual code message in SharedState
          */
-        @Attribute(order = 900)
+        @Attribute(order = 1000)
         default VisualCodeMessageOptions visualCodeMessageOptions() {
             return VisualCodeMessageOptions.sessionID;
         }
@@ -195,7 +204,7 @@ public class OS_Auth_ValidateEventNode implements Node {
 	            throw new NodeProcessException("Oopts, there are missing data for OneSpan Auth Event Validation Process!");
 	        } 
 	        
-            String APIUrl = String.format(Constants.OSTID_API_ADAPTIVE_EVENT_VALIDATION, usernameJsonValue.asString(), tenantName);
+            String APIUrl = String.format(Constants.OSTID_API_ADAPTIVE_EVENT_VALIDATION, usernameJsonValue.asString(), config.domain());
             /**
              * 1.eventType
              * 2.credentials
@@ -281,7 +290,7 @@ public class OS_Auth_ValidateEventNode implements Node {
             );
             logger.debug(loggerPrefix + "OS_Auth_ValidateEventNode request JSON:" + eventValidationJSON);
 
-            HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, eventValidationJSON);
+            HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, eventValidationJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
             JSONObject responseJSON = httpEntity.getResponseJSON();
 
             if (httpEntity.isSuccess()) {
