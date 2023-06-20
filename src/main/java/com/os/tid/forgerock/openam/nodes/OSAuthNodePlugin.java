@@ -71,7 +71,7 @@ import org.slf4j.LoggerFactory;
  * @since AM 5.5.0
  */
 public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
-	static private String currentVersion = "1.2.5";
+	static private String currentVersion = "1.2.12";
     private final Logger logger = LoggerFactory.getLogger(OSAuthNodePlugin.class);
 
 	private final List<Class<? extends Node>> nodeList = ImmutableList.of(
@@ -104,7 +104,8 @@ public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
 			//Sample
 			OS_Sample_ErrorDisplayNode.class,
 			OS_Sample_StoreCommandNode.class,
-			OS_Sample_AttributesCollector.class	
+			OS_Sample_AttributesCollector.class,
+			OS_Sample_TransactionCollector.class
 	);
 
 //	private final Class serviceClass = OSConfigurationsService.class;
@@ -163,17 +164,40 @@ public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
 	@Override
 	public void upgrade(String fromVersion) throws PluginException {
 		try {
-	        for (Class<? extends Node> nodeClass : this.nodeList) {
-		        pluginTools.upgradeAuthNode(nodeClass);
-			}
-	        
-		    SSOToken adminToken = AccessController.doPrivileged(AdminTokenAction.getInstance());
-	        ServiceManager sm = new ServiceManager(adminToken);
-	        if (sm.getServiceNames().contains("OSConfigurationsService")) {
-	            sm.removeService("OSConfigurationsService",fromVersion);
-	        }
-	        pluginTools.installService(OSConfigurationsService.class);
-		} catch(SSOException | SMSException e) {
+			//OCA
+			pluginTools.upgradeAuthNode(OS_Auth_AddDeviceNode.class);
+			pluginTools.upgradeAuthNode(OS_Auth_ActivateDeviceNode.class);
+			pluginTools.upgradeAuthNode(OS_Auth_GenerateChallengeNode.class);
+
+			pluginTools.upgradeAuthNode(OS_Sample_TransactionCollector.class);
+
+			//Adaptive
+			pluginTools.upgradeAuthNode(OS_Auth_CheckActivationNode.class);
+			pluginTools.upgradeAuthNode(OS_Auth_CheckSessionStatusNode.class);
+			pluginTools.upgradeAuthNode(OS_Auth_UserRegisterNode.class);
+			pluginTools.upgradeAuthNode(OS_Auth_UserLoginNode.class);
+			pluginTools.upgradeAuthNode(OS_Auth_ValidateTransactionNode.class);
+			pluginTools.upgradeAuthNode(OS_Auth_ValidateEventNode.class);
+
+			//Risk
+			pluginTools.upgradeAuthNode(OS_Risk_CDDCNode.class);
+			pluginTools.upgradeAuthNode(OS_Risk_InsertTransactionNode.class);
+
+			//Util
+			pluginTools.upgradeAuthNode(OS_Auth_VisualCodeNode.class);
+			pluginTools.upgradeAuthNode(OS_Auth_VisualCodeStopNode.class);
+
+			//Sample
+			pluginTools.upgradeAuthNode(OS_Sample_ErrorDisplayNode.class);
+			pluginTools.upgradeAuthNode(OS_Sample_StoreCommandNode.class);
+			pluginTools.upgradeAuthNode(OS_Sample_AttributesCollector.class);
+
+			pluginTools.upgradeAuthNode(OS_Auth_VDPAssignAuthenticatorNode.class);
+			pluginTools.upgradeAuthNode(OS_Auth_VDPGenerateVOTPNode.class);
+			pluginTools.upgradeAuthNode(OS_Auth_VDPUserRegisterNode.class);
+
+			pluginTools.upgradeIdRepo(OSConfigurationsService.class);
+		} catch(Exception e) {
 	    	e.printStackTrace();
 	    }
 		super.upgrade(fromVersion);

@@ -31,15 +31,20 @@ public interface OSConfigurationsService {
     EnvOptions environment();
 
     @Attribute(order = 3)
-    String publicKey();
+    String applicationRef();
+
+
 
     @Attribute(order = 4)
-    String privateKey();
-    
+    String publicKey();
+
     @Attribute(order = 5)
-    String applicationRef();
+    String privateKey();
+
     
     public enum EnvOptions {
+        sdb,
+        prod,
         Sandbox,
         Production_NA1,
         Production_EU1,
