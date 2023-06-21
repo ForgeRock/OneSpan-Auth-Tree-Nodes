@@ -20,7 +20,7 @@ By analyzing vast and disparate data acquired from user actions, device integrit
 
 Watch this video to learn [how OneSpan intelligent adaptive authentication works](https://www.onespan.com/partners/forgerock).
 
-OneSpan Auth Tree Nodes work in tandem with ForgeRock [Access Management (AM) 7.2](https://backstage.forgerock.com/docs/am/7.2).
+OneSpan Auth Tree Nodes work in tandem with ForgeRock [Access Management (AM) 7.3](https://backstage.forgerock.com/docs/am/7.3) and ForgeRock [Identity Cloud](https://backstage.forgerock.com/docs/idcloud/latest/overview.html).
 
 ## About OneSpan IAA
 
@@ -75,7 +75,7 @@ Copy the jar file to the "../web-container/webapps/openam/WEB-INF/lib" folder wh
 
 ## Before You Begin
 
-Below sections only give you a brief introduction to get started. For more detailed descriptions, refer to the [completed guide](./doc/OneSpan%20Auth%20Tree%20Nodes%20Guide%20-%20v1.2.0.pdf).
+Below sections only give you a brief introduction to get started. For more detailed descriptions, refer to the [completed guide](./doc/OneSpan%20Auth%20Tree%20Nodes%20Guide%20-%20v1.2.12.pdf).
 
 **For OneSpan IAA & RA Users:**
 
@@ -100,7 +100,7 @@ Below sections only give you a brief introduction to get started. For more detai
 
 ## Nodes Overview
 
-The OneSpan Auth Tree Nodes contains 1 Auxiliary Service, 13 nodes, and 4 demo nodes which will only be used for testing purpose. 
+The OneSpan Auth Tree Nodes contains 1 Auxiliary Service, 16 nodes, and 4 demo nodes which will only be used for testing purpose. 
 
 ![ScreenShot](./doc/images/Node%20Overview.png)
 
@@ -121,7 +121,8 @@ Below sample trees help you to address the most common use cases. Before start, 
 
 -Manually create a new tree following the design and remain all the settings default. 
 
--Import the JSON files under the "/sample" folder through [AM Treetool](https://github.com/vscheuber/AM-treetool).
+-Import the JSON files under the "/sample" folder.
+(3) If you are testing with IAA Sandbox environment, your IAA domain is the same as your tenant name, update it in corresponding journeys and nodes.
 
 
 **1. OneSpan IAA User Register**
@@ -140,23 +141,31 @@ Below sample trees help you to address the most common use cases. Before start, 
 
 ![ScreenShot](./doc/images/IAA%20Validate%20Event.png)
 
-**5. OneSpan OCA Offline User Registration and Digipass Activation**
+**5. OneSpan IAA VOTP User Register**
+
+![ScreenShot](./doc/images/IAA%20VDP%20User%20Register.png)
+
+**6. OneSpan IAA VOTP User Login**
+
+![ScreenShot](./doc/images/IAA%20VDP%20User%20Login.png)
+
+**7. OneSpan OCA Offline User Registration and Digipass Activation**
 
 ![ScreenShot](./doc/images/OCA%20User%20Register.png)
 
-**6. OneSpan OCA User Login with one-time password (OTP)**
+**8. OneSpan OCA User Login with one-time password (OTP)**
 
 ![ScreenShot](./doc/images/OCA%20User%20Login%20with%20OTP.png)
 
-**7. OneSpan OCA User Login with Challenge/Response (CR)**
+**9. OneSpan OCA User Login with Challenge/Response (CR)**
 
 ![ScreenShot](./doc/images/OCA%20User%20Login%20with%20CR.png)
 
-**8. OneSpan OCA Offline Transaction Data Signing**
+**10. OneSpan OCA Offline Transaction Data Signing**
 
 ![ScreenShot](./doc/images/OCA%20Validate%20Transaction.png)
 
-**9. OneSpan RA Insert Transaction**
+**11. OneSpan RA Insert Transaction**
 
 ![ScreenShot](./doc/images/OSRA%20Insert%20Transaction.png)
 
