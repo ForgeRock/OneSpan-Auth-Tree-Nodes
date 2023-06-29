@@ -1,28 +1,20 @@
 package com.os.tid.forgerock.openam.utils;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.http.Header;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.entity.ContentType;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.ImmutableMap;
 import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.models.HttpEntity;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 public class RestUtils {
     private static final Logger logger = LoggerFactory.getLogger("amAuth");
@@ -30,202 +22,115 @@ public class RestUtils {
     private RestUtils() {
     }
 
-    public static HttpEntity doPostJSON(String url, String payload, SSLConnectionSocketFactory sslConSocFactory) throws IOException {
+    public static HttpEntity doPostJSON(String url, String payload) throws IOException {
         logger.debug("RestUtils doPostJSON url: " + url);
         logger.debug("RestUtils doPostJSON payload: " + payload);
 
-        org.apache.http.HttpEntity entity = new org.apache.http.entity.StringEntity(payload, ContentType.APPLICATION_JSON);
-        
-        HttpDynamicMethod httpDynamicMethod = new HttpDynamicMethod("POST", url);
-        httpDynamicMethod.setEntity(entity);
-        httpDynamicMethod.setHeader("Content-Type", "application/json");
-        httpDynamicMethod.setHeader("Accept", "application/json");
+        URL client = new URL(url);
+        HttpURLConnection conn = (HttpURLConnection) client.openConnection();
+        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setRequestProperty("Accept", "application/json");
+        conn.setRequestMethod("POST");
+        conn.setDoOutput(true);
+        conn.setDoInput(true);
 
-	    HttpClientBuilder clientbuilder = HttpClients.custom();
-	    if(sslConSocFactory != null) {
-	    	clientbuilder.setSSLSocketFactory(sslConSocFactory);
-	    }
-        try (     
-    	     CloseableHttpClient httpClient = clientbuilder.build();
-             CloseableHttpResponse response = httpClient.execute(httpDynamicMethod)) {
-        	int sourceResponseCode = response.getStatusLine().getStatusCode();
-        	logger.debug("RestUtils doPostJSON response status: " + sourceResponseCode);
-        	String responseBody = null;
-        	if(response.getEntity() != null) {
-        		responseBody = EntityUtils.toString(response.getEntity());
-	            logger.debug("RestUtils doPostJSON response: " + responseBody);
-        	}
-            Header headerField = response.getFirstHeader(Constants.OSTID_LOG_CORRELATION_ID);
-            String log_correlation_id = headerField != null && !StringUtils.isEmpty(headerField.getValue()) ? headerField.getValue() : "";
-            try {
-                return new HttpEntity(JSON.parseObject(responseBody), sourceResponseCode, log_correlation_id);
-            } catch (Exception e) {
-                return new HttpEntity(new JSONObject(ImmutableMap.of("response",responseBody)), sourceResponseCode, log_correlation_id);
-            }
+        OutputStream os = conn.getOutputStream();
+        os.write(payload.getBytes());
+        os.flush();
+        os.close();
+        int sourceResponseCode = conn.getResponseCode();
+        String headerField = conn.getHeaderField(Constants.OSTID_LOG_CORRELATION_ID);
+        String log_correlation_id = StringUtils.isEmpty(headerField) ? "" : headerField;
+
+        logger.debug("RestUtils doPostJSON response status: " + sourceResponseCode);
+
+        Reader ir = (sourceResponseCode >= 200 && sourceResponseCode <= 299) ? new InputStreamReader(conn.getInputStream())
+                : new InputStreamReader(conn.getErrorStream());
+        BufferedReader in = new BufferedReader(ir);
+        String inputLine;
+        StringBuffer response = new StringBuffer();
+
+        while ((inputLine = in.readLine()) != null) {
+            response.append(inputLine);
+        }
+
+        in.close();
+        conn.disconnect();
+        logger.debug("RestUtils doPostJSON response: " + response.toString());
+        try {
+            return new HttpEntity(JSON.parseObject(response.toString()), sourceResponseCode, log_correlation_id);
+        } catch (Exception e) {
+            return new HttpEntity(new JSONObject(ImmutableMap.of("response",response.toString())), sourceResponseCode, log_correlation_id);
         }
     }
-    
-    
-    public static HttpEntity doPutJSON(String url, String payload, SSLConnectionSocketFactory sslConSocFactory) throws IOException {
-        logger.debug("RestUtils doPutJSON url: " + url);
-        logger.debug("RestUtils doPutJSON payload: " + payload);
 
-        org.apache.http.HttpEntity entity = new org.apache.http.entity.StringEntity(payload, ContentType.APPLICATION_JSON);
+    public static HttpEntity doPostJSONWithoutResponse(String url, String payload, Map<String, String> requestHeaders) throws IOException {
+        logger.debug("RestUtils doPostJSON url: " + url);
+        logger.debug("RestUtils doPostJSON payload: " + payload);
+
+        URL client = new URL(url);
+        HttpURLConnection conn = (HttpURLConnection) client.openConnection();
+        conn.setRequestProperty("Content-Type", "application/json");
         
-        HttpDynamicMethod httpDynamicMethod = new HttpDynamicMethod("PUT", url);
-        httpDynamicMethod.setEntity(entity);
-        httpDynamicMethod.setHeader("Content-Type", "application/json");
-        httpDynamicMethod.setHeader("Accept", "application/json");
-
-	    HttpClientBuilder clientbuilder = HttpClients.custom();
-	    if(sslConSocFactory != null) {
-	    	clientbuilder.setSSLSocketFactory(sslConSocFactory);
-	    }
-        try (     
-    	     CloseableHttpClient httpClient = clientbuilder.build();
-                CloseableHttpResponse response = httpClient.execute(httpDynamicMethod)) {
-           	int sourceResponseCode = response.getStatusLine().getStatusCode();
-           	logger.debug("RestUtils doPutJSON response status: " + sourceResponseCode);
-           	String responseBody = null;
-           	if(response.getEntity() != null) {
-           		responseBody = EntityUtils.toString(response.getEntity());
-   	            logger.debug("RestUtils doPutJSON response: " + responseBody);
-           	}
-           Header headerField = response.getFirstHeader(Constants.OSTID_LOG_CORRELATION_ID);
-           String log_correlation_id = headerField != null && !StringUtils.isEmpty(headerField.getValue()) ? headerField.getValue() : "";
-           try {
-               return new HttpEntity(JSON.parseObject(responseBody), sourceResponseCode, log_correlation_id);
-           } catch (Exception e) {
-               return new HttpEntity(new JSONObject(ImmutableMap.of("response",responseBody)), sourceResponseCode, log_correlation_id);
-           }
-       }
-    }
-    
-    
-    
-    public static HttpEntity doPatchJSON(String url, String payload, SSLConnectionSocketFactory sslConSocFactory) throws IOException {
-        logger.debug("RestUtils doPatchJSON url: " + url);
-        logger.debug("RestUtils doPatchJSON payload: " + payload);
-
-        org.apache.http.HttpEntity entity = new org.apache.http.entity.StringEntity(payload, ContentType.APPLICATION_JSON);
-        
-        HttpDynamicMethod httpDynamicMethod = new HttpDynamicMethod("PATCH", url);
-        httpDynamicMethod.setEntity(entity);
-        httpDynamicMethod.setHeader("Content-Type", "application/json");
-        httpDynamicMethod.setHeader("Accept", "application/json");
-
-	    HttpClientBuilder clientbuilder = HttpClients.custom();
-	    if(sslConSocFactory != null) {
-	    	clientbuilder.setSSLSocketFactory(sslConSocFactory);
-	    }
-        try (     
-    	     CloseableHttpClient httpClient = clientbuilder.build();
-                CloseableHttpResponse response = httpClient.execute(httpDynamicMethod)) {
-           	int sourceResponseCode = response.getStatusLine().getStatusCode();
-           	logger.debug("RestUtils doPatchJSON response status: " + sourceResponseCode);
-           	String responseBody = null;
-           	if(response.getEntity() != null) {
-           		responseBody = EntityUtils.toString(response.getEntity());
-   	            logger.debug("RestUtils doPatchJSON response: " + responseBody);
-           	}
-           Header headerField = response.getFirstHeader(Constants.OSTID_LOG_CORRELATION_ID);
-           String log_correlation_id = headerField != null && !StringUtils.isEmpty(headerField.getValue()) ? headerField.getValue() : "";
-           try {
-               return new HttpEntity(JSON.parseObject(responseBody), sourceResponseCode, log_correlation_id);
-           } catch (Exception e) {
-               return new HttpEntity(new JSONObject(ImmutableMap.of("response",responseBody)), sourceResponseCode, log_correlation_id);
-           }
-       }
-    }
-
-    public static HttpEntity doHttpRequestWithoutResponse(String url, String payload, String httpmethod, Map<String, String> requestHeaders, SSLConnectionSocketFactory sslConSocFactory) throws IOException {
-        logger.debug("RestUtils doHttpRequestWithoutResponse url: " + url);
-        logger.debug("RestUtils doHttpRequestWithoutResponse payload: " + payload);
-
-        org.apache.http.HttpEntity entity = new org.apache.http.entity.StringEntity(payload, ContentType.APPLICATION_JSON);
-        
-        HttpDynamicMethod httpDynamicMethod = new HttpDynamicMethod(httpmethod, url);
-        httpDynamicMethod.setEntity(entity);
-        httpDynamicMethod.setHeader("Content-Type", "application/json");
-        httpDynamicMethod.setHeader("Accept", "application/json");
         if(requestHeaders != null && requestHeaders.size() > 0) {
 			for (Entry<String, String> entry : requestHeaders.entrySet()) {
 				String key = entry.getKey();
 				String value = entry.getValue();
-				httpDynamicMethod.setHeader(key, value);
+		        conn.setRequestProperty(key, value);
 			}
         }
         
-	    HttpClientBuilder clientbuilder = HttpClients.custom();
-	    if(sslConSocFactory != null) {
-	    	clientbuilder.setSSLSocketFactory(sslConSocFactory);
-	    }
-        try (     
-    	     CloseableHttpClient httpClient = clientbuilder.build();
-                CloseableHttpResponse response = httpClient.execute(httpDynamicMethod)) {
-           	int sourceResponseCode = response.getStatusLine().getStatusCode();
-           	logger.debug("RestUtils doHttpRequestWithoutResponse response status: " + sourceResponseCode);
-           	String responseBody = null;
-           	if(response.getEntity() != null) {
-           		responseBody = EntityUtils.toString(response.getEntity());
-   	            logger.debug("RestUtils doHttpRequestWithoutResponse response: " + responseBody);
-           	}
-           Header headerField = response.getFirstHeader(Constants.OSTID_LOG_CORRELATION_ID);
-           String log_correlation_id = headerField != null && !StringUtils.isEmpty(headerField.getValue()) ? headerField.getValue() : "";
-           try {
-               return new HttpEntity(JSON.parseObject(responseBody), sourceResponseCode, log_correlation_id);
-           } catch (Exception e) {
-               return new HttpEntity(new JSONObject(ImmutableMap.of("response",responseBody)), sourceResponseCode, log_correlation_id);
-           }
-       }
+        conn.setRequestMethod("POST");
+        conn.setDoOutput(true);
+        conn.setDoInput(true);
+
+        OutputStream os = conn.getOutputStream();
+        os.write(payload.getBytes());
+        os.flush();
+        os.close();
+        int sourceResponseCode = conn.getResponseCode();
+        String headerField = conn.getHeaderField(Constants.OSTID_LOG_CORRELATION_ID);
+        String log_correlation_id = StringUtils.isEmpty(headerField) ? "" : headerField;
+
+        logger.debug("RestUtils doPostJSON response status: " + sourceResponseCode);
+        conn.disconnect();
+        return new HttpEntity(new JSONObject(), sourceResponseCode, log_correlation_id);
     }
 
-    
-    public static HttpEntity doGet(String url, SSLConnectionSocketFactory sslConSocFactory) throws IOException {
+    public static HttpEntity doGet(String url) throws IOException {
         logger.debug("RestUtils doGet url: " + url);
-        
-        HttpDynamicMethod httpDynamicMethod = new HttpDynamicMethod("GET", url);
-        httpDynamicMethod.setHeader("Accept", "application/json");
-        
-	    HttpClientBuilder clientbuilder = HttpClients.custom();
-	    if(sslConSocFactory != null) {
-	    	clientbuilder.setSSLSocketFactory(sslConSocFactory);
-	    }
-        try (     
-    	     CloseableHttpClient httpClient = clientbuilder.build();
-                CloseableHttpResponse response = httpClient.execute(httpDynamicMethod)) {
-           	int sourceResponseCode = response.getStatusLine().getStatusCode();
-           	logger.debug("RestUtils doGet response status: " + sourceResponseCode);
-           	String responseBody = null;
-           	if(response.getEntity() != null) {
-           		responseBody = EntityUtils.toString(response.getEntity());
-   	            logger.debug("RestUtils doGet response: " + responseBody);
-           	}
-           Header headerField = response.getFirstHeader(Constants.OSTID_LOG_CORRELATION_ID);
-           String log_correlation_id = headerField != null && !StringUtils.isEmpty(headerField.getValue()) ? headerField.getValue() : "";
-           try {
-               return new HttpEntity(JSON.parseObject(responseBody), sourceResponseCode, log_correlation_id);
-           } catch (Exception e) {
-               return new HttpEntity(new JSONObject(ImmutableMap.of("response",responseBody)), sourceResponseCode, log_correlation_id);
-           }
-       }
-    }
-    
 
+        URL client = new URL(url);
+        HttpURLConnection conn = (HttpURLConnection) client.openConnection();
+        conn.setRequestProperty("Content-Type", "application/json");
+        conn.setRequestProperty("Accept", "application/json");
+        conn.setRequestMethod("GET");
 
-}
+        int sourceResponseCode = conn.getResponseCode();
+        String headerField = conn.getHeaderField(Constants.OSTID_LOG_CORRELATION_ID);
+        String log_correlation_id = StringUtils.isEmpty(headerField) ? "" : headerField;
 
-class HttpDynamicMethod extends HttpEntityEnclosingRequestBase {
-    private final String methodName;
+        logger.debug("RestUtils doGet response status: " + sourceResponseCode);
 
-    public HttpDynamicMethod(final String methodName, final String uri) {
-        super();
-        this.methodName = methodName;
-        setURI(URI.create(uri));
+        Reader ir = (sourceResponseCode >= 200 && sourceResponseCode <= 299) ? new InputStreamReader(conn.getInputStream())
+                : new InputStreamReader(conn.getErrorStream());
+        BufferedReader in = new BufferedReader(ir);
+        String inputLine;
+        StringBuffer response = new StringBuffer();
+
+        while ((inputLine = in.readLine()) != null) {
+            response.append(inputLine);
+        }
+
+        in.close();
+        conn.disconnect();
+        logger.debug("RestUtils doGet response: " + response.toString());
+
+        try {
+            return new HttpEntity(JSON.parseObject(response.toString()), sourceResponseCode, log_correlation_id);
+        } catch (Exception e) {
+            return new HttpEntity(new JSONObject(ImmutableMap.of("response",response.toString())), sourceResponseCode, log_correlation_id);
+        }
     }
 
-    @Override
-    public String getMethod() {
-        return methodName;
-    }
 }

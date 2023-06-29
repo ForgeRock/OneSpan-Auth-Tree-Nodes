@@ -22,8 +22,6 @@ import org.forgerock.openam.auth.node.api.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Date;
 
 import javax.security.auth.callback.Callback;
@@ -58,10 +56,11 @@ public class OS_Auth_VisualCodeStopNode extends SingleOutcomeNode {
 	            return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
 	        }
     	}catch (Exception ex) {
-    		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
-			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
-			context.getStateFor(this).putShared("OS_Auth_VisualCodeStopNode Exception", new Date() + ": " + stackTrace)
-									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Stop Visual Code Node: " + stackTrace);
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
+			ex.printStackTrace();
+			context.getStateFor(this).putShared("OS_Auth_VisualCodeStopNode Exception", new Date() + ": " + ex.getMessage())
+									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Stop Visual Code Node: " + ex.getMessage());
 			throw new NodeProcessException(ex.getMessage());
 	    }
     }

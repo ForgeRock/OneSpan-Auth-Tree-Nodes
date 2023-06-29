@@ -23,9 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.security.auth.callback.TextOutputCallback;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -67,12 +64,12 @@ public class OS_Sample_ErrorDisplayNode extends SingleOutcomeNode {
 	            return goToNext().build();
 	        }
     	}catch (Exception ex) {
-    		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
-			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
-			context.getStateFor(this).putShared("OS_Sample_ErrorDisplayNode Exception", new Date() + ": " + stackTrace)
-									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Sample Error Display: " + stackTrace);
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
+			ex.printStackTrace();
+			context.getStateFor(this).putShared("OS_Sample_ErrorDisplayNode Exception", new Date() + ": " + ex.getMessage())
+									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Sample Error Display: " + ex.getMessage());
 			throw new NodeProcessException(ex.getMessage());
 	    }
     }
-    
 }

@@ -26,12 +26,9 @@ import com.os.tid.forgerock.openam.models.HttpEntity;
 import com.os.tid.forgerock.openam.nodes.OS_Auth_CheckActivationNode.ActivationStatusOutcome;
 import com.os.tid.forgerock.openam.utils.DateUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
-import com.os.tid.forgerock.openam.utils.SslUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
-import com.sun.identity.sm.RequiredValueValidator;
 import com.sun.identity.sm.SMSException;
 import org.forgerock.json.JsonValue;
-import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.*;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.sm.AnnotatedServiceRegistry;
@@ -39,8 +36,6 @@ import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Date;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -62,6 +57,7 @@ public class OS_Auth_CheckSessionStatusNode implements Node {
      * Configuration for the OS Auth Check Session Status Node.
      */
     public interface Config {
+
     }
 
     @Inject
@@ -79,7 +75,7 @@ public class OS_Auth_CheckSessionStatusNode implements Node {
 	        logger.debug(loggerPrefix + "OS_Auth_CheckSessionStatusNode started");
 	        JsonValue sharedState = context.sharedState;
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
-	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
+	        String environment = serviceConfig.environment().name();
 	
 	        JsonValue eventExpiryJsonValue = sharedState.get(Constants.OSTID_EVENT_EXPIRY_DATE);
 	        JsonValue requestIdJsonValue = sharedState.get(Constants.OSTID_REQUEST_ID);
@@ -90,7 +86,7 @@ public class OS_Auth_CheckSessionStatusNode implements Node {
 	            sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: Your session has timed out!");
 	            checkSessionStatusEnum = CheckSessionStatusOutcome.timeout;
 	        }else {
-                HttpEntity httpEntity = RestUtils.doGet(StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_CHECK_SESSION_STATUS,requestIdJsonValue.asString()),SslUtils.getSSLConnectionSocketFactory(serviceConfig));
+                HttpEntity httpEntity = RestUtils.doGet(StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_CHECK_SESSION_STATUS,requestIdJsonValue.asString()));
                 JSONObject checkSessionStatusResponseJSON = httpEntity.getResponseJSON();
                 if(httpEntity.isSuccess()){
                     String sessionStatus = checkSessionStatusResponseJSON.getString("sessionStatus");
@@ -126,16 +122,12 @@ public class OS_Auth_CheckSessionStatusNode implements Node {
 	                return goTo(CheckSessionStatusOutcome.pending).build();
 	        }
     	}catch (Exception ex) {
-	   		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
-			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
-			JsonValue sharedState = context.sharedState;
-		    JsonValue transientState = context.transientState;
-			sharedState.put("OS_Auth_CheckSessionStatusNode Exception", new Date() + ": " + ex.getMessage());
-			sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Check Session Status: " + ex.getMessage());
-			return goTo(CheckSessionStatusOutcome.error)
-                     .replaceSharedState(sharedState)
-                     .replaceTransientState(transientState)
-                     .build();	
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
+			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
+			ex.printStackTrace();
+			context.getStateFor(this).putShared("OS_Auth_CheckSessionStatusNode Exception", new Date() + ": " + ex.getMessage())
+									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Check Session Status: " + ex.getMessage());
+			return goTo(CheckSessionStatusOutcome.error).build();
 	    }
     }
 
