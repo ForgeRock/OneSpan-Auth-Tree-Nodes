@@ -1,0 +1,225 @@
+{
+  "trees":{
+"OneSpan-Cloud-Authentication-User-Login-OTP-Sample-Tree":
+ {
+  "origin": "4188da2c4ac583f1fea3a6ff4eb25a45 -",
+  "innernodes": {
+    "633b71ed-4543-4026-8fe5-bd1848c6257c": {
+      "_id": "633b71ed-4543-4026-8fe5-bd1848c6257c",
+      "pushCDDCJsAsCallback": true,
+      "CDDCJsonHiddenValueId": "osstid_cddc_json",
+      "CDDCHashHiddenValueId": "osstid_cddc_hash",
+      "_type": {
+        "_id": "OS_Risk_CDDCNode",
+        "name": "OneSpan Risk CDDC",
+        "collection": true
+      },
+      "_outcomes": [
+        {
+          "id": "outcome",
+          "displayName": "Outcome"
+        }
+      ]
+    },
+    "72ecb96c-768a-41be-81fe-019d1cc52d1b": {
+      "_id": "72ecb96c-768a-41be-81fe-019d1cc52d1b",
+      "_type": {
+        "_id": "UsernameCollectorNode",
+        "name": "Username Collector",
+        "collection": true
+      },
+      "_outcomes": [
+        {
+          "id": "outcome",
+          "displayName": "Outcome"
+        }
+      ]
+    },
+    "06bd2d43-ddd4-416e-bf21-61d2de647fb2": {
+      "_id": "06bd2d43-ddd4-416e-bf21-61d2de647fb2",
+      "attributes": [
+        "OTP"
+      ],
+      "_type": {
+        "_id": "OS_Sample_AttributesCollector",
+        "name": "OneSpan Sample Attributes Collector",
+        "collection": true
+      },
+      "_outcomes": [
+        {
+          "id": "outcome",
+          "displayName": "Outcome"
+        }
+      ]
+    }
+  },
+  "nodes": {
+    "263c5803-1d9a-45cc-aaba-9a721cd19955": {
+      "_id": "263c5803-1d9a-45cc-aaba-9a721cd19955",
+      "credentialsType": "authenticator",
+      "visualCodeMessageOptions": "sessionID",
+      "objectType": "LoginInput",
+      "timeout": 60,
+      "userNameInSharedData": "username",
+      "passwordInTransientState": "password",
+      "optionalAttributes": {},
+      "orchestrationDelivery": "none",
+      "_type": {
+        "_id": "OS_Auth_UserLoginNode",
+        "name": "OneSpan Auth User Login",
+        "collection": true
+      },
+      "_outcomes": [
+        {
+          "id": "Accept",
+          "displayName": "Accept"
+        },
+        {
+          "id": "Decline",
+          "displayName": "Decline"
+        },
+        {
+          "id": "StepUp",
+          "displayName": "Step Up"
+        },
+        {
+          "id": "Error",
+          "displayName": "Error"
+        }
+      ]
+    },
+    "73cbc0d2-c906-4254-9f26-45c2dadb74ce": {
+      "_id": "73cbc0d2-c906-4254-9f26-45c2dadb74ce",
+      "incrementUserAttributeOnFailure": true,
+      "retryLimit": 3,
+      "_type": {
+        "_id": "RetryLimitDecisionNode",
+        "name": "Retry Limit Decision",
+        "collection": true
+      },
+      "_outcomes": [
+        {
+          "id": "Retry",
+          "displayName": "Retry"
+        },
+        {
+          "id": "Reject",
+          "displayName": "Reject"
+        }
+      ]
+    },
+    "82c6465c-b876-448a-88d5-9efdf8afdc74": {
+      "_id": "82c6465c-b876-448a-88d5-9efdf8afdc74",
+      "_type": {
+        "_id": "OS_Sample_ErrorDisplayNode",
+        "name": "OneSpan Sample Error Display",
+        "collection": true
+      },
+      "_outcomes": [
+        {
+          "id": "outcome",
+          "displayName": "Outcome"
+        }
+      ]
+    },
+    "cf42f652-da69-4867-ab8a-990559de8a72": {
+      "_id": "cf42f652-da69-4867-ab8a-990559de8a72",
+      "pageHeader": {},
+      "pageDescription": {},
+      "nodes": [
+        {
+          "_id": "633b71ed-4543-4026-8fe5-bd1848c6257c",
+          "nodeType": "OS_Risk_CDDCNode",
+          "displayName": "OneSpan Risk CDDC"
+        },
+        {
+          "_id": "72ecb96c-768a-41be-81fe-019d1cc52d1b",
+          "nodeType": "UsernameCollectorNode",
+          "displayName": "Username Collector"
+        },
+        {
+          "_id": "06bd2d43-ddd4-416e-bf21-61d2de647fb2",
+          "nodeType": "OS_Sample_AttributesCollector",
+          "displayName": "OneSpan Sample Attributes Collector"
+        }
+      ],
+      "_type": {
+        "_id": "PageNode",
+        "name": "Page Node",
+        "collection": true
+      },
+      "_outcomes": [
+        {
+          "id": "outcome",
+          "displayName": "Outcome"
+        }
+      ]
+    }
+  },
+  "scripts": {},
+  "emailTemplates": {},
+  "tree": {
+    "_id": "OneSpan-Cloud-Authentication-User-Login-OTP-Sample-Tree",
+    "uiConfig": {},
+    "nodes": {
+      "cf42f652-da69-4867-ab8a-990559de8a72": {
+        "displayName": "Page Node",
+        "nodeType": "PageNode",
+        "x": 187,
+        "y": 128,
+        "connections": {
+          "outcome": "263c5803-1d9a-45cc-aaba-9a721cd19955"
+        }
+      },
+      "263c5803-1d9a-45cc-aaba-9a721cd19955": {
+        "displayName": "OneSpan Auth User Login",
+        "nodeType": "OS_Auth_UserLoginNode",
+        "x": 543,
+        "y": 134,
+        "connections": {
+          "Accept": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0",
+          "Decline": "82c6465c-b876-448a-88d5-9efdf8afdc74",
+          "Error": "82c6465c-b876-448a-88d5-9efdf8afdc74"
+        }
+      },
+      "73cbc0d2-c906-4254-9f26-45c2dadb74ce": {
+        "displayName": "Retry Limit Decision",
+        "nodeType": "RetryLimitDecisionNode",
+        "x": 792,
+        "y": 505,
+        "connections": {
+          "Retry": "cf42f652-da69-4867-ab8a-990559de8a72",
+          "Reject": "e301438c-0bd0-429c-ab0c-66126501069a"
+        }
+      },
+      "82c6465c-b876-448a-88d5-9efdf8afdc74": {
+        "displayName": "OneSpan Sample Error Display",
+        "nodeType": "OS_Sample_ErrorDisplayNode",
+        "x": 493,
+        "y": 506,
+        "connections": {
+          "outcome": "73cbc0d2-c906-4254-9f26-45c2dadb74ce"
+        }
+      }
+    },
+    "staticNodes": {
+      "startNode": {
+        "x": 52,
+        "y": 50
+      },
+      "70e691a5-1e33-4ac3-a356-e7b6d60d92e0": {
+        "x": 1147,
+        "y": 150
+      },
+      "e301438c-0bd0-429c-ab0c-66126501069a": {
+        "x": 1163,
+        "y": 556
+      }
+    },
+    "entryNodeId": "cf42f652-da69-4867-ab8a-990559de8a72"
+  }
+}
+
+    
+  }
+}
