@@ -1,0 +1,238 @@
+{
+  "trees": {
+    "OneSpan-Risk-Analytics-Send-Transaction-Sample-Tree": {
+      "tree": {
+        "_id": "OneSpan-Risk-Analytics-Send-Transaction-Sample-Tree",
+        "_rev": "-1984487297",
+        "identityResource": "managed/alpha_user",
+        "uiConfig": {},
+        "entryNodeId": "9f1de5cf-6cbb-4917-8774-ee2fef458de7",
+        "nodes": {
+          "13b5b0f6-d479-4722-8d41-a72193dd99b5": {
+            "connections": {
+              "Challenge": "cde9e0a7-a42b-4ece-acea-925eb43cf7aa",
+              "Decline": "e301438c-0bd0-429c-ab0c-66126501069a",
+              "Error": "d64fffe6-0aef-4818-ad7f-67a17c9ca0bf"
+            },
+            "displayName": "OneSpan Risk Analytics Send Transaction",
+            "nodeType": "OS_Risk_InsertTransactionNode",
+            "x": 525,
+            "y": 102
+          },
+          "9f1de5cf-6cbb-4917-8774-ee2fef458de7": {
+            "connections": {
+              "outcome": "13b5b0f6-d479-4722-8d41-a72193dd99b5"
+            },
+            "displayName": "Page Node",
+            "nodeType": "PageNode",
+            "x": 166,
+            "y": 98
+          },
+          "cde9e0a7-a42b-4ece-acea-925eb43cf7aa": {
+            "connections": {
+              "22": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0"
+            },
+            "displayName": "Scripted Decision",
+            "nodeType": "ScriptedDecisionNode",
+            "x": 964,
+            "y": 170
+          },
+          "d64fffe6-0aef-4818-ad7f-67a17c9ca0bf": {
+            "connections": {
+              "outcome": "e301438c-0bd0-429c-ab0c-66126501069a"
+            },
+            "displayName": "OneSpan Sample Error Display",
+            "nodeType": "OS_Sample_ErrorDisplayNode",
+            "x": 686,
+            "y": 456
+          }
+        },
+        "staticNodes": {
+          "70e691a5-1e33-4ac3-a356-e7b6d60d92e0": {
+            "x": 1259,
+            "y": 169
+          },
+          "e301438c-0bd0-429c-ab0c-66126501069a": {
+            "x": 1268,
+            "y": 459
+          },
+          "startNode": {
+            "x": 58,
+            "y": 46
+          }
+        },
+        "enabled": true
+      },
+      "nodes": {
+        "13b5b0f6-d479-4722-8d41-a72193dd99b5": {
+          "_id": "13b5b0f6-d479-4722-8d41-a72193dd99b5",
+          "_rev": "-812989627",
+          "domain": "master",
+          "userNameInSharedData": "username",
+          "adaptiveAttributes": {
+            "accountRef": "accountRef",
+            "amount": "amount",
+            "creditorBank": "creditorBank",
+            "creditorIBAN": "creditorIBAN",
+            "creditorName": "creditorName",
+            "currency": "currency",
+            "debtorIBAN": "debtorIBAN",
+            "transactionType": "transactionType"
+          },
+          "_type": {
+            "_id": "OS_Risk_InsertTransactionNode",
+            "name": "OneSpan Risk Analytics Send Transaction",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "Accept",
+              "displayName": "Accept"
+            },
+            {
+              "id": "Decline",
+              "displayName": "Decline"
+            },
+            {
+              "id": "Challenge",
+              "displayName": "Challenge"
+            },
+            {
+              "id": "Error",
+              "displayName": "Error"
+            }
+          ]
+        },
+        "9f1de5cf-6cbb-4917-8774-ee2fef458de7": {
+          "_id": "9f1de5cf-6cbb-4917-8774-ee2fef458de7",
+          "_rev": "-2083675009",
+          "nodes": [
+            {
+              "_id": "6f5d1bd8-fcb2-469e-88c8-8629d0a40d2b",
+              "nodeType": "OS_Risk_CDDCNode",
+              "displayName": "OneSpan Risk CDDC"
+            },
+            {
+              "_id": "157993f6-8eb4-4707-93bf-7ccb572d59a7",
+              "nodeType": "OS_Sample_TransactionCollector",
+              "displayName": "OneSpan Sample Transaction Collector"
+            }
+          ],
+          "pageDescription": {},
+          "pageHeader": {},
+          "_type": {
+            "_id": "PageNode",
+            "name": "Page Node",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "outcome",
+              "displayName": "Outcome"
+            }
+          ]
+        },
+        "cde9e0a7-a42b-4ece-acea-925eb43cf7aa": {
+          "_id": "cde9e0a7-a42b-4ece-acea-925eb43cf7aa",
+          "_rev": "2034166432",
+          "script": "197bcecf-28c1-44e3-a4cb-3985fe1a3675",
+          "outcomes": [
+            "22"
+          ],
+          "outputs": [
+            "*"
+          ],
+          "inputs": [
+            "*"
+          ],
+          "_type": {
+            "_id": "ScriptedDecisionNode",
+            "name": "Scripted Decision",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "22",
+              "displayName": "22"
+            }
+          ]
+        },
+        "d64fffe6-0aef-4818-ad7f-67a17c9ca0bf": {
+          "_id": "d64fffe6-0aef-4818-ad7f-67a17c9ca0bf",
+          "_rev": "-668728083",
+          "_type": {
+            "_id": "OS_Sample_ErrorDisplayNode",
+            "name": "OneSpan Sample Error Display",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "outcome",
+              "displayName": "Outcome"
+            }
+          ]
+        }
+      },
+      "innerNodes": {
+        "6f5d1bd8-fcb2-469e-88c8-8629d0a40d2b": {
+          "_id": "6f5d1bd8-fcb2-469e-88c8-8629d0a40d2b",
+          "_rev": "-1568387194",
+          "CDDCHashHiddenValueId": "osstid_cddc_hash",
+          "CDDCJsonHiddenValueId": "osstid_cddc_json",
+          "pushCDDCJsAsCallback": true,
+          "_type": {
+            "_id": "OS_Risk_CDDCNode",
+            "name": "OneSpan Risk CDDC",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "outcome",
+              "displayName": "Outcome"
+            }
+          ]
+        },
+        "157993f6-8eb4-4707-93bf-7ccb572d59a7": {
+          "_id": "157993f6-8eb4-4707-93bf-7ccb572d59a7",
+          "_rev": "1701704745",
+          "optionalAttributes": [
+            "creditorBank",
+            "debtorIBAN"
+          ],
+          "passKeyRequired": false,
+          "_type": {
+            "_id": "OS_Sample_TransactionCollector",
+            "name": "OneSpan Sample Transaction Collector",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "outcome",
+              "displayName": "Outcome"
+            }
+          ]
+        }
+      },
+      "scripts": {
+        "197bcecf-28c1-44e3-a4cb-3985fe1a3675": {
+          "_id": "197bcecf-28c1-44e3-a4cb-3985fe1a3675",
+          "name": "OneSpan Risk Send Transaction Script",
+          "description": "null",
+          "script": "\"/*\\n  - Data made available by nodes that have already executed are available in the sharedState variable.\\n  - The script should set outcome to either \\\"true\\\" or \\\"false\\\".\\n */\\n\\n\\nvar riskResponseCode = sharedState.get(\\\"riskResponseCode\\\")\\nswitch(riskResponseCode) {\\n  case 0:\\n   outcome = \\\"0\\\";\\n    break;\\n  case 1:\\n    outcome = \\\"1\\\";\\n    break;\\n  case 22:\\n    outcome = \\\"22\\\";\\n    break;\\n  default:\\n    \\n}\"",
+          "default": false,
+          "language": "JAVASCRIPT",
+          "context": "AUTHENTICATION_TREE_DECISION_NODE",
+          "createdBy": "null",
+          "creationDate": 0,
+          "lastModifiedBy": "null",
+          "lastModifiedDate": 0
+        }
+      },
+      "emailTemplates": {},
+      "socialIdentityProviders": {},
+      "themes": [],
+      "saml2Entities": {},
+      "circlesOfTrust": {}
+    }
+  }
+}
