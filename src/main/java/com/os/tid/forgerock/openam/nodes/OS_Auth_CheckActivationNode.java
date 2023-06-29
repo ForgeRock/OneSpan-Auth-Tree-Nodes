@@ -24,11 +24,15 @@ import com.iplanet.sso.SSOException;
 import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.models.HttpEntity;
 import com.os.tid.forgerock.openam.nodes.OS_Auth_ActivateDeviceNode.OSTIDActivateDeviceOutcome;
+import com.os.tid.forgerock.openam.nodes.OS_Auth_AddDeviceNode.AddDeviceOutcome;
 import com.os.tid.forgerock.openam.utils.DateUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
+import com.os.tid.forgerock.openam.utils.SslUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
+import com.sun.identity.sm.RequiredValueValidator;
 import com.sun.identity.sm.SMSException;
 import org.forgerock.json.JsonValue;
+import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.*;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.sm.AnnotatedServiceRegistry;
@@ -36,6 +40,8 @@ import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Date;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -74,7 +80,7 @@ public class OS_Auth_CheckActivationNode implements Node {
 	        logger.debug(loggerPrefix + "OS_Auth_CheckActivationNode started");
 	        JsonValue sharedState = context.sharedState;
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
-	        String environment = serviceConfig.environment().name();
+	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
 	        //1. go to next
 	        JsonValue ostid_cronto_status = sharedState.get(Constants.OSTID_CRONTO_STATUS);
@@ -100,7 +106,7 @@ public class OS_Auth_CheckActivationNode implements Node {
 	                    usernameJsonValue.asString(),                            //param1
 	                    Constants.OSTID_DEFAULT_CHECK_ACTIVATION_TIMEOUT         //param2
 	            );
-                HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName,environment) + Constants.OSTID_API_CHECK_ACTIVATION, checkActivationJSON);
+                HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName,environment) + Constants.OSTID_API_CHECK_ACTIVATION, checkActivationJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
                 JSONObject checkActivationResponseJSON = httpEntity.getResponseJSON();
                 if(httpEntity.isSuccess()){
                     String activationStatus = checkActivationResponseJSON.getString(Constants.OSTID_RESPONSE_CHECK_ACTIVATION_STATUS);
@@ -130,12 +136,16 @@ public class OS_Auth_CheckActivationNode implements Node {
 	                return goTo(ActivationStatusOutcome.pending).build();
 	        }
     	}catch (Exception ex) {
-			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
-			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
-			ex.printStackTrace();
-			context.getStateFor(this).putShared("OS_Auth_CheckActivationNode Exception", new Date() + ": " + ex.getMessage())
-									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Check Activation: " + ex.getMessage());
-			return goTo(ActivationStatusOutcome.error).build();
+    		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
+			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
+			JsonValue sharedState = context.sharedState;
+		    JsonValue transientState = context.transientState;
+			sharedState.put("OS_Auth_CheckActivationNode Exception", new Date() + ": " + ex.getMessage());
+			sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Check Activation: " + ex.getMessage());
+			return goTo(ActivationStatusOutcome.error)
+                     .replaceSharedState(sharedState)
+                     .replaceTransientState(transientState)
+                     .build();	
 	    }
     }
 

@@ -31,6 +31,9 @@ import org.slf4j.LoggerFactory;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.*;
 
 
@@ -87,11 +90,10 @@ public class OS_Sample_AttributesCollector extends SingleOutcomeNode {
 	            return Action.send(callbackList).build();
 	        }
     	}catch (Exception ex) {
-			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
-			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
-			ex.printStackTrace();
-			context.getStateFor(this).putShared("OS_Sample_AttributesCollector Exception", new Date() + ": " + ex.getMessage())
-									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Sample Attributes Collector: " + ex.getMessage());
+    		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
+			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
+			context.getStateFor(this).putShared("OS_Sample_AttributesCollector Exception", new Date() + ": " + stackTrace)
+									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Sample Attributes Collector: " + stackTrace);
 			throw new NodeProcessException(ex.getMessage());
 	    }
     }
