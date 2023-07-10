@@ -21,6 +21,8 @@ import com.iplanet.sso.SSOException;
 import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.nodes.OS_Auth_UserLoginNode.UserLoginOutcome;
 import com.os.tid.forgerock.openam.utils.DateUtils;
+import com.os.tid.forgerock.openam.utils.RestUtils;
+import com.os.tid.forgerock.openam.utils.SslUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
 import com.sun.identity.authentication.callbacks.HiddenValueCallback;
 import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
@@ -206,6 +208,7 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
 	                crontURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_ADAPTIVE_CRTONTO_RENDER,
 	                        config.visualCodeType().name().toUpperCase(),
 	                        crontoMsgJsonValue.asString());
+	                crontURL = RestUtils.doGetImage(crontURL, SslUtils.getSSLConnectionSocketFactory(serviceConfig));
 	                sharedState.put(config.visualCodeHiddenValueId(), crontURL);
 	            } else {
 	                crontURL = sharedState.get(config.visualCodeHiddenValueId()).asString();
