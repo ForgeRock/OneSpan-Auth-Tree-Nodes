@@ -2,6 +2,7 @@ package com.os.tid.forgerock.openam.utils;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Base64;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -83,7 +84,7 @@ public class RestUtils {
 	    }
         try (     
     	     CloseableHttpClient httpClient = clientbuilder.build();
-                CloseableHttpResponse response = httpClient.execute(httpDynamicMethod)) {
+             CloseableHttpResponse response = httpClient.execute(httpDynamicMethod)) {
            	int sourceResponseCode = response.getStatusLine().getStatusCode();
            	logger.debug("RestUtils doPutJSON response status: " + sourceResponseCode);
            	String responseBody = null;
@@ -120,7 +121,7 @@ public class RestUtils {
 	    }
         try (     
     	     CloseableHttpClient httpClient = clientbuilder.build();
-                CloseableHttpResponse response = httpClient.execute(httpDynamicMethod)) {
+             CloseableHttpResponse response = httpClient.execute(httpDynamicMethod)) {
            	int sourceResponseCode = response.getStatusLine().getStatusCode();
            	logger.debug("RestUtils doPatchJSON response status: " + sourceResponseCode);
            	String responseBody = null;
@@ -162,7 +163,7 @@ public class RestUtils {
 	    }
         try (     
     	     CloseableHttpClient httpClient = clientbuilder.build();
-                CloseableHttpResponse response = httpClient.execute(httpDynamicMethod)) {
+             CloseableHttpResponse response = httpClient.execute(httpDynamicMethod)) {
            	int sourceResponseCode = response.getStatusLine().getStatusCode();
            	logger.debug("RestUtils doHttpRequestWithoutResponse response status: " + sourceResponseCode);
            	String responseBody = null;
@@ -193,7 +194,7 @@ public class RestUtils {
 	    }
         try (     
     	     CloseableHttpClient httpClient = clientbuilder.build();
-                CloseableHttpResponse response = httpClient.execute(httpDynamicMethod)) {
+             CloseableHttpResponse response = httpClient.execute(httpDynamicMethod)) {
            	int sourceResponseCode = response.getStatusLine().getStatusCode();
            	logger.debug("RestUtils doGet response status: " + sourceResponseCode);
            	String responseBody = null;
@@ -212,6 +213,36 @@ public class RestUtils {
     }
     
 
+    public static String doGetImage(String url, SSLConnectionSocketFactory sslConSocFactory) throws IOException {
+        logger.debug("RestUtils doGetImage url: " + url);
+        
+        HttpDynamicMethod httpDynamicMethod = new HttpDynamicMethod("GET", url);
+        httpDynamicMethod.setHeader("Accept", "image/png");
+        
+	    HttpClientBuilder clientbuilder = HttpClients.custom();
+	    if(sslConSocFactory != null) {
+	    	clientbuilder.setSSLSocketFactory(sslConSocFactory);
+	    }
+        try (     
+    	     CloseableHttpClient httpClient = clientbuilder.build();
+             CloseableHttpResponse response = httpClient.execute(httpDynamicMethod)) {
+           	int sourceResponseCode = response.getStatusLine().getStatusCode();
+           	logger.debug("RestUtils doGetImage response status: " + sourceResponseCode);
+           	String imageForHtml  = null;
+           	if(response.getEntity() != null) {
+                byte[] imageBytes = EntityUtils.toByteArray(response.getEntity());
+                String imageBase64  = Base64.getEncoder().encodeToString(imageBytes);
+            	imageForHtml = "data:image/png;base64," + imageBase64;
+   	            logger.debug("RestUtils doGetImage imageBase64 : " + imageForHtml);
+           	}
+           try {
+               return imageForHtml;
+           } catch (Exception e) {
+               return url;
+           }
+       }
+    }
+    
 
 }
 

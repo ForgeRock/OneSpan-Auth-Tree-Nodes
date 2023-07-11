@@ -219,14 +219,16 @@ public class OS_Auth_UserRegisterNode implements Node {
             if (httpEntity.isSuccess()) {
                 UserRegisterOutputEx userRegisterOutputEx = JSON.toJavaObject(responseJSON, UserRegisterOutputEx.class);
                 String activationCode = userRegisterOutputEx.getActivationPassword();
-                if (config.nodeFunction() == NodeFunction.UserRegister && config.objectType() == ObjectType.IAA) {
+                if (config.nodeFunction() == NodeFunction.UserRegister && config.activationType() == ActivationType.onlineMDL) {
                     //"02;user01211;111;duoliang11071-mailin;3zE6RNH5;duoliang11071-mailin"
+                	String userProfile = sharedState.get(Constants.OSTID_USERPROFILE_IN_SHARED_STATE).isNull() ? "0" : sharedState.get(Constants.OSTID_USERPROFILE_IN_SHARED_STATE).asString();            	
                     String crontoValueRaw = String.format(Constants.OSTID_CRONTO_FORMULA,
                             Constants.OSTID_API_VERSION,                        //param1
                             usernameJsonValue.asString(),                       //param2
                             config.domain(),                                    //param3
                             activationCode,                                     //param4
-                            tenantName                                          //param5
+                            tenantName,                                         //param5
+                            userProfile                                         //param6
                     );
                     String crontoValueHex = StringUtils.stringToHex(crontoValueRaw);
 
@@ -236,7 +238,7 @@ public class OS_Auth_UserRegisterNode implements Node {
                     sharedState.put(Constants.OSTID_CRONTO_MSG, crontoValueHex);
                     sharedState.put(Constants.OSTID_DIGI_SERIAL, userRegisterOutputEx.getSerialNumber());
                     sharedState.put(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.activationTokenExpiry()));
-                } else if (config.nodeFunction() == NodeFunction.UserRegister && config.objectType() == ObjectType.OCA) {
+                } else if (config.nodeFunction() == NodeFunction.UserRegister && config.activationType() == ActivationType.offlineMDL) {
                     sharedState.put(Constants.OSTID_SESSIONID, sessionId);
                     sharedState.put(Constants.OSTID_ACTIVATION_CODE, activationCode);
                     sharedState.put(Constants.OSTID_ACTIVATION_CODE2, activationCode);
