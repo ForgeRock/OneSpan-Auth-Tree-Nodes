@@ -184,7 +184,7 @@ public class OS_Auth_VDPGenerateVOTPNode implements Node {
             String vir10SerialNumber = null;
             String applicationName = null;
             for (String authenticator : authenticatorsList) {
-                String getAuthenticatorURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_VDP_GET_AUTHENTICATOR,authenticator,config.domain());
+                String getAuthenticatorURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_VDP_GET_VIR10_AUTHENTICATOR,authenticator,config.domain());
                 HttpEntity getAuthenticatorHttpEntity = RestUtils.doGet(getAuthenticatorURL,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
                 JSONObject getAuthenticatorResponseJSON = getAuthenticatorHttpEntity.getResponseJSON();
                 if(getAuthenticatorHttpEntity.isSuccess()) {
@@ -271,7 +271,7 @@ public class OS_Auth_VDPGenerateVOTPNode implements Node {
     }
 
     public enum DeliveryMethod {
-    	SMS, Email, Response
+    	Email, SMS, Voice, Response
     }
 
     

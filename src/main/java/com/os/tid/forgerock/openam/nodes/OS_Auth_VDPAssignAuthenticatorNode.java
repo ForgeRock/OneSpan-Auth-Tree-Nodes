@@ -136,7 +136,7 @@ public class OS_Auth_VDPAssignAuthenticatorNode implements Node {
 	            List<String> authenticatorsList = authenticatorsJsonArray.toJavaList(String.class);
 	            String vir10SerialNumber = null;
 	            for (String authenticator : authenticatorsList) {
-	                String getAuthenticatorURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_VDP_GET_AUTHENTICATOR,authenticator,config.domain());
+	                String getAuthenticatorURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_VDP_GET_VIR10_AUTHENTICATOR,authenticator,config.domain());
 	                HttpEntity getAuthenticatorHttpEntity = RestUtils.doGet(getAuthenticatorURL,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
 	                JSONObject getAuthenticatorResponseJSON = getAuthenticatorHttpEntity.getResponseJSON();
 	                if(getAuthenticatorHttpEntity.isSuccess()) {

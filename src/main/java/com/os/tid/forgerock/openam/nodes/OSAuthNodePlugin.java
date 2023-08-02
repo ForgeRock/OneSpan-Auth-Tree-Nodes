@@ -71,7 +71,7 @@ import org.slf4j.LoggerFactory;
  * @since AM 5.5.0
  */
 public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
-	static private String currentVersion = "1.2.13";
+	static private String currentVersion = "1.2.4";
     private final Logger logger = LoggerFactory.getLogger(OSAuthNodePlugin.class);
 
 	private final List<Class<? extends Node>> nodeList = ImmutableList.of(
@@ -87,6 +87,7 @@ public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
 			OS_Auth_UserLoginNode.class,
 			OS_Auth_ValidateTransactionNode.class,
 			OS_Auth_ValidateEventNode.class,
+			OS_Auth_GetUserAuthenticatorNode.class,
 			
 			//VDP
 			OS_Auth_VDPAssignAuthenticatorNode.class,
@@ -178,6 +179,8 @@ public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
 			pluginTools.upgradeAuthNode(OS_Auth_UserLoginNode.class);
 			pluginTools.upgradeAuthNode(OS_Auth_ValidateTransactionNode.class);
 			pluginTools.upgradeAuthNode(OS_Auth_ValidateEventNode.class);
+			pluginTools.installAuthNode(OS_Auth_GetUserAuthenticatorNode.class);
+			pluginTools.upgradeAuthNode(OS_Auth_GetUserAuthenticatorNode.class);
 
 			//Risk
 			pluginTools.upgradeAuthNode(OS_Risk_CDDCNode.class);
