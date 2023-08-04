@@ -21,9 +21,12 @@ import com.iplanet.sso.SSOException;
 import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.nodes.OS_Auth_UserLoginNode.UserLoginOutcome;
 import com.os.tid.forgerock.openam.utils.DateUtils;
+import com.os.tid.forgerock.openam.utils.RestUtils;
+import com.os.tid.forgerock.openam.utils.SslUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
 import com.sun.identity.authentication.callbacks.HiddenValueCallback;
 import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
+import com.sun.identity.sm.RequiredValueValidator;
 import com.sun.identity.sm.SMSException;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
@@ -34,6 +37,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.security.auth.callback.Callback;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -170,7 +176,7 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
 	        logger.debug(loggerPrefix + "OS_Auth_VisualCodeNode started");
 	        JsonValue sharedState = context.sharedState;
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
-	        String environment = serviceConfig.environment().name();
+	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
 	        JsonValue crontoMsgJsonValue = config.visualCodeMessageOption() == VisualCodeMessageOptions.CustomCrontoMessage ? sharedState.get(config.customMessageInSharedState()) : sharedState.get(Constants.OSTID_CRONTO_MSG);
 	        boolean hasConsumed = false;
@@ -202,6 +208,7 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
 	                crontURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_ADAPTIVE_CRTONTO_RENDER,
 	                        config.visualCodeType().name().toUpperCase(),
 	                        crontoMsgJsonValue.asString());
+	                crontURL = RestUtils.doGetImage(crontURL, SslUtils.getSSLConnectionSocketFactory(serviceConfig));
 	                sharedState.put(config.visualCodeHiddenValueId(), crontURL);
 	            } else {
 	                crontURL = sharedState.get(config.visualCodeHiddenValueId()).asString();
@@ -228,11 +235,10 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
 	        }
         
     	}catch (Exception ex) {
-			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
-			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
-			ex.printStackTrace();
-			context.getStateFor(this).putShared("OS_Auth_VisualCodeNode Exception", new Date() + ": " + ex.getMessage())
-									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Visual Code Node: " + ex.getMessage());
+    		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
+			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
+			context.getStateFor(this).putShared("OS_Auth_VisualCodeNode Exception", new Date() + ": " + stackTrace)
+									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Visual Code Node: " + stackTrace);
 			throw new NodeProcessException(ex.getMessage());
 	    }
     }

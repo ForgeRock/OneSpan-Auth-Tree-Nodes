@@ -25,8 +25,10 @@ import com.iplanet.sso.SSOException;
 import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.models.HttpEntity;
 import com.os.tid.forgerock.openam.nodes.OS_Auth_UserLoginNode.UserLoginOutcome;
+import com.os.tid.forgerock.openam.nodes.OS_Auth_VDPGenerateVOTPNode.GenerateVOTPOutcome;
 import com.os.tid.forgerock.openam.utils.CollectionsUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
+import com.os.tid.forgerock.openam.utils.SslUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
@@ -40,6 +42,9 @@ import com.sun.identity.sm.SMSException;
 import com.sun.identity.sm.RequiredValueValidator;
 
 import javax.inject.Inject;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -61,9 +66,17 @@ public class OS_Risk_InsertTransactionNode implements Node {
      */
     public interface Config {
         /**
-         * The key name in Shared State which represents the IAA/OCA username
+         * Domain wherein to search for user accounts.
          */
         @Attribute(order = 100, validators = RequiredValueValidator.class)
+        default String domain() {
+            return Constants.OSTID_DEFAULT_DOMAIN;
+        }
+        
+        /**
+         * The key name in Shared State which represents the IAA/OCA username
+         */
+        @Attribute(order = 200, validators = RequiredValueValidator.class)
         default String userNameInSharedData() {
             return Constants.OSTID_DEFAULT_USERNAME;
         }
@@ -71,7 +84,7 @@ public class OS_Risk_InsertTransactionNode implements Node {
         /**
          * Orchestration transaction data signing input. Delivery method for this transaction message is specified in the orchestrationDelivery field.
          */
-        @Attribute(order = 200)
+        @Attribute(order = 300)
         default Map<String, String> adaptiveAttributes() {
             return ImmutableMap.<String, String>builder()
                     .put("accountRef", "accountRef")
@@ -102,7 +115,7 @@ public class OS_Risk_InsertTransactionNode implements Node {
 	        logger.debug(loggerPrefix + "OS_Risk_InsertTransactionNode started");
 	        JsonValue sharedState = context.sharedState;
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
-	        String environment = serviceConfig.environment().name();
+	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
 	        boolean missAttr = false;
 	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
@@ -143,6 +156,9 @@ public class OS_Risk_InsertTransactionNode implements Node {
 	         * 6.application reference
 	         * 7.relationship ID
 	         **/
+	        
+            String relationshipRef = sharedState.get("relationshipRef").isString() ? sharedState.get("relationshipRef").asString():usernameJsonValue.asString();
+	        
             String sendTransactionJSON = String.format(Constants.OSTID_JSON_RISK_SEND_TRANSACTION,
                     attributesStringBuilder.toString(),                              //param1
                     sharedState.get(Constants.OSTID_CDDC_IP).asString(),             //param2
@@ -150,10 +166,10 @@ public class OS_Risk_InsertTransactionNode implements Node {
                     sharedState.get(Constants.OSTID_CDDC_JSON).asString(),           //param4
                     sessionID,                                                       //param5
                     applicationRef,                                                  //param6
-                    usernameJsonValue.asString()                                     //param7
+                    relationshipRef                                     			 //param7
             );
             String APIUrl = Constants.OSTID_API_RISK_SEND_TRANSACTION;
-            HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, sendTransactionJSON);
+            HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, sendTransactionJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
             JSONObject responseJSON = httpEntity.getResponseJSON();
 
             if (httpEntity.isSuccess()) {
@@ -192,12 +208,16 @@ public class OS_Risk_InsertTransactionNode implements Node {
                 }
             }
     	}catch (Exception ex) {
-			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
-			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
-			ex.printStackTrace();
-			context.getStateFor(this).putShared("OS_Risk_InsertTransactionNode Exception", new Date() + ": " + ex.getMessage())
-									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Risk Insert Transaction: " + ex.getMessage());
-			return goTo(RiskTransactionOutcome.Error).build();
+	   		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
+			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
+			JsonValue sharedState = context.sharedState;
+		    JsonValue transientState = context.transientState;
+			sharedState.put("OS_Risk_InsertTransactionNode Exception", new Date() + ": " + ex.getMessage());
+			sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Risk Insert Transaction: " + ex.getMessage());
+			return goTo(RiskTransactionOutcome.Error)
+                     .replaceSharedState(sharedState)
+                     .replaceTransientState(transientState)
+                     .build();	
 	    }
     }
 
