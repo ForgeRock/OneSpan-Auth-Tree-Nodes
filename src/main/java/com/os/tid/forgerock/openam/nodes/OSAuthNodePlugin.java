@@ -71,7 +71,7 @@ import org.slf4j.LoggerFactory;
  * @since AM 5.5.0
  */
 public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
-	static private String currentVersion = "1.2.13";
+	static private String currentVersion = "1.2.14";
     private final Logger logger = LoggerFactory.getLogger(OSAuthNodePlugin.class);
 
 	private final List<Class<? extends Node>> nodeList = ImmutableList.of(
