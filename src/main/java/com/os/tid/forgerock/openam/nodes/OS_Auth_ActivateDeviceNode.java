@@ -24,7 +24,6 @@ import java.util.stream.Stream;
 import javax.security.auth.callback.Callback;
 
 import org.forgerock.json.JsonValue;
-import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
@@ -50,7 +49,6 @@ import com.os.tid.forgerock.openam.utils.RestUtils;
 import com.os.tid.forgerock.openam.utils.SslUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
 import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
-import com.sun.identity.sm.RequiredValueValidator;
 import com.sun.identity.sm.SMSException;
 
 /**

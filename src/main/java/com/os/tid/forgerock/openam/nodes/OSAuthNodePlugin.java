@@ -16,27 +16,18 @@
 
 package com.os.tid.forgerock.openam.nodes;
 
-import java.security.AccessController;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.ImmutableList;
-import com.iplanet.sso.SSOException;
-import com.iplanet.sso.SSOToken;
-import com.sun.identity.security.AdminTokenAction;
-import com.sun.identity.sm.SMSException;
-import com.sun.identity.sm.ServiceManager;
-import com.sun.identity.sm.ServiceSchemaManager;
-
 import org.forgerock.openam.auth.node.api.AbstractNodeAmPlugin;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.plugins.PluginException;
-import org.forgerock.openam.plugins.PluginTools;
 import org.forgerock.openam.plugins.StartupType;
-import org.forgerock.openam.sm.ServiceSchemaManagerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.ImmutableList;
 
 
 /**
@@ -71,7 +62,7 @@ import org.slf4j.LoggerFactory;
  * @since AM 5.5.0
  */
 public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
-	static private String currentVersion = "1.2.13";
+	static private String currentVersion = "1.2.14";
     private final Logger logger = LoggerFactory.getLogger(OSAuthNodePlugin.class);
 
 	private final List<Class<? extends Node>> nodeList = ImmutableList.of(
@@ -198,7 +189,7 @@ public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
 			pluginTools.upgradeAuthNode(OS_Auth_VDPAssignAuthenticatorNode.class);
 			pluginTools.upgradeAuthNode(OS_Auth_VDPGenerateVOTPNode.class);
 			pluginTools.upgradeAuthNode(OS_Auth_VDPUserRegisterNode.class);
-
+			
 			pluginTools.upgradeIdRepo(OSConfigurationsService.class);
 		} catch(Exception e) {
 	    	e.printStackTrace();

@@ -110,6 +110,7 @@ public class Constants {
             .put(EnvOptions.Staging_EU1, "staging.eu1")
             .put(EnvOptions.Staging_EU2, "staging.eu2")
             .put(EnvOptions.UAT_EU1, "uat.eu1")
+            .put(EnvOptions.CUSTOMIZED, "CUSTOMIZED")
             .build();
     
     

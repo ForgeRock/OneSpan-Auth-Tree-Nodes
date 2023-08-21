@@ -15,10 +15,17 @@
  */
 package com.os.tid.forgerock.openam.nodes;
 
-import com.google.inject.Inject;
-import com.google.inject.assistedinject.Assisted;
-import com.os.tid.forgerock.openam.config.Constants;
-import com.os.tid.forgerock.openam.utils.CollectionsUtils;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.NameCallback;
+
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
@@ -29,12 +36,10 @@ import org.forgerock.openam.auth.node.api.TreeContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.NameCallback;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.*;
+import com.google.inject.Inject;
+import com.google.inject.assistedinject.Assisted;
+import com.os.tid.forgerock.openam.config.Constants;
+import com.os.tid.forgerock.openam.utils.CollectionsUtils;
 
 
 @Node.Metadata( outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,

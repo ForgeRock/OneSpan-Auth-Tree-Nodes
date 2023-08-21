@@ -15,20 +15,23 @@
  */
 package com.os.tid.forgerock.openam.nodes;
 
-import com.os.tid.forgerock.openam.config.Constants;
-import com.os.tid.forgerock.openam.utils.StringUtils;
-import org.forgerock.json.JsonValue;
-import org.forgerock.openam.auth.node.api.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.security.auth.callback.TextOutputCallback;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
+import javax.security.auth.callback.TextOutputCallback;
+
+import org.forgerock.json.JsonValue;
+import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.Node;
+import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
+import org.forgerock.openam.auth.node.api.TreeContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.os.tid.forgerock.openam.config.Constants;
+import com.os.tid.forgerock.openam.utils.StringUtils;
 
 @Node.Metadata( outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
                 configClass = OS_Sample_ErrorDisplayNode.Config.class,

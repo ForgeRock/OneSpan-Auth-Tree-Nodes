@@ -33,8 +33,6 @@ public interface OSConfigurationsService {
     @Attribute(order = 3)
     String applicationRef();
 
-
-
     @Attribute(order = 4)
     String publicKey();
 
@@ -50,7 +48,8 @@ public interface OSConfigurationsService {
         Staging_NA1,
         Staging_EU1,
         Staging_EU2,
-        UAT_EU1;
+        UAT_EU1,
+    	CUSTOMIZED;
     }
     
 }

@@ -1,12 +1,15 @@
 package com.os.tid.forgerock.openam.utils;
 
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
+import com.os.tid.forgerock.openam.config.Constants;
+import com.os.tid.forgerock.openam.nodes.OSConfigurationsService;
 
 public class StringUtils {
     private final static Logger logger = LoggerFactory.getLogger("amAuth");
@@ -37,7 +40,13 @@ public class StringUtils {
 
     //"https://duoliang11071-mailin.sdb.tid.onespan.cloud"
     public static String getAPIEndpoint(String ostid_tenant_name, String ostid_environment){
-        return String.format("https://%1$s.%2$s.tid.onespan.cloud",ostid_tenant_name,ostid_environment);
+    	String ApiEndpoint = "";
+    	if(ostid_environment.equalsIgnoreCase(Constants.OSTID_ENV_MAP.get(OSConfigurationsService.EnvOptions.CUSTOMIZED))) {
+    		ApiEndpoint = String.format("https://%1$s",ostid_tenant_name);
+    	}else {
+    		ApiEndpoint = String.format("https://%1$s.%2$s.tid.onespan.cloud",ostid_tenant_name,ostid_environment);
+    	}
+        return ApiEndpoint;
     }
 
     public static String getErrorMsgNoRetCodeWithoutValidation(String message, String log_correlation_id, String requestJSON){
