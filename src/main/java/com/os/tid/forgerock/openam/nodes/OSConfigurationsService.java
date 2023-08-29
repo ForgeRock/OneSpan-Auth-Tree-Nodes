@@ -41,8 +41,8 @@ public interface OSConfigurationsService {
 
     
     public enum EnvOptions {
-	sdb,	
-	prod,
+        sdb,
+        prod,
         Sandbox,
         Production_NA1,
         Production_EU1,

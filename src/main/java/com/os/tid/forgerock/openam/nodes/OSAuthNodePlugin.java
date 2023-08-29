@@ -63,7 +63,8 @@ import com.google.common.collect.ImmutableList;
  */
 public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
 	static private String currentVersion = "1.2.19";
-    private final Logger logger = LoggerFactory.getLogger(OSAuthNodePlugin.class);
+  
+  private final Logger logger = LoggerFactory.getLogger(OSAuthNodePlugin.class);
 
 	private final List<Class<? extends Node>> nodeList = ImmutableList.of(
 			//OCA
