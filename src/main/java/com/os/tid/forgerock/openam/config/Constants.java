@@ -102,6 +102,8 @@ public class Constants {
             .build();
 
     public static final Map<EnvOptions,String> OSTID_ENV_MAP = ImmutableMap.<EnvOptions, String>builder()
+            .put(EnvOptions.sdb, "sdb")
+            .put(EnvOptions.prod, "prod")
             .put(EnvOptions.Sandbox, "sdb")
             .put(EnvOptions.Production_NA1, "prod.na1")
             .put(EnvOptions.Production_EU1, "prod.eu1")

@@ -62,7 +62,7 @@ import com.google.common.collect.ImmutableList;
  * @since AM 5.5.0
  */
 public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
-	static private String currentVersion = "1.2.14";
+	static private String currentVersion = "1.2.19";
     private final Logger logger = LoggerFactory.getLogger(OSAuthNodePlugin.class);
 
 	private final List<Class<? extends Node>> nodeList = ImmutableList.of(
@@ -170,7 +170,6 @@ public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
 			pluginTools.upgradeAuthNode(OS_Auth_UserLoginNode.class);
 			pluginTools.upgradeAuthNode(OS_Auth_ValidateTransactionNode.class);
 			pluginTools.upgradeAuthNode(OS_Auth_ValidateEventNode.class);
-			pluginTools.installAuthNode(OS_Auth_GetUserAuthenticatorNode.class);
 			pluginTools.upgradeAuthNode(OS_Auth_GetUserAuthenticatorNode.class);
 
 			//Risk
@@ -189,7 +188,7 @@ public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
 			pluginTools.upgradeAuthNode(OS_Auth_VDPAssignAuthenticatorNode.class);
 			pluginTools.upgradeAuthNode(OS_Auth_VDPGenerateVOTPNode.class);
 			pluginTools.upgradeAuthNode(OS_Auth_VDPUserRegisterNode.class);
-			
+
 			pluginTools.upgradeIdRepo(OSConfigurationsService.class);
 		} catch(Exception e) {
 	    	e.printStackTrace();
