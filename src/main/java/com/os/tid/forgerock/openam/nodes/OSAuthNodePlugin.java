@@ -63,8 +63,10 @@ import com.google.common.collect.ImmutableList;
  */
 public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
 	static private String currentVersion = "1.2.19";
-  
-  private final Logger logger = LoggerFactory.getLogger(OSAuthNodePlugin.class);
+	static final String logAppender = "[Version: " + currentVersion + "][Marketplace] ";
+    private final Logger logger = LoggerFactory.getLogger(OSAuthNodePlugin.class);
+	private String loggerPrefix = "[OSAuthNodePlugin]" + OSAuthNodePlugin.logAppender;
+
 
 	private final List<Class<? extends Node>> nodeList = ImmutableList.of(
 			//OCA
@@ -122,7 +124,7 @@ public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
      */
 	@Override
 	public void onInstall() throws PluginException {
-        logger.info("Installing OSConfigurationsService");
+        logger.info(loggerPrefix + "Installing OSConfigurationsService");
 		pluginTools.installService(OSConfigurationsService.class);
 		super.onInstall();
 	}
@@ -139,7 +141,7 @@ public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
 	 */
 	@Override
 	public void onStartup(StartupType startupType) throws PluginException {
-        logger.info("Starting OSConfigurationsService");
+        logger.info(loggerPrefix + "Starting OSConfigurationsService");
 		pluginTools.startService(OSConfigurationsService.class);
 		super.onStartup(startupType);
 	}
@@ -192,6 +194,7 @@ public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
 
 			pluginTools.upgradeIdRepo(OSConfigurationsService.class);
 		} catch(Exception e) {
+			logger.error(loggerPrefix + e.getLocalizedMessage());
 	    	e.printStackTrace();
 	    }
 		super.upgrade(fromVersion);

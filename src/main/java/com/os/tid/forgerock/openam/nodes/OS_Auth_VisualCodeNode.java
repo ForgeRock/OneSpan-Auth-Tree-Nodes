@@ -18,6 +18,7 @@ package com.os.tid.forgerock.openam.nodes;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.ResourceBundle;
 
 import javax.security.auth.callback.Callback;
 
@@ -26,13 +27,16 @@ import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
-import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
+import org.forgerock.openam.auth.node.api.NodeState;
+import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.sm.AnnotatedServiceRegistry;
+import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import com.iplanet.sso.SSOException;
@@ -50,14 +54,15 @@ import com.sun.identity.sm.SMSException;
  *
  * This node reads the visual code message from the sharedState and renders it as a visual code, which allows the device integrated with the Mobile Security Suite SDKs, or DIGIPASS Authenticator with Cronto support to scan with.
  */
-@Node.Metadata( outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
+@Node.Metadata( outcomeProvider = OS_Auth_VisualCodeNode.OSAuthVisualCodeOutcomeProvider.class,
                 configClass = OS_Auth_VisualCodeNode.Config.class,
                 tags = {"OneSpan", "multi-factor authentication", "marketplace", "trustnetwork"})
-public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
-    private final Logger logger = LoggerFactory.getLogger("amAuth");
+public class OS_Auth_VisualCodeNode implements Node {
+    private final Logger logger = LoggerFactory.getLogger(OS_Auth_VisualCodeNode.class);
+    private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_VisualCodeNode";
     private final OS_Auth_VisualCodeNode.Config config;
     private final OSConfigurationsService serviceConfig;
-    private static final String loggerPrefix = "[OneSpan Auth Visual Code][Marketplace] ";
+    private static final String loggerPrefix = "[OneSpan Auth Visual Code]" + OSAuthNodePlugin.logAppender;
 
     /**
      * Configuration for the OneSpan Auth Visual Code Node.
@@ -175,11 +180,11 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
     public Action process(TreeContext context) throws NodeProcessException {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_VisualCodeNode started");
-	        JsonValue sharedState = context.sharedState;
+	        NodeState ns = context.getStateFor(this);
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
-	        JsonValue crontoMsgJsonValue = config.visualCodeMessageOption() == VisualCodeMessageOptions.CustomCrontoMessage ? sharedState.get(config.customMessageInSharedState()) : sharedState.get(Constants.OSTID_CRONTO_MSG);
+	        JsonValue crontoMsgJsonValue = config.visualCodeMessageOption() == VisualCodeMessageOptions.CustomCrontoMessage ? ns.get(config.customMessageInSharedState()) : ns.get(Constants.OSTID_CRONTO_MSG);
 	        boolean hasConsumed = false;
 	        if(context.getCallbacks(HiddenValueCallback.class) != null && context.getCallbacks(HiddenValueCallback.class).size() >= 1){
 	            for (HiddenValueCallback hiddenValueCallback : context.getCallbacks(HiddenValueCallback.class)) {
@@ -196,8 +201,8 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
 	        }
 	        //2. go to next
 	        else if(hasConsumed) {
-	            sharedState.remove(config.visualCodeHiddenValueId());
-	            return goToNext().replaceSharedState(sharedState).build();
+	            ns.remove(config.visualCodeHiddenValueId());
+	            return goTo(VisualCodeOutcome.Next).build();	
 	        }
 	        //3. send to page
 	        else {
@@ -205,17 +210,17 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
 	
 	            //return visual code URL as hiddenValueCallback
 	            String crontURL = "";
-	            if (sharedState.get(config.visualCodeHiddenValueId()).isNull()) {
+	            if (ns.get(config.visualCodeHiddenValueId()).isNull()) {
 	                crontURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_ADAPTIVE_CRTONTO_RENDER,
 	                        config.visualCodeType().name().toUpperCase(),
 	                        crontoMsgJsonValue.asString());
 	                crontURL = RestUtils.doGetImage(crontURL, SslUtils.getSSLConnectionSocketFactory(serviceConfig));
-	                sharedState.put(config.visualCodeHiddenValueId(), crontURL);
+	                ns.putShared(config.visualCodeHiddenValueId(), crontURL);
 	            } else {
-	                crontURL = sharedState.get(config.visualCodeHiddenValueId()).asString();
+	                crontURL = ns.get(config.visualCodeHiddenValueId()).asString();
 	            }
 	            HiddenValueCallback hiddenValueCDDCJson = new HiddenValueCallback(config.visualCodeHiddenValueId(), crontURL);
-	            HiddenValueCallback expiryDateCallback = new HiddenValueCallback(Constants.OSTID_EVENT_EXPIRY_DATE, getExpiryString(sharedState));
+	            HiddenValueCallback expiryDateCallback = new HiddenValueCallback(Constants.OSTID_EVENT_EXPIRY_DATE, getExpiryString(ns));
 	            HiddenValueCallback hasConsumedCallback = new HiddenValueCallback(Constants.OSTID_CRONTO_HAS_RENDERED, Constants.OSTID_CRONTO_HAS_RENDERED);
 	            returnCallback.add(hiddenValueCDDCJson);
 	            returnCallback.add(expiryDateCallback);
@@ -223,24 +228,23 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
 	
 	            //return Visual Code Script if required
 	            if (config.renderVisualCodeInCallback() ) {
-	                if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()) {
+	                if(ns.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()) {
 	                    addCrontoScript(returnCallback);
-	                    sharedState.put(Constants.OSTID_CRONTO_PUSH_JS, true);
+	                    ns.putShared(Constants.OSTID_CRONTO_PUSH_JS, true);
 	                }
-	                addStartScript(sharedState, crontURL, returnCallback);
+	                addStartScript(ns, crontURL, returnCallback);
 	            }
 	
-	            return Action.send(returnCallback)
-	                    .replaceSharedState(sharedState)
-	                    .build();
+	            return Action.send(returnCallback).build();
 	        }
         
     	}catch (Exception ex) {
     		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
 			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
-			context.getStateFor(this).putShared("OS_Auth_VisualCodeNode Exception", new Date() + ": " + stackTrace)
-									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Visual Code Node: " + stackTrace);
-			throw new NodeProcessException(ex.getMessage());
+			context.getStateFor(this).putShared(loggerPrefix + "StackTrace", new Date() + ": " + stackTrace);
+			context.getStateFor(this).putShared(loggerPrefix + "OS_Auth_VisualCodeNode Exception", new Date() + ": " + stackTrace)
+									 .putShared(loggerPrefix + Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Visual Code Node: " + stackTrace);
+			return goTo(VisualCodeOutcome.Error).build();	
 	    }
     }
 
@@ -310,8 +314,8 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
         returnCallback.add(displayScriptCallback);
     }
 
-    private void addStartScript(JsonValue sharedState, String crontURL, List<Callback> returnCallback ){
-        String expiryDateInMilli = getExpiryString(sharedState);
+    private void addStartScript(NodeState ns, String crontURL, List<Callback> returnCallback ){
+        String expiryDateInMilli = getExpiryString(ns);
 
         String displayScriptBase =
                 "if (typeof window.CDDC_display == 'function') { " +
@@ -352,11 +356,36 @@ public class OS_Auth_VisualCodeNode extends SingleOutcomeNode {
     public enum VisualCodeMessageOptions {
         DemoMobileApp, CustomCrontoMessage
     }
+    
+    private Action.ActionBuilder goTo(OS_Auth_VisualCodeNode.VisualCodeOutcome outcome) {
+        return Action.goTo(outcome.name());
+    }
+    
+    public enum VisualCodeOutcome {
+        Next, Error
+    }
 
-    private String getExpiryString(JsonValue sharedState){
-        JsonValue activationTokenExpiryDateJsonValue = sharedState.get(Constants.OSTID_EVENT_EXPIRY_DATE);
+    private String getExpiryString(NodeState ns){
+        JsonValue activationTokenExpiryDateJsonValue = ns.get(Constants.OSTID_EVENT_EXPIRY_DATE);
         String expiryDateInMilli =  activationTokenExpiryDateJsonValue.isNull() ? DateUtils.getMilliStringAfterCertainSecs(Constants.OSTID_DEFAULT_EVENT_EXPIRY) :
                 activationTokenExpiryDateJsonValue.asString();
         return expiryDateInMilli;
     }
+    
+    
+    /**
+     * Defines the possible outcomes.
+     */
+    public static class OSAuthVisualCodeOutcomeProvider implements OutcomeProvider {
+        @Override
+        public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes) {
+            ResourceBundle bundle = locales.getBundleInPreferredLocale(OS_Auth_VisualCodeNode.BUNDLE,
+            		OS_Auth_VisualCodeNode.OSAuthVisualCodeOutcomeProvider.class.getClassLoader());
+            return ImmutableList.of(
+                    new Outcome(OS_Auth_VisualCodeNode.VisualCodeOutcome.Next.name(), bundle.getString("nextOutcome")),
+                    new Outcome(OS_Auth_VisualCodeNode.VisualCodeOutcome.Error.name(), bundle.getString("errorOutcome"))
+            );
+        }
+    }
+    
 }

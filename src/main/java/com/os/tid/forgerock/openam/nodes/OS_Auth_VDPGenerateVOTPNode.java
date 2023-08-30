@@ -27,6 +27,7 @@ import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
@@ -59,11 +60,11 @@ import com.sun.identity.sm.SMSException;
                 configClass = OS_Auth_VDPGenerateVOTPNode.Config.class,
                 tags = {"OneSpan", "multi-factor authentication", "marketplace", "trustnetwork"})
 public class OS_Auth_VDPGenerateVOTPNode implements Node {
-    private final Logger logger = LoggerFactory.getLogger("amAuth");
+    private final Logger logger = LoggerFactory.getLogger(OS_Auth_VDPGenerateVOTPNode.class);
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_VDPGenerateVOTPNode";
     private final OSConfigurationsService serviceConfig;
     private final OS_Auth_VDPGenerateVOTPNode.Config config;
-    private static final String loggerPrefix = "[OneSpan Auth VDP Generate VOTP][Marketplace] ";
+    private static final String loggerPrefix = "[OneSpan Auth VDP Generate VOTP]" + OSAuthNodePlugin.logAppender;
 
     /**
      * Configuration for the OS Auth Generate Challenge Node.
@@ -117,19 +118,19 @@ public class OS_Auth_VDPGenerateVOTPNode implements Node {
     public Action process(TreeContext context) {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_VDPGenerateVOTPNode started");
-	        JsonValue sharedState = context.sharedState;
+	        NodeState ns = context.getStateFor(this);
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
-	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
-	        sharedState.put(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
+	        JsonValue usernameJsonValue = ns.get(config.userNameInSharedData());
+	        ns.putShared(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
 	
 	        boolean allOptionalFieldsIncluded = true;
 	        StringBuilder optionalAttributesStringBuilder = new StringBuilder(1000);
 	        Map<String, String> optionalAttributesMap = config.optionalAttributes();
 	        for (Map.Entry<String, String> entrySet : optionalAttributesMap.entrySet()) {
 	        	JsonValue jsonValue;
-        		jsonValue = sharedState.get(entrySet.getValue());
+        		jsonValue = ns.get(entrySet.getValue());
 	        	
 	            if (jsonValue.isString()) {
 	                optionalAttributesStringBuilder.append("\"").append(entrySet.getKey()).append("\":\"").append(jsonValue.asString()).append("\",");
@@ -246,20 +247,14 @@ public class OS_Auth_VDPGenerateVOTPNode implements Node {
                 }
             }
             
-	        return goTo(OS_Auth_VDPGenerateVOTPNode.GenerateVOTPOutcome.success)
-	                  .replaceSharedState(sharedState)
-	                  .build();
+	        return goTo(OS_Auth_VDPGenerateVOTPNode.GenerateVOTPOutcome.success).build();
     	}catch (Exception ex) {
 	   		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
 			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
-			JsonValue sharedState = context.sharedState;
-		    JsonValue transientState = context.transientState;
-			sharedState.put("OS_Auth_VDPGenerateVOTP Exception", new Date() + ": " + ex.getMessage());
-			sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Generate VOTP: " + ex.getMessage());
-			return goTo(GenerateVOTPOutcome.error)
-                     .replaceSharedState(sharedState)
-                     .replaceTransientState(transientState)
-                     .build();	
+			context.getStateFor(this).putShared(loggerPrefix + "StackTrace", new Date() + ": " + stackTrace);
+			context.getStateFor(this).putShared(loggerPrefix + "OS_Auth_VDPGenerateVOTP Exception", new Date() + ": " + ex.getMessage());
+			context.getStateFor(this).putShared(loggerPrefix + Constants.OSTID_ERROR_MESSAGE, "OneSpan Generate VOTP: " + ex.getMessage());
+			return goTo(GenerateVOTPOutcome.error).build();	
 	    }
     }
 

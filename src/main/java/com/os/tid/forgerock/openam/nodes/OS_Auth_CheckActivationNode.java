@@ -23,6 +23,7 @@ import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
@@ -53,10 +54,10 @@ import com.sun.identity.sm.SMSException;
                 configClass = OS_Auth_CheckActivationNode.Config.class,
                 tags = {"OneSpan", "multi-factor authentication", "marketplace", "trustnetwork"})
 public class OS_Auth_CheckActivationNode implements Node {
-    private final Logger logger = LoggerFactory.getLogger("amAuth");
+    private final Logger logger = LoggerFactory.getLogger(OS_Auth_CheckActivationNode.class);
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_CheckActivationNode";
     private final OSConfigurationsService serviceConfig;
-    private static final String loggerPrefix = "[OneSpan Auth Check Activation][Marketplace] ";
+    private static final String loggerPrefix = "[OneSpan Auth Check Activation]" + OSAuthNodePlugin.logAppender;
 
     /**
      * Configuration for the OS Auth Check Activate Node.
@@ -77,29 +78,28 @@ public class OS_Auth_CheckActivationNode implements Node {
     public Action process(TreeContext context) {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_CheckActivationNode started");
-	        JsonValue sharedState = context.sharedState;
+	        NodeState ns = context.getStateFor(this);
+
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
 	        //1. go to next
-	        JsonValue ostid_cronto_status = sharedState.get(Constants.OSTID_CRONTO_STATUS);
+	        JsonValue ostid_cronto_status = ns.get(Constants.OSTID_CRONTO_STATUS);
 	        if(ostid_cronto_status.isString()){
 	            ActivationStatusOutcome ostid_cronto_status_enum = ActivationStatusOutcome.valueOf(ostid_cronto_status.asString());
-	            sharedState.remove(Constants.OSTID_CRONTO_STATUS);
-	            return goTo(ostid_cronto_status_enum)
-	                    .replaceSharedState(sharedState)
-	                    .build();
+	            ns.remove(Constants.OSTID_CRONTO_STATUS);
+	            return goTo(ostid_cronto_status_enum).build();
 	        }
 	
 	        //2. call API and send script to remove visual code
-	        JsonValue usernameJsonValue = sharedState.get(sharedState.get(Constants.OSTID_USERNAME_IN_SHARED_STATE).asString());
-	        JsonValue eventExpiryJsonValue = sharedState.get(Constants.OSTID_EVENT_EXPIRY_DATE);
+	        JsonValue usernameJsonValue = ns.get(ns.get(Constants.OSTID_USERNAME_IN_SHARED_STATE).asString());
+	        JsonValue eventExpiryJsonValue = ns.get(Constants.OSTID_EVENT_EXPIRY_DATE);
 	        ActivationStatusOutcome activationStatusEnum;
 	        if (!usernameJsonValue.isString() || usernameJsonValue.asString().isEmpty()) {
 	            throw new NodeProcessException("Username is missing!");
 	        } else if(DateUtils.hasExpired(eventExpiryJsonValue.asString())){
 	            activationStatusEnum = ActivationStatusOutcome.timeout;
-	            sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Activation: Your session has timed out!");
+	            ns.putShared(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Activation: Your session has timed out!");
 	        } else {
 	            String checkActivationJSON = String.format(Constants.OSTID_JSON_CHECK_ACTIVATION,
 	                    usernameJsonValue.asString(),                            //param1
@@ -126,25 +126,21 @@ public class OS_Auth_CheckActivationNode implements Node {
 	            case activated:
 	                return goTo(ActivationStatusOutcome.activated).build();
 	            case timeout:
-	                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Activation: Your session has timed out!");
-	                return goTo(ActivationStatusOutcome.timeout).replaceSharedState(sharedState).build();
+	                ns.putShared(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Activation: Your session has timed out!");
+	                return goTo(ActivationStatusOutcome.timeout).build();
 	            case unknown:
-	                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Activation: Status Unknown!");
-	                return goTo(ActivationStatusOutcome.unknown).replaceSharedState(sharedState).build();
+	                ns.putShared(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Activation: Status Unknown!");
+	                return goTo(ActivationStatusOutcome.unknown).build();
 	            default:
 	                return goTo(ActivationStatusOutcome.pending).build();
 	        }
     	}catch (Exception ex) {
     		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
 			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
-			JsonValue sharedState = context.sharedState;
-		    JsonValue transientState = context.transientState;
-			sharedState.put("OS_Auth_CheckActivationNode Exception", new Date() + ": " + ex.getMessage());
-			sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Check Activation: " + ex.getMessage());
-			return goTo(ActivationStatusOutcome.error)
-                     .replaceSharedState(sharedState)
-                     .replaceTransientState(transientState)
-                     .build();	
+			context.getStateFor(this).putShared(loggerPrefix + "StackTrace", new Date() + ": " + stackTrace);
+			context.getStateFor(this).putShared(loggerPrefix + "OS_Auth_CheckActivationNode Exception", new Date() + ": " + ex.getMessage());
+			context.getStateFor(this).putShared(loggerPrefix + Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Check Activation: " + ex.getMessage());
+			return goTo(ActivationStatusOutcome.error).build();	
 	    }
     }
 

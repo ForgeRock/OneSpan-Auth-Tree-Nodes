@@ -23,6 +23,7 @@ import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
@@ -53,10 +54,10 @@ import com.sun.identity.sm.SMSException;
                 configClass = OS_Auth_CheckSessionStatusNode.Config.class,
                 tags = {"OneSpan", "multi-factor authentication", "marketplace", "trustnetwork"})
 public class OS_Auth_CheckSessionStatusNode implements Node {
-    private final Logger logger = LoggerFactory.getLogger("amAuth");
+    private final Logger logger = LoggerFactory.getLogger(OS_Auth_CheckSessionStatusNode.class);
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_CheckSessionStatusNode";
     private final OSConfigurationsService serviceConfig;
-    private static final String loggerPrefix = "[OneSpan Auth Check Session Status][Marketplace] ";
+    private static final String loggerPrefix = "[OneSpan Auth Check Session Status]" + OSAuthNodePlugin.logAppender;
 
     /**
      * Configuration for the OS Auth Check Session Status Node.
@@ -77,17 +78,17 @@ public class OS_Auth_CheckSessionStatusNode implements Node {
     public Action process(TreeContext context) {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_CheckSessionStatusNode started");
-	        JsonValue sharedState = context.sharedState;
+	        NodeState ns = context.getStateFor(this);
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
-	        JsonValue eventExpiryJsonValue = sharedState.get(Constants.OSTID_EVENT_EXPIRY_DATE);
-	        JsonValue requestIdJsonValue = sharedState.get(Constants.OSTID_REQUEST_ID);
+	        JsonValue eventExpiryJsonValue = ns.get(Constants.OSTID_EVENT_EXPIRY_DATE);
+	        JsonValue requestIdJsonValue = ns.get(Constants.OSTID_REQUEST_ID);
 	        CheckSessionStatusOutcome checkSessionStatusEnum;
 	        if (!requestIdJsonValue.isString() || requestIdJsonValue.asString().isEmpty()) {
 	            throw new NodeProcessException("Request ID is missing!");
 	        }else if(DateUtils.hasExpired(eventExpiryJsonValue.asString())){
-	            sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: Your session has timed out!");
+	            ns.putShared(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: Your session has timed out!");
 	            checkSessionStatusEnum = CheckSessionStatusOutcome.timeout;
 	        }else {
                 HttpEntity httpEntity = RestUtils.doGet(StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_CHECK_SESSION_STATUS,requestIdJsonValue.asString()),SslUtils.getSSLConnectionSocketFactory(serviceConfig));
@@ -111,31 +112,27 @@ public class OS_Auth_CheckSessionStatusNode implements Node {
 	            case accepted:
 	                return goTo(CheckSessionStatusOutcome.accepted).build();
 	            case refused:
-	                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: End user refused to validate the event!");
-	                return goTo(CheckSessionStatusOutcome.refused).replaceSharedState(sharedState).build();
+	                ns.putShared(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: End user refused to validate the event!");
+	                return goTo(CheckSessionStatusOutcome.refused).build();
 	            case failure:
-	                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: End user failed to validate the event!");
-	                return goTo(CheckSessionStatusOutcome.failure).replaceSharedState(sharedState).build();
+	            	ns.putShared(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: End user failed to validate the event!");
+	                return goTo(CheckSessionStatusOutcome.failure).build();
 	            case timeout:
-	                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: The session has been expired!");
-	                return goTo(CheckSessionStatusOutcome.timeout).replaceSharedState(sharedState).build();
+	            	ns.putShared(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: The session has been expired!");
+	                return goTo(CheckSessionStatusOutcome.timeout).build();
 	            case unknown:
-	                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: The event validation status is unknown!");
-	                return goTo(CheckSessionStatusOutcome.unknown).replaceSharedState(sharedState).build();
+	            	ns.putShared(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: The event validation status is unknown!");
+	                return goTo(CheckSessionStatusOutcome.unknown).build();
 	            default:
 	                return goTo(CheckSessionStatusOutcome.pending).build();
 	        }
     	}catch (Exception ex) {
 	   		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
 			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
-			JsonValue sharedState = context.sharedState;
-		    JsonValue transientState = context.transientState;
-			sharedState.put("OS_Auth_CheckSessionStatusNode Exception", new Date() + ": " + ex.getMessage());
-			sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Check Session Status: " + ex.getMessage());
-			return goTo(CheckSessionStatusOutcome.error)
-                     .replaceSharedState(sharedState)
-                     .replaceTransientState(transientState)
-                     .build();	
+			context.getStateFor(this).putShared(loggerPrefix + "StackTrace", new Date() + ": " + stackTrace);
+			context.getStateFor(this).putShared(loggerPrefix + "OS_Auth_CheckSessionStatusNode Exception", new Date() + ": " + ex.getMessage());
+			context.getStateFor(this).putShared(loggerPrefix + Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Check Session Status: " + ex.getMessage());
+			return goTo(CheckSessionStatusOutcome.error).build();	
 	    }
     }
 

@@ -26,6 +26,7 @@ import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
@@ -58,10 +59,10 @@ import com.sun.identity.sm.SMSException;
                 configClass = OS_Auth_VDPAssignAuthenticatorNode.Config.class,
                 tags = {"OneSpan", "multi-factor authentication", "marketplace", "trustnetwork"})
 public class OS_Auth_VDPAssignAuthenticatorNode implements Node {
-    private final Logger logger = LoggerFactory.getLogger("amAuth");
+    private final Logger logger = LoggerFactory.getLogger(OS_Auth_VDPAssignAuthenticatorNode.class);
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_VDPAssignAuthenticatorNode";
     private final OSConfigurationsService serviceConfig;
-    private static final String loggerPrefix = "[OneSpan Auth VDP Assign Authenticator][Marketplace] ";
+    private static final String loggerPrefix = "[OneSpan Auth VDP Assign Authenticator]" + OSAuthNodePlugin.logAppender;
     private final OS_Auth_VDPAssignAuthenticatorNode.Config config;
 
     /**
@@ -91,12 +92,12 @@ public class OS_Auth_VDPAssignAuthenticatorNode implements Node {
     public Action process(TreeContext context) {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_VDPAssignAuthenticatorNode started");
-	        JsonValue sharedState = context.sharedState;
+	        NodeState ns = context.getStateFor(this);
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
-	        String usernameInSharedState = sharedState.get(Constants.OSTID_USERNAME_IN_SHARED_STATE) == null ? Constants.OSTID_DEFAULT_USERNAME : sharedState.get(Constants.OSTID_USERNAME_IN_SHARED_STATE).asString();
-	        JsonValue usernameJsonValue = sharedState.get(usernameInSharedState);
+	        String usernameInSharedState = ns.get(Constants.OSTID_USERNAME_IN_SHARED_STATE) == null ? Constants.OSTID_DEFAULT_USERNAME : ns.get(Constants.OSTID_USERNAME_IN_SHARED_STATE).asString();
+	        JsonValue usernameJsonValue = ns.get(usernameInSharedState);
 
 	
 	        if(CollectionsUtils.hasAnyNullValues(ImmutableList.of(usernameJsonValue))){
@@ -157,9 +158,7 @@ public class OS_Auth_VDPAssignAuthenticatorNode implements Node {
 				}
 	            
 	            if(!StringUtils.isEmpty(vir10SerialNumber)) {
-	                return goTo(OS_Auth_VDPAssignAuthenticatorNode.VDPAssignAuthenticatorOutcome.success)
-	                        .replaceSharedState(sharedState)
-	                        .build();
+	                return goTo(OS_Auth_VDPAssignAuthenticatorNode.VDPAssignAuthenticatorOutcome.success).build();
 	            }
             }
 	        
@@ -227,20 +226,14 @@ public class OS_Auth_VDPAssignAuthenticatorNode implements Node {
                 }
             }
             
-            return goTo(OS_Auth_VDPAssignAuthenticatorNode.VDPAssignAuthenticatorOutcome.success)
-                    .replaceSharedState(sharedState)
-                    .build();
+            return goTo(OS_Auth_VDPAssignAuthenticatorNode.VDPAssignAuthenticatorOutcome.success).build();
     	}catch (Exception ex) {
 	   		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
 			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
-			JsonValue sharedState = context.sharedState;
-		    JsonValue transientState = context.transientState;
-			sharedState.put("OS_Auth_VDPAssignAuthenticatorNode Exception", new Date() + ": " + ex.getMessage());
-			sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan VDP Assign Authenticator process: " + ex.getMessage());
-			return goTo(VDPAssignAuthenticatorOutcome.error)
-                     .replaceSharedState(sharedState)
-                     .replaceTransientState(transientState)
-                     .build();	
+			context.getStateFor(this).putShared(loggerPrefix + "StackTrace", new Date() + ": " + stackTrace);
+			context.getStateFor(this).putShared(loggerPrefix + "OS_Auth_VDPAssignAuthenticatorNode Exception", new Date() + ": " + ex.getMessage());
+			context.getStateFor(this).putShared(loggerPrefix + Constants.OSTID_ERROR_MESSAGE, "OneSpan VDP Assign Authenticator process: " + ex.getMessage());
+			return goTo(VDPAssignAuthenticatorOutcome.error).build();	
 	    }
     }
 

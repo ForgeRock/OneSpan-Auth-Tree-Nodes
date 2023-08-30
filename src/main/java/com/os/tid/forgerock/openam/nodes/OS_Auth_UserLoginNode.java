@@ -31,6 +31,7 @@ import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
@@ -64,10 +65,10 @@ import com.sun.identity.sm.SMSException;
                 tags = {"OneSpan", "multi-factor authentication", "marketplace", "trustnetwork"})
 public class OS_Auth_UserLoginNode implements Node {
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_UserLoginNode";
-    private final Logger logger = LoggerFactory.getLogger("amAuth");
+    private final Logger logger = LoggerFactory.getLogger(OS_Auth_UserLoginNode.class);
     private final OS_Auth_UserLoginNode.Config config;
     private final OSConfigurationsService serviceConfig;
-    private static final String loggerPrefix = "[OneSpan Auth User Login][Marketplace] ";
+    private static final String loggerPrefix = "[OneSpan Auth User Login]" + OSAuthNodePlugin.logAppender;
 
     /**
      * Configuration for the OS Auth User Login Node.
@@ -152,22 +153,21 @@ public class OS_Auth_UserLoginNode implements Node {
     public Action process(TreeContext context) {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_UserLoginNode started");
-	        JsonValue sharedState = context.sharedState;
-	        JsonValue transientState = context.transientState;
+	        NodeState ns = context.getStateFor(this);
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
-	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
-	        JsonValue cddcJsonJsonValue = sharedState.get(Constants.OSTID_CDDC_JSON);
-	        JsonValue cddcHashJsonValue = sharedState.get(Constants.OSTID_CDDC_HASH);
-	        JsonValue cddcIpJsonValue = sharedState.get(Constants.OSTID_CDDC_IP);
-	        sharedState.put(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
+	        JsonValue usernameJsonValue = ns.get(config.userNameInSharedData());
+	        JsonValue cddcJsonJsonValue = ns.get(Constants.OSTID_CDDC_JSON);
+	        JsonValue cddcHashJsonValue = ns.get(Constants.OSTID_CDDC_HASH);
+	        JsonValue cddcIpJsonValue = ns.get(Constants.OSTID_CDDC_IP);
+	        ns.putShared(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
 	
 	        boolean missOptionalAttr = false;
 	        StringBuilder optionalAttributesStringBuilder = new StringBuilder(1000);
 	        Map<String, String> optionalAttributesMap = config.optionalAttributes();
 	        for (Map.Entry<String, String> entrySet : optionalAttributesMap.entrySet()) {
-	            JsonValue jsonValue = sharedState.get(entrySet.getValue());
+	            JsonValue jsonValue = ns.get(entrySet.getValue());
 	            if (jsonValue.isString()) {
 	                optionalAttributesStringBuilder.append("\"").append(entrySet.getKey()).append("\":\"").append(jsonValue.asString()).append("\",");
 	            } else {
@@ -206,18 +206,18 @@ public class OS_Auth_UserLoginNode implements Node {
             String fido = "";
             switch (config.credentialsType()) {
                 case fidoAuthenticator:
-                    credentials = String.format(Constants.OSTID_JSON_ADAPTIVE_CREDENTIALS_FIDOAUTHENTICATOR, sharedState.get("authenticationResponse").asString());
-                    fido = String.format(Constants.OSTID_JSON_ADAPTIVE_CREDENTIALS_FIDOAUTHENTICATOR_2, sharedState.get("fidoProtocol").asString());
+                    credentials = String.format(Constants.OSTID_JSON_ADAPTIVE_CREDENTIALS_FIDOAUTHENTICATOR, ns.get("authenticationResponse").asString());
+                    fido = String.format(Constants.OSTID_JSON_ADAPTIVE_CREDENTIALS_FIDOAUTHENTICATOR_2, ns.get("fidoProtocol").asString());
                     break;
                 case authenticator:
-                    credentials = String.format(Constants.OSTID_JSON_ADAPTIVE_CREDENTIALS_AUTHENTICATOR, sharedState.get("OTP").asString());
+                    credentials = String.format(Constants.OSTID_JSON_ADAPTIVE_CREDENTIALS_AUTHENTICATOR, ns.get("OTP").asString());
                     break;
                 case passKey:
-                    credentials = String.format(Constants.OSTID_JSON_ADAPTIVE_CREDENTIALS_PASSKEY, transientState.get("password").asString());
+                    credentials = String.format(Constants.OSTID_JSON_ADAPTIVE_CREDENTIALS_PASSKEY, ns.get("password").asString());
                     break;
             }
             //param3
-            String requestID = sharedState.get(Constants.OSTID_REQUEST_ID).isString() ? String.format(Constants.OSTID_JSON_ADAPTIVE_REQUESTID, sharedState.get(Constants.OSTID_REQUEST_ID).asString()) : "";
+            String requestID = ns.get(Constants.OSTID_REQUEST_ID).isString() ? String.format(Constants.OSTID_JSON_ADAPTIVE_REQUESTID, ns.get(Constants.OSTID_REQUEST_ID).asString()) : "";
             //param4
             String orchestrationDelivery = "";
             switch (config.orchestrationDelivery()) {
@@ -236,8 +236,8 @@ public class OS_Auth_UserLoginNode implements Node {
             //param5: for now, API timeout will always set to 0, timeout specified in config will be used for visual code time out
             String timeout = String.format(Constants.OSTID_JSON_ADAPTIVE_TIMEOUT, 0);
             //param6
-            String sessionID = sharedState.get(Constants.OSTID_SESSIONID).isString() ? sharedState.get(Constants.OSTID_SESSIONID).asString() : StringUtils.stringToHex(UUID.randomUUID().toString());
-            String relationshipRef = sharedState.get("relationshipRef").isString() ? sharedState.get("relationshipRef").asString():usernameJsonValue.asString();
+            String sessionID = ns.get(Constants.OSTID_SESSIONID).isString() ? ns.get(Constants.OSTID_SESSIONID).asString() : StringUtils.stringToHex(UUID.randomUUID().toString());
+            String relationshipRef = ns.get("relationshipRef").isString() ? ns.get("relationshipRef").asString():usernameJsonValue.asString();
 
             String IAA = String.format(Constants.OSTID_JSON_ADAPTIVE_USER_LOGIN_IAA,
                     cddcIpJsonValue.asString(),                         //param6.1
@@ -267,11 +267,11 @@ public class OS_Auth_UserLoginNode implements Node {
             if (httpEntity.isSuccess()) {
                 GeneralResponseOutput loginOutput = JSON.toJavaObject(responseJSON, GeneralResponseOutput.class);
                 int irmResponse = loginOutput.getRiskResponseCode();
-                sharedState.put(Constants.OSTID_IRM_RESPONSE,irmResponse);
-                sharedState.put(Constants.OSTID_SESSIONID,sessionID);
-                sharedState.put(Constants.OSTID_REQUEST_ID, org.apache.commons.lang.StringUtils.isEmpty(loginOutput.getRequestID())? requestID : loginOutput.getRequestID());
-                sharedState.put(Constants.OSTID_COMMAND,loginOutput.getRequestMessage());
-                sharedState.put(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.timeout()));
+                ns.putShared(Constants.OSTID_IRM_RESPONSE,irmResponse);
+                ns.putShared(Constants.OSTID_SESSIONID,sessionID);
+                ns.putShared(Constants.OSTID_REQUEST_ID, org.apache.commons.lang.StringUtils.isEmpty(loginOutput.getRequestID())? requestID : loginOutput.getRequestID());
+                ns.putShared(Constants.OSTID_COMMAND,loginOutput.getRequestMessage());
+                ns.putShared(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.timeout()));
 
                 UserLoginOutcome userLoginOutcome = UserLoginOutcome.Error;
                 
@@ -282,38 +282,38 @@ public class OS_Auth_UserLoginNode implements Node {
                     break;
                 case failed:
                     userLoginOutcome = UserLoginOutcome.Error;
-                    sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth User Login: User failed to authenticate!");
+                    ns.putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth User Login: User failed to authenticate!");
                     break;
                 case refused:
                     userLoginOutcome = UserLoginOutcome.Decline;
-                    sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth User Login: User declined to authenticate!");
+                    ns.putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth User Login: User declined to authenticate!");
                     break;
                 case timeout:
                     userLoginOutcome = UserLoginOutcome.Error;
-                    sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth User Login: Request times out!");
+                    ns.putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth User Login: Request times out!");
                     break;
                 case unknown:
                     userLoginOutcome = UserLoginOutcome.Error;
-                    sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth User Login: Request status unknown!");
+                    ns.putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth User Login: Request status unknown!");
                     break;
                 case pending:
                     if(irmResponse > -1) {
-                        sharedState.put(Constants.OSTID_IRM_RESPONSE, irmResponse);
+                    	ns.putShared(Constants.OSTID_IRM_RESPONSE, irmResponse);
                         if(irmResponse == 0){
                             userLoginOutcome = UserLoginOutcome.Accept;
                         }else if(irmResponse == 1){
                             userLoginOutcome = UserLoginOutcome.Decline;
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth User Login: Request been declined!");
+                            ns.putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth User Login: Request been declined!");
                         }else if(Constants.OSTID_API_CHALLANGE_MAP.containsKey(irmResponse)){
                             userLoginOutcome = UserLoginOutcome.StepUp;
                         }
                         switch (config.visualCodeMessageOptions()) {
                             case sessionID:
-                                sharedState.put(Constants.OSTID_CRONTO_MSG, StringUtils.stringToHex(sessionID));
+                            	ns.putShared(Constants.OSTID_CRONTO_MSG, StringUtils.stringToHex(sessionID));
                                 break;
                             case requestID:
                                 String crontoMsg = StringUtils.stringToHex(loginOutput.getRequestID() == null ? "" : loginOutput.getRequestID());
-                                sharedState.put(Constants.OSTID_CRONTO_MSG, crontoMsg);
+                                ns.putShared(Constants.OSTID_CRONTO_MSG, crontoMsg);
                                 break;
                         }
                     }
@@ -321,9 +321,7 @@ public class OS_Auth_UserLoginNode implements Node {
 	            }
 	                
 	            logger.debug(loggerPrefix + "OS_Auth_UserLoginNode user login outcome:" + userLoginOutcome.name());
-	            return goTo(userLoginOutcome)
-	                    .replaceSharedState(sharedState)
-	                    .build();
+	            return goTo(userLoginOutcome).build();
             } else {
                 String log_correction_id = httpEntity.getLog_correlation_id();
                 String message = responseJSON.getString("message");
@@ -346,14 +344,10 @@ public class OS_Auth_UserLoginNode implements Node {
     	}catch (Exception ex) {
 	   		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
 			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
-			JsonValue sharedState = context.sharedState;
-		    JsonValue transientState = context.transientState;
-			sharedState.put("OS_Auth_UserLoginNode Exception", new Date() + ": " + ex.getMessage());
-			sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth User Login: " + ex.getMessage());
-			return goTo(UserLoginOutcome.Error)
-                     .replaceSharedState(sharedState)
-                     .replaceTransientState(transientState)
-                     .build();	
+			context.getStateFor(this).putShared(loggerPrefix + "StackTrace", new Date() + ": " + stackTrace);
+			context.getStateFor(this).putShared(loggerPrefix + "OS_Auth_UserLoginNode Exception", new Date() + ": " + ex.getMessage());
+			context.getStateFor(this).putShared(loggerPrefix + Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth User Login: " + ex.getMessage());
+			return goTo(UserLoginOutcome.Error).build();	
 	    }
 
         

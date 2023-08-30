@@ -20,6 +20,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ResourceBundle;
 
 import javax.inject.Inject;
 import javax.security.auth.callback.Callback;
@@ -29,11 +30,14 @@ import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
-import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
+import org.forgerock.openam.auth.node.api.NodeState;
+import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.assistedinject.Assisted;
 import com.os.tid.forgerock.openam.config.Constants;
@@ -47,13 +51,14 @@ import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
  * A node which collects CDDC information through script callback.
  * Places the result in the shared state as 'osstid_cddc_json', 'osstid_cddc_hash' and 'osstid_cddc_ip'.
  */
-@Node.Metadata( outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
+@Node.Metadata( outcomeProvider =OS_Risk_CDDCNode.OS_Risk_CDDCOutcomeProvider.class,
                 configClass = OS_Risk_CDDCNode.Config.class,
                 tags = {"OneSpan", "multi-factor authentication", "marketplace", "trustnetwork"})
-public class OS_Risk_CDDCNode extends SingleOutcomeNode {
-    private final Logger logger = LoggerFactory.getLogger("amAuth");
+public class OS_Risk_CDDCNode  implements Node {
+    private final Logger logger = LoggerFactory.getLogger(OS_Risk_CDDCNode.class);
     private final OS_Risk_CDDCNode.Config config;
-    private static final String loggerPrefix = "[OneSpan Risk CDDC][Marketplace] ";
+    private static final String loggerPrefix = "[OneSpan Risk CDDC]" + OSAuthNodePlugin.logAppender;
+    private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Risk_CDDCNode";
 
     /**
      * Configuration for the OS Risk CDDC Collector Node.
@@ -93,7 +98,7 @@ public class OS_Risk_CDDCNode extends SingleOutcomeNode {
     public Action process(TreeContext context) throws NodeProcessException {
     	try {
 	        logger.debug(loggerPrefix + "OS_Risk_CDDCNode started");
-	        JsonValue sharedState = context.sharedState.copy();
+	        NodeState ns = context.getStateFor(this);
 	
 	        Map<String, String> attrValueMap = new HashMap<>();
 	        ImmutableSet<String> attrNameSet = ImmutableSet.of(getCDDCJsonInHiddenValue(), getCDDCHashInHiddenValue());
@@ -118,13 +123,11 @@ public class OS_Risk_CDDCNode extends SingleOutcomeNode {
 	                CDDCIp = "127.0.0.1";
 	            }
 	
-	            sharedState.put(Constants.OSTID_CDDC_JSON,CDDCJson);
-	            sharedState.put(Constants.OSTID_CDDC_HASH,CDDCHash);
-	            sharedState.put(Constants.OSTID_CDDC_IP,CDDCIp);
+	            ns.putShared(Constants.OSTID_CDDC_JSON,CDDCJson);
+	            ns.putShared(Constants.OSTID_CDDC_HASH,CDDCHash);
+	            ns.putShared(Constants.OSTID_CDDC_IP,CDDCIp);
 	
-	            return goToNext()
-	                    .replaceSharedState(sharedState)
-	                    .build();
+	            return goTo(OS_Risk_CDDCOutcome.Next).build();
 	        }else {                                                                 //2. the first time, without collected data
 	            logger.debug(loggerPrefix + "OS_Risk_CDDCNode without CDDC JSON and Hash!");
 	
@@ -135,7 +138,7 @@ public class OS_Risk_CDDCNode extends SingleOutcomeNode {
 	            returnCallback.add(hiddenValueCDDCHash);
 	            if(config.pushCDDCJsAsCallback()){
 	                //only push CDDC JS once
-	                JsonValue hasPushedJSJsonValue = sharedState.get(Constants.OSTID_CDDC_HAS_PUSHED_JS);
+	                JsonValue hasPushedJSJsonValue = ns.get(Constants.OSTID_CDDC_HAS_PUSHED_JS);
 	                if(hasPushedJSJsonValue.isNull()) {
 	                    String jqueryScript = ScriptUtils.getScriptFromFile("/js/jquery-3.5.1.min.js");
 	                    ScriptTextOutputCallback jqueryScriptCallback = new ScriptTextOutputCallback(jqueryScript);
@@ -149,7 +152,7 @@ public class OS_Risk_CDDCNode extends SingleOutcomeNode {
 	                    returnCallback.add(jqueryScriptCallback);
 	                    returnCallback.add(JsonScriptScriptCallback);
 	                    returnCallback.add(CDDCScriptCallback);
-	                    sharedState.put(Constants.OSTID_CDDC_HAS_PUSHED_JS, true);
+	                    ns.putShared(Constants.OSTID_CDDC_HAS_PUSHED_JS, true);
 	                }
 	
 	                String customCDDCScriptBase =
@@ -165,21 +168,45 @@ public class OS_Risk_CDDCNode extends SingleOutcomeNode {
 	                returnCallback.add(customCDDCScriptCallback);
 	
 	            }
-	            return Action.send(returnCallback)
-	                    .replaceSharedState(sharedState)
-	                    .build();
+	            return Action.send(returnCallback).build();
 	        }
         
     	}catch (Exception ex) {
     		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
-			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
-			context.getStateFor(this).putShared("OS_Risk_CDDCNode Exception", new Date() + ": " + stackTrace)
-									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Risk CDDC: " + stackTrace);
-			throw new NodeProcessException(ex.getMessage());
+    		logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
+			context.getStateFor(this).putShared(loggerPrefix + "StackTrace", new Date() + ": " + stackTrace);
+			context.getStateFor(this).putShared(loggerPrefix + "OS_Risk_CDDCNode Exception", new Date() + ": " + stackTrace)
+									 .putShared(loggerPrefix + Constants.OSTID_ERROR_MESSAGE, "OneSpan Risk CDDC: " + stackTrace);
+			return goTo(OS_Risk_CDDCOutcome.Error).build();
 	    }
     }
 
     private String getCDDCJsonInHiddenValue(){return config.pushCDDCJsAsCallback() ? Constants.OSTID_CDDC_JSON : config.CDDCJsonHiddenValueId();}
     private String getCDDCHashInHiddenValue(){return config.pushCDDCJsAsCallback() ? Constants.OSTID_CDDC_HASH : config.CDDCHashHiddenValueId();}
 
+    public enum OS_Risk_CDDCOutcome {
+        Next, Error
+    }
+    
+    private Action.ActionBuilder goTo(OS_Risk_CDDCNode.OS_Risk_CDDCOutcome outcome) {
+        return Action.goTo(outcome.name());
+    }
+    
+    /**
+     * Defines the possible outcomes.
+     */
+    public static class OS_Risk_CDDCOutcomeProvider implements OutcomeProvider {
+        @Override
+        public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes) {
+            ResourceBundle bundle = locales.getBundleInPreferredLocale(OS_Risk_CDDCNode.BUNDLE,
+            		OS_Risk_CDDCNode.OS_Risk_CDDCOutcomeProvider.class.getClassLoader());
+            return ImmutableList.of(
+                    new Outcome(OS_Risk_CDDCNode.OS_Risk_CDDCOutcome.Next.name(), bundle.getString("nextOutcome")),
+                    new Outcome(OS_Risk_CDDCNode.OS_Risk_CDDCOutcome.Error.name(), bundle.getString("errorOutcome"))
+            );
+        }
+    }
+    
+    
+    
 }

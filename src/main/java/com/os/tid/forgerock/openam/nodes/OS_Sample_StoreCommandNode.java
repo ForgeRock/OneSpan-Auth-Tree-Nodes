@@ -15,8 +15,6 @@
  */
 package com.os.tid.forgerock.openam.nodes;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -30,6 +28,7 @@ import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
@@ -44,7 +43,6 @@ import com.google.inject.assistedinject.Assisted;
 import com.iplanet.sso.SSOException;
 import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.models.HttpEntity;
-import com.os.tid.forgerock.openam.nodes.OS_Risk_InsertTransactionNode.RiskTransactionOutcome;
 import com.os.tid.forgerock.openam.utils.RestUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
 import com.sun.identity.sm.RequiredValueValidator;
@@ -55,10 +53,10 @@ import com.sun.identity.sm.SMSException;
         tags = {"OneSpan", "multi-factor authentication", "marketplace", "trustnetwork"})
 public class OS_Sample_StoreCommandNode implements Node {
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Sample_StoreCommandNode";
-    private final Logger logger = LoggerFactory.getLogger("amAuth");
+    private final Logger logger = LoggerFactory.getLogger(OS_Sample_StoreCommandNode.class);
     private final OS_Sample_StoreCommandNode.Config config;
     private final OSConfigurationsService serviceConfig;
-    private static final String loggerPrefix = "[OneSpan Sample Store Command][Marketplace] ";
+    private static final String loggerPrefix = "[OneSpan Sample Store Command]" + OSAuthNodePlugin.logAppender;
 
     /**
      * Configuration for the OS_Sample_StoreCommandNode.
@@ -113,13 +111,13 @@ public class OS_Sample_StoreCommandNode implements Node {
     public Action process(TreeContext context){
     	try {
 	        logger.debug(loggerPrefix + "OSTID_DEMO_BackCommandsNode started");
-	        JsonValue sharedState = context.sharedState;
+	        NodeState ns = context.getStateFor(this);
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
 	
-	        JsonValue ostid_sessionid = sharedState.get(Constants.OSTID_SESSIONID);
-	        JsonValue ostid_irm_response = sharedState.get(Constants.OSTID_IRM_RESPONSE);
-	        JsonValue ostid_command = sharedState.get(Constants.OSTID_COMMAND);
-	        String requestId = sharedState.get(Constants.OSTID_REQUEST_ID).isString() ? sharedState.get(Constants.OSTID_REQUEST_ID).asString() : ""; //temporary, the request ID is not mandatory
+	        JsonValue ostid_sessionid = ns.get(Constants.OSTID_SESSIONID);
+	        JsonValue ostid_irm_response = ns.get(Constants.OSTID_IRM_RESPONSE);
+	        JsonValue ostid_command = ns.get(Constants.OSTID_COMMAND);
+	        String requestId = ns.get(Constants.OSTID_REQUEST_ID).isString() ? ns.get(Constants.OSTID_REQUEST_ID).asString() : ""; //temporary, the request ID is not mandatory
             //build payload
             String demo_cmd_payload = String.format(Constants.OSTID_JSON_DEMO_COMMANDS, ostid_command.asString(), ostid_irm_response.asInteger() + "", ostid_sessionid.asString());
 
@@ -129,12 +127,12 @@ public class OS_Sample_StoreCommandNode implements Node {
                 put("sessionIdentifier", StringUtils.hexToString(ostid_sessionid.asString()));
                 put("sessionID", ostid_sessionid.asString());
                 put("requestID", requestId);
-                put("username", sharedState.get(Constants.OSTID_DEFAULT_USERNAME).isString() ? sharedState.get(Constants.OSTID_DEFAULT_USERNAME).asString() : "username");
+                put("username", ns.get(Constants.OSTID_DEFAULT_USERNAME).isString() ? ns.get(Constants.OSTID_DEFAULT_USERNAME).asString() : "username");
                 put("hexRequestID", StringUtils.stringToHex(requestId));
             }};
 
             for (Map.Entry<String, String> entry : config.placeholderMap().entrySet()) {
-                placeholders.put(entry.getKey(), sharedState.get(entry.getValue()).isString() ? sharedState.get(entry.getValue()).asString() : entry.getValue());
+                placeholders.put(entry.getKey(), ns.get(entry.getValue()).isString() ? ns.get(entry.getValue()).asString() : entry.getValue());
             }
 
             String commandURL = config.javascript();
@@ -144,23 +142,17 @@ public class OS_Sample_StoreCommandNode implements Node {
             HttpEntity httpEntity = RestUtils.doHttpRequestWithoutResponse(commandURLFinal, demo_cmd_payload,config.httpmethod().name(),config.requestHeaders(),null);
 
             if (httpEntity.isSuccess()) {
-                return goTo(OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome.Success)
-                        .replaceSharedState(sharedState)
-                        .build();
+                return goTo(OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome.Success).build();
             } else {
                 throw new NodeProcessException(httpEntity.getResponseJSON().toJSONString());
             }
     	}catch (Exception ex) {
 	   		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
 			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
-			JsonValue sharedState = context.sharedState;
-		    JsonValue transientState = context.transientState;
-			sharedState.put("OSTID_DEMO_BackCommandsNode Exception", new Date() + ": " + ex.getMessage());
-			sharedState.put(Constants.OSTID_ERROR_MESSAGE, "Fail to Store Command in backoffice: " + ex.getMessage());
-			return goTo(OSTID_DEMO_StoreCommandNode_Outcome.Error)
-                     .replaceSharedState(sharedState)
-                     .replaceTransientState(transientState)
-                     .build();	
+		    context.getStateFor(this).putShared(loggerPrefix + "StackTrace", new Date() + ": " + stackTrace);
+		    context.getStateFor(this).putShared(loggerPrefix + "OSTID_DEMO_BackCommandsNode Exception", new Date() + ": " + ex.getMessage());
+		    context.getStateFor(this).putShared(loggerPrefix + Constants.OSTID_ERROR_MESSAGE, "Fail to Store Command in backoffice: " + ex.getMessage());
+			return goTo(OSTID_DEMO_StoreCommandNode_Outcome.Error).build();	
 	    }
     }
 

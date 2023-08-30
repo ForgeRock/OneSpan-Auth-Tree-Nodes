@@ -29,6 +29,7 @@ import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
@@ -61,10 +62,10 @@ import com.sun.identity.sm.SMSException;
                 tags = {"OneSpan", "multi-factor authentication", "marketplace", "trustnetwork"})
 public class OS_Auth_VDPUserRegisterNode implements Node {
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_VDPUserRegisterNode";
-    private final Logger logger = LoggerFactory.getLogger("amAuth");
+    private final Logger logger = LoggerFactory.getLogger(OS_Auth_VDPUserRegisterNode.class);
     private final OS_Auth_VDPUserRegisterNode.Config config;
     private final OSConfigurationsService serviceConfig;
-    private static final String loggerPrefix = "[OneSpan Auth VDP User Register][Marketplace] ";
+    private static final String loggerPrefix = "[OneSpan Auth VDP User Register]" + OSAuthNodePlugin.logAppender;
 
     /**
      * Configuration for the OneSpan Auth User Register Node.
@@ -118,13 +119,12 @@ public class OS_Auth_VDPUserRegisterNode implements Node {
     public Action process(TreeContext context) {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_VDPUserRegisterNode started");
-	        JsonValue sharedState = context.sharedState;
-	        JsonValue transientState = context.transientState;
+	        NodeState ns = context.getStateFor(this);
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
-	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
-	        sharedState.put(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
+	        JsonValue usernameJsonValue = ns.get(config.userNameInSharedData());
+	        ns.putShared(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
 	
 	        boolean allOptionalFieldsIncluded = true;
 	        StringBuilder optionalAttributesStringBuilder = new StringBuilder(1000);
@@ -132,9 +132,9 @@ public class OS_Auth_VDPUserRegisterNode implements Node {
 	        for (Map.Entry<String, String> entrySet : optionalAttributesMap.entrySet()) {
 	        	JsonValue jsonValue;
 	        	if(Constants.OSTID_STATIC_PASSWORD.equalsIgnoreCase(entrySet.getKey())) {
-	        		jsonValue = transientState.get(entrySet.getValue());
+	        		jsonValue = ns.get(entrySet.getValue());
 	        	}else {
-	        		jsonValue = sharedState.get(entrySet.getValue());
+	        		jsonValue = ns.get(entrySet.getValue());
 	        	}
 	        	
 	            if (jsonValue.isString()) {
@@ -167,10 +167,7 @@ public class OS_Auth_VDPUserRegisterNode implements Node {
                 JSONObject responseJSON = httpEntity.getResponseJSON();
 
                 if (httpEntity.isSuccess()) {
-                    return goTo(VDPUserRegisterOutcome.Success)
-                            .replaceSharedState(sharedState)
-                            .replaceTransientState(transientState)
-                            .build();
+                    return goTo(VDPUserRegisterOutcome.Success).build();
                 } else {
                     String log_correction_id = httpEntity.getLog_correlation_id();
                     String message = responseJSON.getString("message");
@@ -201,10 +198,7 @@ public class OS_Auth_VDPUserRegisterNode implements Node {
                 JSONObject responseJSON = httpEntity.getResponseJSON();
 
                 if (httpEntity.isSuccess()) {
-                    return goTo(VDPUserRegisterOutcome.Success)
-                            .replaceSharedState(sharedState)
-                            .replaceTransientState(transientState)
-                            .build();
+                    return goTo(VDPUserRegisterOutcome.Success).build();
                 } else {
                     String log_correction_id = httpEntity.getLog_correlation_id();
                     String message = responseJSON.getString("message");
@@ -229,14 +223,11 @@ public class OS_Auth_VDPUserRegisterNode implements Node {
 			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
 //			context.getStateFor(this).putShared("OS_Auth_VDPUserRegisterNode Exception", new Date() + ": " + stackTrace)
 //									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan VDP User Register process: " + stackTrace);
-			JsonValue sharedState = context.sharedState;
-		    JsonValue transientState = context.transientState;
-			sharedState.put("OS_Auth_VDPUserRegisterNode Exception", new Date() + ": " + ex.getMessage());
-			sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan VDP User Register process: " + ex.getMessage());
-			return goTo(VDPUserRegisterOutcome.Error)
-                     .replaceSharedState(sharedState)
-                     .replaceTransientState(transientState)
-                     .build();	    
+
+			context.getStateFor(this).putShared(loggerPrefix + "StackTrace", new Date() + ": " + stackTrace);
+			context.getStateFor(this).putShared(loggerPrefix + "OS_Auth_VDPUserRegisterNode Exception", new Date() + ": " + ex.getMessage());
+			context.getStateFor(this).putShared(loggerPrefix + Constants.OSTID_ERROR_MESSAGE, "OneSpan VDP User Register process: " + ex.getMessage());
+			return goTo(VDPUserRegisterOutcome.Error).build();	    
 		 }
     }
 

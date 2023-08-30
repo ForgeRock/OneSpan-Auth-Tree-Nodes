@@ -26,6 +26,7 @@ import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
@@ -58,10 +59,10 @@ import com.sun.identity.sm.SMSException;
                 configClass = OS_Auth_GetUserAuthenticatorNode.Config.class,
                 tags = {"OneSpan", "multi-factor authentication", "marketplace", "trustnetwork"})
 public class OS_Auth_GetUserAuthenticatorNode implements Node {
-    private final Logger logger = LoggerFactory.getLogger("amAuth");
+    private final Logger logger = LoggerFactory.getLogger(OS_Auth_GetUserAuthenticatorNode.class);
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_GetUserAuthenticatorNode";
     private final OSConfigurationsService serviceConfig;
-    private static final String loggerPrefix = "[OneSpan Auth Get User Authenticator][Marketplace] ";
+    private static final String loggerPrefix = "[OneSpan Auth Get User Authenticator]"  + OSAuthNodePlugin.logAppender;
     private final OS_Auth_GetUserAuthenticatorNode.Config config;
 
     /**
@@ -99,12 +100,12 @@ public class OS_Auth_GetUserAuthenticatorNode implements Node {
     public Action process(TreeContext context) {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_GetUserAuthenticatorNode started");
-	        JsonValue sharedState = context.sharedState;
+	        NodeState ns = context.getStateFor(this);
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
-	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
-	        sharedState.put(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
+	        JsonValue usernameJsonValue = ns.get(config.userNameInSharedData());
+	        ns.putShared(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
 	        
 	
 	        if(CollectionsUtils.hasAnyNullValues(ImmutableList.of(usernameJsonValue))){
@@ -171,38 +172,24 @@ public class OS_Auth_GetUserAuthenticatorNode implements Node {
 	            
 	            	
 		            if(hasVIR10Authenticator && hasTYPAuthenticator) {
-		                return goTo(OS_Auth_GetUserAuthenticatorNode.GetUserAuthenticatorOutcome.Both)
-		                        .replaceSharedState(sharedState)
-		                        .build();
+		                return goTo(OS_Auth_GetUserAuthenticatorNode.GetUserAuthenticatorOutcome.Both).build();
 		            }else if(hasVIR10Authenticator && !hasTYPAuthenticator) {
-		            	 return goTo(OS_Auth_GetUserAuthenticatorNode.GetUserAuthenticatorOutcome.VIR10)
-			                        .replaceSharedState(sharedState)
-			                        .build();
+		            	 return goTo(OS_Auth_GetUserAuthenticatorNode.GetUserAuthenticatorOutcome.VIR10).build();
 		            }else if(!hasVIR10Authenticator && hasTYPAuthenticator) {
-		            	 return goTo(OS_Auth_GetUserAuthenticatorNode.GetUserAuthenticatorOutcome.TYP)
-			                        .replaceSharedState(sharedState)
-			                        .build();
+		            	 return goTo(OS_Auth_GetUserAuthenticatorNode.GetUserAuthenticatorOutcome.TYP).build();
 		            }else {
-		            	 return goTo(OS_Auth_GetUserAuthenticatorNode.GetUserAuthenticatorOutcome.None)
-		                         .replaceSharedState(sharedState)
-		                         .build();
+		            	 return goTo(OS_Auth_GetUserAuthenticatorNode.GetUserAuthenticatorOutcome.None).build();
 		            }
 				}
             
-            return goTo(OS_Auth_GetUserAuthenticatorNode.GetUserAuthenticatorOutcome.None)
-                    .replaceSharedState(sharedState)
-                    .build();
+            return goTo(OS_Auth_GetUserAuthenticatorNode.GetUserAuthenticatorOutcome.None).build();
     	}catch (Exception ex) {
 	   		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
 			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
-			JsonValue sharedState = context.sharedState;
-		    JsonValue transientState = context.transientState;
-			sharedState.put("OS_Auth_GetUserAuthenticatorNode Exception", new Date() + ": " + ex.getMessage());
-			sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Get User Authenticator process: " + ex.getMessage());
-			return goTo(GetUserAuthenticatorOutcome.None)
-                     .replaceSharedState(sharedState)
-                     .replaceTransientState(transientState)
-                     .build();	
+			context.getStateFor(this).putShared(loggerPrefix + "StackTrace", new Date() + ": " + stackTrace);
+			context.getStateFor(this).putShared(loggerPrefix + "OS_Auth_GetUserAuthenticatorNode Exception", new Date() + ": " + ex.getMessage());
+			context.getStateFor(this).putShared(loggerPrefix + Constants.OSTID_ERROR_MESSAGE, "OneSpan Get User Authenticator process: " + ex.getMessage());
+			return goTo(GetUserAuthenticatorOutcome.Error).build();	
 	    }
     }
 
@@ -214,7 +201,8 @@ public class OS_Auth_GetUserAuthenticatorNode implements Node {
         TYP,
         VIR10,
         Both,
-        None
+        None,
+        Error
     }
 
     /**
@@ -229,7 +217,8 @@ public class OS_Auth_GetUserAuthenticatorNode implements Node {
                     new Outcome(GetUserAuthenticatorOutcome.TYP.name(), bundle.getString("TYPOutcome")),
                     new Outcome(GetUserAuthenticatorOutcome.VIR10.name(), bundle.getString("VIR10Outcome")),
                     new Outcome(GetUserAuthenticatorOutcome.Both.name(), bundle.getString("BothOutcome")),
-                    new Outcome(GetUserAuthenticatorOutcome.None.name(), bundle.getString("NoneOutcome"))
+                    new Outcome(GetUserAuthenticatorOutcome.None.name(), bundle.getString("NoneOutcome")),
+                    new Outcome(GetUserAuthenticatorOutcome.Error.name(), bundle.getString("ErrorOutcome"))
             		);
         }
     }

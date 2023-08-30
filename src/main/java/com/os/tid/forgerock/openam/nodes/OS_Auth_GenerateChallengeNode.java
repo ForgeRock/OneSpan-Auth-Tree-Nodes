@@ -26,6 +26,7 @@ import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
@@ -57,11 +58,11 @@ import com.sun.identity.sm.SMSException;
                 configClass = OS_Auth_GenerateChallengeNode.Config.class,
                 tags = {"OneSpan", "multi-factor authentication", "marketplace", "trustnetwork"})
 public class OS_Auth_GenerateChallengeNode implements Node {
-    private final Logger logger = LoggerFactory.getLogger("amAuth");
+    private final Logger logger = LoggerFactory.getLogger(OS_Auth_GenerateChallengeNode.class);
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_GenerateChallengeNode";
     private final OSConfigurationsService serviceConfig;
     private final OS_Auth_GenerateChallengeNode.Config config;
-    private static final String loggerPrefix = "[OneSpan Auth Generate Challenge][Marketplace] ";
+    private static final String loggerPrefix = "[OneSpan Auth Generate Challenge]" + OSAuthNodePlugin.logAppender;
 
     /**
      * Configuration for the OS Auth Generate Challenge Node.
@@ -113,10 +114,10 @@ public class OS_Auth_GenerateChallengeNode implements Node {
     public Action process(TreeContext context) {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_GenerateChallengeNode started");
-	        JsonValue sharedState = context.sharedState;
+	        NodeState ns = context.getStateFor(this);
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
-	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
+	        JsonValue usernameJsonValue = ns.get(config.userNameInSharedData());
 	
 	        String generateChallengeJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_GENERATE_CHALLENGE,
 	                config.length(),                                    //param1
@@ -127,12 +128,10 @@ public class OS_Auth_GenerateChallengeNode implements Node {
             JSONObject responseJSON = httpEntity.getResponseJSON();
             if (httpEntity.isSuccess()) {
                 GenerateChallengeOutput generateChallengeOutput = JSON.toJavaObject(responseJSON, GenerateChallengeOutput.class);
-                sharedState.put(Constants.OSTID_REQUEST_ID, generateChallengeOutput.getRequestID());
-                sharedState.put(Constants.OSTID_CRONTO_MSG, StringUtils.stringToHex2(generateChallengeOutput.getChallenge()));
+                ns.putShared(Constants.OSTID_REQUEST_ID, generateChallengeOutput.getRequestID());
+                ns.putShared(Constants.OSTID_CRONTO_MSG, StringUtils.stringToHex2(generateChallengeOutput.getChallenge()));
 
-                return goTo(OS_Auth_GenerateChallengeNode.GenerateChallengeOutcome.success)
-                        .replaceSharedState(sharedState)
-                        .build();
+                return goTo(OS_Auth_GenerateChallengeNode.GenerateChallengeOutcome.success).build();
             } else {
                 String error = responseJSON.getString("error");
                 String message = responseJSON.getString("message");
@@ -156,14 +155,10 @@ public class OS_Auth_GenerateChallengeNode implements Node {
     	}catch (Exception ex) {
 	   		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
 			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
-			JsonValue sharedState = context.sharedState;
-		    JsonValue transientState = context.transientState;
-			sharedState.put("OS_Auth_GenerateChallengeNode Exception", new Date() + ": " + ex.getMessage());
-			sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan OCA Generate Challenge: " + ex.getMessage());
-			return goTo(GenerateChallengeOutcome.error)
-                     .replaceSharedState(sharedState)
-                     .replaceTransientState(transientState)
-                     .build();	
+			context.getStateFor(this).putShared(loggerPrefix + "StackTrace", new Date() + ": " + stackTrace);
+		    context.getStateFor(this).putShared(loggerPrefix + "OS_Auth_GenerateChallengeNode Exception", new Date() + ": " + ex.getMessage());
+			context.getStateFor(this).putShared(loggerPrefix + Constants.OSTID_ERROR_MESSAGE, "OneSpan OCA Generate Challenge: " + ex.getMessage());
+			return goTo(GenerateChallengeOutcome.error).build();	
 	    }
     }
 

@@ -32,6 +32,7 @@ import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
@@ -66,10 +67,10 @@ import com.sun.identity.sm.SMSException;
                 tags = {"OneSpan", "multi-factor authentication", "marketplace", "trustnetwork"})
 public class OS_Auth_ValidateTransactionNode implements Node {
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_ValidateTransactionNode";
-    private final Logger logger = LoggerFactory.getLogger("amAuth");
+    private final Logger logger = LoggerFactory.getLogger(OS_Auth_ValidateTransactionNode.class);
     private final OS_Auth_ValidateTransactionNode.Config config;
     private final OSConfigurationsService serviceConfig;
-    private static final String loggerPrefix = "[OneSpan Auth Validate Transaction][Marketplace] ";
+    private static final String loggerPrefix = "[OneSpan Auth Validate Transaction]" + OSAuthNodePlugin.logAppender;
 
     /**
      * Configuration for the OneSpan Auth Validate Transaction Node.
@@ -204,18 +205,18 @@ public class OS_Auth_ValidateTransactionNode implements Node {
     public Action process(TreeContext context) {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_ValidateTransactionNode started");
-	        JsonValue sharedState = context.sharedState;
+	        NodeState ns = context.getStateFor(this);
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
-	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
-	        sharedState.put(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
+	        JsonValue usernameJsonValue = ns.get(config.userNameInSharedData());
+	        ns.putShared(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
 	
 	        boolean missOptionalAttr = false;
 	        StringBuilder optionalAttributesStringBuilder = new StringBuilder(1000);
 	        Map<String, String> optionalAttributesMap = config.optionalAttributes();
 	        for (Map.Entry<String, String> entrySet : optionalAttributesMap.entrySet()) {
-	            JsonValue jsonValue = sharedState.get(entrySet.getValue());
+	            JsonValue jsonValue = ns.get(entrySet.getValue());
 	            if (jsonValue.isString()) {
 	                optionalAttributesStringBuilder.append("\"").append(entrySet.getKey()).append("\":\"").append(jsonValue.asString()).append("\",");
 	            } else {
@@ -223,7 +224,7 @@ public class OS_Auth_ValidateTransactionNode implements Node {
 	            }
 	        }
 	
-	        String sessionID = sharedState.get(Constants.OSTID_SESSIONID).isString() ? sharedState.get(Constants.OSTID_SESSIONID).asString() : StringUtils.stringToHex(UUID.randomUUID().toString());
+	        String sessionID = ns.get(Constants.OSTID_SESSIONID).isString() ? ns.get(Constants.OSTID_SESSIONID).asString() : StringUtils.stringToHex(UUID.randomUUID().toString());
 	        String dataJSON = "";
 	        String IAAJson = "";
 	        boolean hasNullValue = false;
@@ -232,16 +233,16 @@ public class OS_Auth_ValidateTransactionNode implements Node {
 	                Map<String, String> fidoDataToSign = config.fidoDataToSign();
 	                String fidoProtocol = fidoDataToSign.getOrDefault("fidoProtocol", "");
 	                String authenticationResponse = fidoDataToSign.getOrDefault("authenticationResponse", "");
-	                boolean isFido2 = sharedState.get(fidoProtocol).asString().equalsIgnoreCase("FIDO2");
+	                boolean isFido2 = ns.get(fidoProtocol).asString().equalsIgnoreCase("FIDO2");
 	                hasNullValue = CollectionsUtils.hasAnyNullValues(ImmutableList.of(
-	                        sharedState.get(fidoProtocol),
-	                        sharedState.get(authenticationResponse)
-	                )) ||  (isFido2 && sharedState.get(Constants.OSTID_REQUEST_ID).isNull());
+	                        ns.get(fidoProtocol),
+	                        ns.get(authenticationResponse)
+	                )) ||  (isFido2 && ns.get(Constants.OSTID_REQUEST_ID).isNull());
 	                if(!hasNullValue){
 	                    dataJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_DATATOSIGN_FIDO,
-	                            sharedState.get(fidoProtocol).asString(),                                                                                   //param1
-	                            sharedState.get(authenticationResponse).asString(),                                                                         //param2
-	                            isFido2? String.format(Constants.OSTID_JSON_ADAPTIVE_REQUESTID,sharedState.get(Constants.OSTID_REQUEST_ID).asString()):""   //param3
+	                            ns.get(fidoProtocol).asString(),                                                                                   //param1
+	                            ns.get(authenticationResponse).asString(),                                                                         //param2
+	                            isFido2? String.format(Constants.OSTID_JSON_ADAPTIVE_REQUESTID,ns.get(Constants.OSTID_REQUEST_ID).asString()):""   //param3
 	                    );
 	                }
 	                break;
@@ -249,29 +250,29 @@ public class OS_Auth_ValidateTransactionNode implements Node {
 	                List<String> dataValues = new ArrayList<>();
 	                List<String> standardDataToSign = config.standardDataToSign();
 	                for (String dataToSign : standardDataToSign) {
-	                    if(!sharedState.get(dataToSign).isString()){
+	                    if(!ns.get(dataToSign).isString()){
 	                        hasNullValue = true;
 	                    }else{
-	                        dataValues.add("\""+sharedState.get(dataToSign).asString()+"\"");
+	                        dataValues.add("\""+ns.get(dataToSign).asString()+"\"");
 	                    }
 	                }
-	                hasNullValue |= !sharedState.get(config.signatureInSharedData()).isString();
+	                hasNullValue |= !ns.get(config.signatureInSharedData()).isString();
 	                if(!hasNullValue){
 	                    dataJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_DATATOSIGN_STANDARD,
 	                            String.join(",", dataValues),                           //param1
-	                            sharedState.get(config.signatureInSharedData()).asString()          //param2
+	                            ns.get(config.signatureInSharedData()).asString()          //param2
 	                    );
 	                }
 	                break;
 	            case secureChannel:
 	                hasNullValue = CollectionsUtils.hasAnyNullValues(ImmutableList.of(
-	                        sharedState.get(Constants.OSTID_REQUEST_ID),
-	                        sharedState.get(config.signatureInSharedData())
+	                        ns.get(Constants.OSTID_REQUEST_ID),
+	                        ns.get(config.signatureInSharedData())
 	                ));
 	                if(!hasNullValue){
 	                    dataJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_DATATOSIGN_SECURECHANNEL,
-	                            sharedState.get(Constants.OSTID_REQUEST_ID).asString(),             //param1
-	                            sharedState.get(config.signatureInSharedData()).asString()          //param2
+	                            ns.get(Constants.OSTID_REQUEST_ID).asString(),             //param1
+	                            ns.get(config.signatureInSharedData()).asString()          //param2
 	                    );
 	                }
 	                break;
@@ -281,10 +282,10 @@ public class OS_Auth_ValidateTransactionNode implements Node {
 	                Map<String, String> adaptiveAttributes = config.adaptiveAttributes();
 	                for (Map.Entry<String, String> entry : adaptiveAttributes.entrySet()) {
 	                    String nameInSharedState = entry.getValue();
-	                    if(!sharedState.get(nameInSharedState).isString()){
+	                    if(!ns.get(nameInSharedState).isString()){
 	                        hasNullValue = true;
 	                    }else{
-	                        adaptiveAttributesList.add("\""+entry.getKey()+"\":\""+sharedState.get(nameInSharedState).asString()+"\"");
+	                        adaptiveAttributesList.add("\""+entry.getKey()+"\":\""+ns.get(nameInSharedState).asString()+"\"");
 	                    }
 	                }
 	
@@ -301,31 +302,31 @@ public class OS_Auth_ValidateTransactionNode implements Node {
 	                    String value = entry.getValue();
 	                    logger.debug(loggerPrefix + "OSS data key= " + key);
 	                    logger.debug(loggerPrefix + "OSS data value name= " + value);
-	                    if(!sharedState.get(value).isString()){
+	                    if(!ns.get(value).isString()){
 	                        hasNullValue = true;
 	                    }else{
-	                        logger.debug(loggerPrefix + "OSS data value value= " + sharedState.get(value).asString());
+	                        logger.debug(loggerPrefix + "OSS data value value= " + ns.get(value).asString());
 	                        dataFieldsList.add(String.format(Constants.OSTID_JSON_ADAPTIVE_DATATOSIGN_TRANSACTIONMESSAGE_DATAFIELDS,
 	                                key,
-	                                sharedState.get(value).asString()));
+	                                ns.get(value).asString()));
 	                    }
 	                }
 	
 	                if(config.objectType() == ObjectType.AdaptiveTransactionValidationInput) {
 	                    hasNullValue |= CollectionsUtils.hasAnyNullValues(ImmutableList.of(
-	                            sharedState.get(Constants.OSTID_CDDC_JSON),
-	                            sharedState.get(Constants.OSTID_CDDC_HASH),
-	                            sharedState.get(Constants.OSTID_CDDC_IP)
+	                            ns.get(Constants.OSTID_CDDC_JSON),
+	                            ns.get(Constants.OSTID_CDDC_HASH),
+	                            ns.get(Constants.OSTID_CDDC_IP)
 	                    ));
 	                }
 	                if(!hasNullValue){
 	                    String applicationRef = serviceConfig.applicationRef() != null ? serviceConfig.applicationRef() : "";
 	                    String relationshipRefNameInSharedState = config.adaptiveAttributes().containsKey("relationshipRef") ? config.adaptiveAttributes().get("relationshipRef") : "relationshipRef";
-	                    String relationshipRef = sharedState.get(relationshipRefNameInSharedState).isString() ? sharedState.get(relationshipRefNameInSharedState).asString():usernameJsonValue.asString();
+	                    String relationshipRef = ns.get(relationshipRefNameInSharedState).isString() ? ns.get(relationshipRefNameInSharedState).asString():usernameJsonValue.asString();
 	                    IAAJson = String.join(",",adaptiveAttributesList)+","+String.format(Constants.OSTID_JSON_ADAPTIVE_USER_LOGIN_IAA,
-	                            sharedState.get(Constants.OSTID_CDDC_IP).asString(),
-	                            sharedState.get(Constants.OSTID_CDDC_HASH).asString(),
-	                            sharedState.get(Constants.OSTID_CDDC_JSON).asString(),
+	                            ns.get(Constants.OSTID_CDDC_IP).asString(),
+	                            ns.get(Constants.OSTID_CDDC_HASH).asString(),
+	                            ns.get(Constants.OSTID_CDDC_JSON).asString(),
 	                            relationshipRef,
 	                            sessionID,
 	                            applicationRef
@@ -382,11 +383,11 @@ public class OS_Auth_ValidateTransactionNode implements Node {
             if (httpEntity.isSuccess()) {
                 GeneralResponseOutput loginOutput = JSON.toJavaObject(responseJSON, GeneralResponseOutput.class);
                 int irmResponse = loginOutput.getRiskResponseCode();
-                sharedState.put(Constants.OSTID_IRM_RESPONSE,irmResponse);
-                sharedState.put(Constants.OSTID_SESSIONID,sessionID);
-                sharedState.put(Constants.OSTID_REQUEST_ID, loginOutput.getRequestID());
-                sharedState.put(Constants.OSTID_COMMAND,loginOutput.getRequestMessage());
-                sharedState.put(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.timeout()));
+                ns.putShared(Constants.OSTID_IRM_RESPONSE,irmResponse);
+                ns.putShared(Constants.OSTID_SESSIONID,sessionID);
+                ns.putShared(Constants.OSTID_REQUEST_ID, loginOutput.getRequestID());
+                ns.putShared(Constants.OSTID_COMMAND,loginOutput.getRequestMessage());
+                ns.putShared(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.timeout()));
 
                 SendTransactionOutcome sendTransactionOutcome = SendTransactionOutcome.Error;
 
@@ -396,40 +397,40 @@ public class OS_Auth_ValidateTransactionNode implements Node {
                     break;
                 case failed:
                     sendTransactionOutcome = SendTransactionOutcome.Error;
-                    sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Transaction : User failed to authenticate!");
+                    ns.putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Transaction : User failed to authenticate!");
                     break;
                 case refused:
                     sendTransactionOutcome = SendTransactionOutcome.Decline;
-                    sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Transaction : User declined to authenticate!");
+                    ns.putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Transaction : User declined to authenticate!");
                     break;
                 case timeout:
                 	sendTransactionOutcome = SendTransactionOutcome.Error;
-                    sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Transaction : Request times out!");
+                    ns.putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Transaction : Request times out!");
                     break;
                 case unknown:
                 	sendTransactionOutcome = SendTransactionOutcome.Error;
-                    sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Event: Request status unknown!");
+                    ns.putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Event: Request status unknown!");
                     break;
                 case pending:
                     if(irmResponse > -1) {
-                        sharedState.put(Constants.OSTID_IRM_RESPONSE, irmResponse);
+                        ns.putShared(Constants.OSTID_IRM_RESPONSE, irmResponse);
 
                         if (irmResponse == 0) {
                             sendTransactionOutcome = SendTransactionOutcome.Accept;
                         } else if (irmResponse == 1) {
                             sendTransactionOutcome = SendTransactionOutcome.Decline;
-                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Transaction: Request been declined!");
+                            ns.putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Transaction: Request been declined!");
                         } else if (Constants.OSTID_API_CHALLANGE_MAP.containsKey(irmResponse)) {
                             sendTransactionOutcome = SendTransactionOutcome.StepUp;
                         }
 
                         switch (config.visualCodeMessageOptions()) {
                             case sessionID:
-                                sharedState.put(Constants.OSTID_CRONTO_MSG, StringUtils.stringToHex(sessionID));
+                                ns.putShared(Constants.OSTID_CRONTO_MSG, StringUtils.stringToHex(sessionID));
                                 break;
                             case requestID:
                                 String crontoMsg = StringUtils.stringToHex(loginOutput.getRequestID() == null ? "" : loginOutput.getRequestID());
-                                sharedState.put(Constants.OSTID_CRONTO_MSG, crontoMsg);
+                                ns.putShared(Constants.OSTID_CRONTO_MSG, crontoMsg);
                                 break;
                         }
                     }
@@ -437,9 +438,7 @@ public class OS_Auth_ValidateTransactionNode implements Node {
                 }
 
                 logger.debug(loggerPrefix + "OS_Auth_ValidateTransactionNode validate transaction outcome:" + sendTransactionOutcome.name());
-                return goTo(sendTransactionOutcome)
-                        .replaceSharedState(sharedState)
-                        .build();
+                return goTo(sendTransactionOutcome).build();
             } else {
                 String log_correction_id = httpEntity.getLog_correlation_id();
                 String message = responseJSON.getString("message");
@@ -461,14 +460,10 @@ public class OS_Auth_ValidateTransactionNode implements Node {
 		}catch (Exception ex) {
 	   		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
 			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
-			JsonValue sharedState = context.sharedState;
-		    JsonValue transientState = context.transientState;
-			sharedState.put("OS_Auth_ValidateTransactionNode Exception", new Date() + ": " + ex.getMessage());
-			sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Transactin Process: " + ex.getMessage());
-			return goTo(SendTransactionOutcome.Error)
-                     .replaceSharedState(sharedState)
-                     .replaceTransientState(transientState)
-                     .build();	
+			context.getStateFor(this).putShared(loggerPrefix + "StackTrace", new Date() + ": " + stackTrace);
+			context.getStateFor(this).putShared(loggerPrefix + "OS_Auth_ValidateTransactionNode Exception", new Date() + ": " + ex.getMessage());
+			context.getStateFor(this).putShared(loggerPrefix + Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Transactin Process: " + ex.getMessage());
+			return goTo(SendTransactionOutcome.Error).build();	
 	    }
         
     }

@@ -31,6 +31,7 @@ import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
@@ -64,10 +65,10 @@ import com.sun.identity.sm.SMSException;
                 tags = {"OneSpan", "multi-factor authentication", "marketplace", "trustnetwork"})
 public class OS_Auth_UserRegisterNode implements Node {
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_UserRegisterNode";
-    private final Logger logger = LoggerFactory.getLogger("amAuth");
+    private final Logger logger = LoggerFactory.getLogger(OS_Auth_UserRegisterNode.class);
     private final OS_Auth_UserRegisterNode.Config config;
     private final OSConfigurationsService serviceConfig;
-    private static final String loggerPrefix = "[OneSpan Auth User Register][Marketplace] ";
+    private static final String loggerPrefix = "[OneSpan Auth User Register]" + OSAuthNodePlugin.logAppender;
 
     /**
      * Configuration for the OneSpan Auth User Register Node.
@@ -142,17 +143,16 @@ public class OS_Auth_UserRegisterNode implements Node {
     public Action process(TreeContext context) {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_UserRegisterNode started");
-	        JsonValue sharedState = context.sharedState;
-	        JsonValue transientState = context.transientState;
+	        NodeState ns = context.getStateFor(this);
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
-	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
-	        JsonValue cddcJsonJsonValue = sharedState.get(Constants.OSTID_CDDC_JSON);
-	        JsonValue cddcHashJsonValue = sharedState.get(Constants.OSTID_CDDC_HASH);
-	        JsonValue cddcIpJsonValue = sharedState.get(Constants.OSTID_CDDC_IP);
+	        JsonValue usernameJsonValue = ns.get(config.userNameInSharedData());
+	        JsonValue cddcJsonJsonValue = ns.get(Constants.OSTID_CDDC_JSON);
+	        JsonValue cddcHashJsonValue = ns.get(Constants.OSTID_CDDC_HASH);
+	        JsonValue cddcIpJsonValue = ns.get(Constants.OSTID_CDDC_IP);
 	
-	        sharedState.put(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
+	        ns.putShared(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
 	
 	        boolean allOptionalFieldsIncluded = true;
 	        StringBuilder optionalAttributesStringBuilder = new StringBuilder(1000);
@@ -160,9 +160,9 @@ public class OS_Auth_UserRegisterNode implements Node {
 	        for (Map.Entry<String, String> entrySet : optionalAttributesMap.entrySet()) {
 	        	JsonValue jsonValue;
 	        	if(Constants.OSTID_STATIC_PASSWORD.equalsIgnoreCase(entrySet.getKey())) {
-	        		jsonValue = transientState.get(entrySet.getValue());
+	        		jsonValue = ns.get(entrySet.getValue());
 	        	}else {
-	        		jsonValue = sharedState.get(entrySet.getValue());
+	        		jsonValue = ns.get(entrySet.getValue());
 	        	} 
 	            if (jsonValue.isString()) {
 	                optionalAttributesStringBuilder.append("\"").append(entrySet.getKey()).append("\":\"").append(jsonValue.asString()).append("\",");
@@ -198,10 +198,10 @@ public class OS_Auth_UserRegisterNode implements Node {
             //param 7
             String applicationRef = config.objectType() == ObjectType.IAA ? String.format(Constants.OSTID_JSON_ADAPTIVE_APPLICATIONREF, serviceConfig.applicationRef()) : "";
             //param 8
-            String sessionId = sharedState.get(Constants.OSTID_SESSIONID).isString() ? sharedState.get(Constants.OSTID_SESSIONID).asString() : StringUtils.stringToHex(UUID.randomUUID().toString());
+            String sessionId = ns.get(Constants.OSTID_SESSIONID).isString() ? ns.get(Constants.OSTID_SESSIONID).asString() : StringUtils.stringToHex(UUID.randomUUID().toString());
             String sessionIdJSON = config.objectType() == ObjectType.IAA ? String.format(Constants.OSTID_JSON_ADAPTIVE_SESSIONID, sessionId) : "";
             //param 9
-            String relationshipRef = sharedState.get("relationshipRef").isString() ? sharedState.get("relationshipRef").asString():usernameJsonValue.asString();
+            String relationshipRef = ns.get("relationshipRef").isString() ? ns.get("relationshipRef").asString():usernameJsonValue.asString();
             relationshipRef = config.objectType() == ObjectType.IAA ? String.format(Constants.OSTID_JSON_ADAPTIVE_USER_REGISTER_RELATIONSHIPREF, relationshipRef) : "";
             //param 10
             String activationType = String.format(Constants.OSTID_JSON_ADAPTIVE_USER_REGISTER_ACTIVATIONTYPE, config.activationType().name());
@@ -228,7 +228,7 @@ public class OS_Auth_UserRegisterNode implements Node {
                 String activationCode = userRegisterOutputEx.getActivationPassword();
                 if (config.nodeFunction() == NodeFunction.UserRegister && config.activationType() == ActivationType.onlineMDL) {
                     //"02;user01211;111;duoliang11071-mailin;3zE6RNH5;duoliang11071-mailin"
-                	String userProfile = sharedState.get(Constants.OSTID_USERPROFILE_IN_SHARED_STATE).isNull() ? "0" : sharedState.get(Constants.OSTID_USERPROFILE_IN_SHARED_STATE).asString();            	
+                	String userProfile = ns.get(Constants.OSTID_USERPROFILE_IN_SHARED_STATE).isNull() ? "0" : ns.get(Constants.OSTID_USERPROFILE_IN_SHARED_STATE).asString();            	
                     String crontoValueRaw = String.format(Constants.OSTID_CRONTO_FORMULA,
                             Constants.OSTID_API_VERSION,                        //param1
                             usernameJsonValue.asString(),                       //param2
@@ -239,27 +239,24 @@ public class OS_Auth_UserRegisterNode implements Node {
                     );
                     String crontoValueHex = StringUtils.stringToHex(crontoValueRaw);
 
-                    sharedState.put(Constants.OSTID_SESSIONID, sessionId);
-                    sharedState.put(Constants.OSTID_ACTIVATION_CODE, activationCode);
-                    sharedState.put(Constants.OSTID_ACTIVATION_CODE2, activationCode);
-                    sharedState.put(Constants.OSTID_CRONTO_MSG, crontoValueHex);
-                    sharedState.put(Constants.OSTID_DIGI_SERIAL, userRegisterOutputEx.getSerialNumber());
-                    sharedState.put(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.activationTokenExpiry()));
+                    ns.putShared(Constants.OSTID_SESSIONID, sessionId);
+                    ns.putShared(Constants.OSTID_ACTIVATION_CODE, activationCode);
+                    ns.putShared(Constants.OSTID_ACTIVATION_CODE2, activationCode);
+                    ns.putShared(Constants.OSTID_CRONTO_MSG, crontoValueHex);
+                    ns.putShared(Constants.OSTID_DIGI_SERIAL, userRegisterOutputEx.getSerialNumber());
+                    ns.putShared(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.activationTokenExpiry()));
                 } else if (config.nodeFunction() == NodeFunction.UserRegister && config.activationType() == ActivationType.offlineMDL) {
-                    sharedState.put(Constants.OSTID_SESSIONID, sessionId);
-                    sharedState.put(Constants.OSTID_ACTIVATION_CODE, activationCode);
-                    sharedState.put(Constants.OSTID_ACTIVATION_CODE2, activationCode);
-                    sharedState.put(Constants.OSTID_CRONTO_MSG, activationCode);
-                    sharedState.put(Constants.OSTID_DIGI_SERIAL, userRegisterOutputEx.getSerialNumber());
-                    sharedState.put(Constants.OSTID_REGISTRATION_ID, userRegisterOutputEx.getRegistrationID());
-                    sharedState.put(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.activationTokenExpiry()));
+                	ns.putShared(Constants.OSTID_SESSIONID, sessionId);
+                	ns.putShared(Constants.OSTID_ACTIVATION_CODE, activationCode);
+                	ns.putShared(Constants.OSTID_ACTIVATION_CODE2, activationCode);
+                	ns.putShared(Constants.OSTID_CRONTO_MSG, activationCode);
+                	ns.putShared(Constants.OSTID_DIGI_SERIAL, userRegisterOutputEx.getSerialNumber());
+                	ns.putShared(Constants.OSTID_REGISTRATION_ID, userRegisterOutputEx.getRegistrationID());
+                	ns.putShared(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.activationTokenExpiry()));
                 } else if (config.nodeFunction() == NodeFunction.UserUnregister) {
-                    sharedState.put(Constants.OSTID_SESSIONID, sessionId);
+                	ns.putShared(Constants.OSTID_SESSIONID, sessionId);
                 }
-                return goTo(UserRegisterOutcome.Success)
-                        .replaceSharedState(sharedState)
-                        .replaceTransientState(transientState)
-                        .build();
+                return goTo(UserRegisterOutcome.Success).build();
             } else {
                 String log_correction_id = httpEntity.getLog_correlation_id();
                 String message = responseJSON.getString("message");
@@ -281,14 +278,10 @@ public class OS_Auth_UserRegisterNode implements Node {
     	}catch (Exception ex) {
 	   		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
 			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
-			JsonValue sharedState = context.sharedState;
-		    JsonValue transientState = context.transientState;
-			sharedState.put("OS_Auth_UserRegisterNode Exception", new Date() + ": " + ex.getMessage());
-			sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan User Register process: " + ex.getMessage());
-			return goTo(UserRegisterOutcome.Error)
-                     .replaceSharedState(sharedState)
-                     .replaceTransientState(transientState)
-                     .build();	
+			context.getStateFor(this).putShared(loggerPrefix + "StackTrace", new Date() + ": " + stackTrace);
+			context.getStateFor(this).putShared(loggerPrefix + "OS_Auth_UserRegisterNode Exception", new Date() + ": " + ex.getMessage());
+			context.getStateFor(this).putShared(loggerPrefix + Constants.OSTID_ERROR_MESSAGE, "OneSpan User Register process: " + ex.getMessage());
+			return goTo(UserRegisterOutcome.Error).build();	
 	    }
     }
 
