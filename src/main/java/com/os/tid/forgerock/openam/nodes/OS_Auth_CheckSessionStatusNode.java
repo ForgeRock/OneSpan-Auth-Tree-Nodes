@@ -91,7 +91,8 @@ public class OS_Auth_CheckSessionStatusNode implements Node {
 	            ns.putShared(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: Your session has timed out!");
 	            checkSessionStatusEnum = CheckSessionStatusOutcome.timeout;
 	        }else {
-                HttpEntity httpEntity = RestUtils.doGet(StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_CHECK_SESSION_STATUS,requestIdJsonValue.asString()),SslUtils.getSSLConnectionSocketFactory(serviceConfig));
+                String customUrl = serviceConfig.customUrl().toLowerCase();
+                HttpEntity httpEntity = RestUtils.doGet(StringUtils.getAPIEndpoint(tenantName,environment, customUrl) + String.format(Constants.OSTID_API_CHECK_SESSION_STATUS,requestIdJsonValue.asString()),SslUtils.getSSLConnectionSocketFactory(serviceConfig));
                 JSONObject checkSessionStatusResponseJSON = httpEntity.getResponseJSON();
                 if(httpEntity.isSuccess()){
                     String sessionStatus = checkSessionStatusResponseJSON.getString("sessionStatus");

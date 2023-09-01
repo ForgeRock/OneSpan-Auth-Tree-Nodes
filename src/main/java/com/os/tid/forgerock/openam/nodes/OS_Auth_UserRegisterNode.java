@@ -145,6 +145,7 @@ public class OS_Auth_UserRegisterNode implements Node {
 	        logger.debug(loggerPrefix + "OS_Auth_UserRegisterNode started");
 	        NodeState ns = context.getStateFor(this);
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
+            String customUrl = serviceConfig.customUrl().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
 	        JsonValue usernameJsonValue = ns.get(config.userNameInSharedData());
@@ -220,7 +221,7 @@ public class OS_Auth_UserRegisterNode implements Node {
             );
             logger.debug(loggerPrefix + "OS_Auth_UserRegisterNode userRegisterJSON:" + userRegisterJSON);
 
-            HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, userRegisterJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
+            HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment, customUrl) + APIUrl, userRegisterJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
             JSONObject responseJSON = httpEntity.getResponseJSON();
 
             if (httpEntity.isSuccess()) {
@@ -260,7 +261,7 @@ public class OS_Auth_UserRegisterNode implements Node {
             } else {
                 String log_correction_id = httpEntity.getLog_correlation_id();
                 String message = responseJSON.getString("message");
-                String requestJSON = "POST " + StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl + " : " + userRegisterJSON;
+                String requestJSON = "POST " + StringUtils.getAPIEndpoint(tenantName, environment, customUrl) + APIUrl + " : " + userRegisterJSON;
 
                 if (Stream.of(log_correction_id, message).anyMatch(Objects::isNull)) {
                     throw new NodeProcessException("Fail to parse response: " + JSON.toJSONString(responseJSON));

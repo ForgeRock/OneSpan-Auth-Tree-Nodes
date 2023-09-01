@@ -123,7 +123,8 @@ public class OS_Auth_GenerateChallengeNode implements Node {
 	                config.length(),                                    //param1
 	                config.checkDigit()                                 //param2
 	        );
-            String url = StringUtils.getAPIEndpoint(tenantName, environment) + String.format(Constants.OSTID_API_ADAPTIVE_GENERATE_CHALLENGE, usernameJsonValue.asString(), config.domain());
+            String customUrl = serviceConfig.customUrl().toLowerCase();
+            String url = StringUtils.getAPIEndpoint(tenantName, environment, customUrl) + String.format(Constants.OSTID_API_ADAPTIVE_GENERATE_CHALLENGE, usernameJsonValue.asString(), config.domain());
             HttpEntity httpEntity = RestUtils.doPostJSON(url, generateChallengeJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
             JSONObject responseJSON = httpEntity.getResponseJSON();
             if (httpEntity.isSuccess()) {

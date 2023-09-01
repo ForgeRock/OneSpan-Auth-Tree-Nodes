@@ -31,12 +31,15 @@ public interface OSConfigurationsService {
     EnvOptions environment();
 
     @Attribute(order = 3)
-    String applicationRef();
+    String customUrl();
 
     @Attribute(order = 4)
-    String publicKey();
+    String applicationRef();
 
     @Attribute(order = 5)
+    String publicKey();
+
+    @Attribute(order = 6)
     String privateKey();
 
     

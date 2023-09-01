@@ -114,7 +114,8 @@ public class OS_Auth_GetUserAuthenticatorNode implements Node {
 	        
     		
 	        //API1: GET /v1/users/duotest2305011@duoliang-onespan
-            String getUserURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_VDP_GET_USER,usernameJsonValue.asString(),config.domain());
+            String customUrl = serviceConfig.customUrl().toLowerCase();
+            String getUserURL = StringUtils.getAPIEndpoint(tenantName,environment, customUrl) + String.format(Constants.OSTID_API_VDP_GET_USER,usernameJsonValue.asString(),config.domain());
             HttpEntity getUserHttpEntity = RestUtils.doGet(getUserURL,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
             JSONObject getUserResponseJSON = getUserHttpEntity.getResponseJSON();
             if(!getUserHttpEntity.isSuccess()) {
@@ -148,7 +149,7 @@ public class OS_Auth_GetUserAuthenticatorNode implements Node {
 	            Boolean hasTYPAuthenticator = false;
 	            
 	            for (String authenticator : authenticatorsList) {
-	                String getAuthenticatorURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_GET_USER_AUTHENTICATOR,authenticator,config.domain());
+	                String getAuthenticatorURL = StringUtils.getAPIEndpoint(tenantName,environment, customUrl) + String.format(Constants.OSTID_API_GET_USER_AUTHENTICATOR,authenticator,config.domain());
 	                HttpEntity getAuthenticatorHttpEntity = RestUtils.doGet(getAuthenticatorURL,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
 	                JSONObject getAuthenticatorResponseJSON = getAuthenticatorHttpEntity.getResponseJSON();
 	                if(getAuthenticatorHttpEntity.isSuccess()) {

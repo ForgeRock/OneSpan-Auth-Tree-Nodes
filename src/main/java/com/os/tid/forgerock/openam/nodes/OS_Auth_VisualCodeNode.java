@@ -211,7 +211,8 @@ public class OS_Auth_VisualCodeNode implements Node {
 	            //return visual code URL as hiddenValueCallback
 	            String crontURL = "";
 	            if (ns.get(config.visualCodeHiddenValueId()).isNull()) {
-	                crontURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_ADAPTIVE_CRTONTO_RENDER,
+                    String customUrl = serviceConfig.customUrl().toLowerCase();
+	                crontURL = StringUtils.getAPIEndpoint(tenantName,environment, customUrl) + String.format(Constants.OSTID_API_ADAPTIVE_CRTONTO_RENDER,
 	                        config.visualCodeType().name().toUpperCase(),
 	                        crontoMsgJsonValue.asString());
 	                crontURL = RestUtils.doGetImage(crontURL, SslUtils.getSSLConnectionSocketFactory(serviceConfig));

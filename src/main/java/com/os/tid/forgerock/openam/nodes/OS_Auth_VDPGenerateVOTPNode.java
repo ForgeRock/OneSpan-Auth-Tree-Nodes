@@ -146,7 +146,8 @@ public class OS_Auth_VDPGenerateVOTPNode implements Node {
 	        
     		
 	        //API1: GET /v1/users/duotest2305011@duoliang-onespan
-            String getUserURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_VDP_GET_USER,usernameJsonValue.asString(),config.domain());
+            String customUrl = serviceConfig.customUrl().toLowerCase();
+            String getUserURL = StringUtils.getAPIEndpoint(tenantName,environment, customUrl) + String.format(Constants.OSTID_API_VDP_GET_USER,usernameJsonValue.asString(),config.domain());
             HttpEntity getUserHttpEntity = RestUtils.doGet(getUserURL,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
             JSONObject getUserResponseJSON = getUserHttpEntity.getResponseJSON();
             if(!getUserHttpEntity.isSuccess()) {
@@ -182,7 +183,7 @@ public class OS_Auth_VDPGenerateVOTPNode implements Node {
             String vir10SerialNumber = null;
             String applicationName = null;
             for (String authenticator : authenticatorsList) {
-                String getAuthenticatorURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_VDP_GET_VIR10_AUTHENTICATOR,authenticator,config.domain());
+                String getAuthenticatorURL = StringUtils.getAPIEndpoint(tenantName,environment, customUrl) + String.format(Constants.OSTID_API_VDP_GET_VIR10_AUTHENTICATOR,authenticator,config.domain());
                 HttpEntity getAuthenticatorHttpEntity = RestUtils.doGet(getAuthenticatorURL,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
                 JSONObject getAuthenticatorResponseJSON = getAuthenticatorHttpEntity.getResponseJSON();
                 if(getAuthenticatorHttpEntity.isSuccess()) {
@@ -217,7 +218,7 @@ public class OS_Auth_VDPGenerateVOTPNode implements Node {
             }
             
             //API3: POST /v1/authenticators/VDP4957024/applications/PASSWORD/generate-votp
-            String generateVotpURL = StringUtils.getAPIEndpoint(tenantName, environment) + String.format(Constants.OSTID_API_VDP_GENERATE_VOTP,vir10SerialNumber,applicationName);
+            String generateVotpURL = StringUtils.getAPIEndpoint(tenantName, environment, customUrl) + String.format(Constants.OSTID_API_VDP_GENERATE_VOTP,vir10SerialNumber,applicationName);
 
             String generateVotpJSON = String.format(Constants.OSTID_JSON_VDP_GENERATE_VOTP,
                     optionalAttributesStringBuilder.toString(),                              //param1

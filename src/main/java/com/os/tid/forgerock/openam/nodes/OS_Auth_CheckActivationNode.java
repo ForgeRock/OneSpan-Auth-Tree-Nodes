@@ -105,7 +105,8 @@ public class OS_Auth_CheckActivationNode implements Node {
 	                    usernameJsonValue.asString(),                            //param1
 	                    Constants.OSTID_DEFAULT_CHECK_ACTIVATION_TIMEOUT         //param2
 	            );
-                HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName,environment) + Constants.OSTID_API_CHECK_ACTIVATION, checkActivationJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
+                String customUrl = serviceConfig.customUrl().toLowerCase();
+                HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName,environment, customUrl) + Constants.OSTID_API_CHECK_ACTIVATION, checkActivationJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
                 JSONObject checkActivationResponseJSON = httpEntity.getResponseJSON();
                 if(httpEntity.isSuccess()){
                     String activationStatus = checkActivationResponseJSON.getString(Constants.OSTID_RESPONSE_CHECK_ACTIVATION_STATUS);

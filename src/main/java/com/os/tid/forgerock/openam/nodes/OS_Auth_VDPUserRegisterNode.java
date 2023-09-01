@@ -152,7 +152,8 @@ public class OS_Auth_VDPUserRegisterNode implements Node {
             String APIUrl = String.format(Constants.OSTID_API_VDP_USER_REGISTER,usernameJsonValue.asString(),config.domain());
 
             //step1: GET /v1/users/user1@duoliang-onespan
-            HttpEntity getUserHttpEntity = RestUtils.doGet(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
+            String customUrl = serviceConfig.customUrl().toLowerCase();
+            HttpEntity getUserHttpEntity = RestUtils.doGet(StringUtils.getAPIEndpoint(tenantName, environment, customUrl) + APIUrl,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
 
             
             //if exist: PATCH /v1/users/user1@duoliang-onespan
@@ -163,7 +164,7 @@ public class OS_Auth_VDPUserRegisterNode implements Node {
                 );
                 logger.debug(loggerPrefix + "OS_Auth_VDPUserRegisterNode vdpUserRegisterJSON:" + vdpUserRegisterJSON);
 
-                HttpEntity httpEntity = RestUtils.doPatchJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, vdpUserRegisterJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
+                HttpEntity httpEntity = RestUtils.doPatchJSON(StringUtils.getAPIEndpoint(tenantName, environment, customUrl) + APIUrl, vdpUserRegisterJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
                 JSONObject responseJSON = httpEntity.getResponseJSON();
 
                 if (httpEntity.isSuccess()) {
@@ -171,7 +172,7 @@ public class OS_Auth_VDPUserRegisterNode implements Node {
                 } else {
                     String log_correction_id = httpEntity.getLog_correlation_id();
                     String message = responseJSON.getString("message");
-                    String requestJSON = "PUT " + StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl + " : " + vdpUserRegisterJSON;
+                    String requestJSON = "PUT " + StringUtils.getAPIEndpoint(tenantName, environment, customUrl) + APIUrl + " : " + vdpUserRegisterJSON;
 
                     if (Stream.of(log_correction_id, message).anyMatch(Objects::isNull)) {
                         throw new NodeProcessException("Fail to parse response: " + JSON.toJSONString(responseJSON));
@@ -194,7 +195,7 @@ public class OS_Auth_VDPUserRegisterNode implements Node {
                 );
                 logger.debug(loggerPrefix + "OS_Auth_VDPUserRegisterNode vdpUserRegisterJSON:" + vdpUserRegisterJSON);
 
-                HttpEntity httpEntity = RestUtils.doPutJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, vdpUserRegisterJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
+                HttpEntity httpEntity = RestUtils.doPutJSON(StringUtils.getAPIEndpoint(tenantName, environment, customUrl) + APIUrl, vdpUserRegisterJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
                 JSONObject responseJSON = httpEntity.getResponseJSON();
 
                 if (httpEntity.isSuccess()) {
@@ -202,7 +203,7 @@ public class OS_Auth_VDPUserRegisterNode implements Node {
                 } else {
                     String log_correction_id = httpEntity.getLog_correlation_id();
                     String message = responseJSON.getString("message");
-                    String requestJSON = "PUT " + StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl + " : " + vdpUserRegisterJSON;
+                    String requestJSON = "PUT " + StringUtils.getAPIEndpoint(tenantName, environment, customUrl) + APIUrl + " : " + vdpUserRegisterJSON;
 
                     if (Stream.of(log_correction_id, message).anyMatch(Objects::isNull)) {
                         throw new NodeProcessException("Fail to parse response: " + JSON.toJSONString(responseJSON));

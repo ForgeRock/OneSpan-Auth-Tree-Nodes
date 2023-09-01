@@ -39,10 +39,11 @@ public class StringUtils {
     }
 
     //"https://duoliang11071-mailin.sdb.tid.onespan.cloud"
-    public static String getAPIEndpoint(String ostid_tenant_name, String ostid_environment){
+    public static String getAPIEndpoint(String ostid_tenant_name, String ostid_environment, String ostid_custom_url){
     	String ApiEndpoint = "";
     	if(ostid_environment.equalsIgnoreCase(Constants.OSTID_ENV_MAP.get(OSConfigurationsService.EnvOptions.CUSTOMIZED))) {
-    		ApiEndpoint = String.format("https://%1$s",ostid_tenant_name);
+    		ApiEndpoint = ostid_custom_url;
+
     	}else {
     		ApiEndpoint = String.format("https://%1$s.%2$s.tid.onespan.cloud",ostid_tenant_name,ostid_environment);
     	}

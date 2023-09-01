@@ -102,8 +102,9 @@ public class OS_Auth_ActivateDeviceNode implements Node {
 	            String activateDeviceJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_ACTIVATE_DEVICE,
 	                    signature.asString()                                //param1
 	            );
-	
-                String url = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_ADAPTIVE_ACTIVATE_DEVICE,registration_id.asString());
+
+                String customUrl = serviceConfig.customUrl().toLowerCase();
+                String url = StringUtils.getAPIEndpoint(tenantName,environment, customUrl) + String.format(Constants.OSTID_API_ADAPTIVE_ACTIVATE_DEVICE,registration_id.asString());
                 HttpEntity httpEntity = RestUtils.doPostJSON(url, activateDeviceJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
                 JSONObject responseJSON = httpEntity.getResponseJSON();
                 if(httpEntity.isSuccess()) {

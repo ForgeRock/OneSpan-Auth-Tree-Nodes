@@ -98,8 +98,9 @@ public class OS_Auth_AddDeviceNode implements Node {
 	            String deviceCodeJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_ADD_DEVICE,
 	                    device_code.asString()                                //param1
 	            );
-	
-	            String url = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_ADAPTIVE_ADD_DEVICE,registration_id.asString());
+
+				String customUrl = serviceConfig.customUrl().toLowerCase();
+	            String url = StringUtils.getAPIEndpoint(tenantName,environment, customUrl) + String.format(Constants.OSTID_API_ADAPTIVE_ADD_DEVICE,registration_id.asString());
 	            HttpEntity httpEntity = RestUtils.doPostJSON(url, deviceCodeJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
 	            JSONObject responseJSON = httpEntity.getResponseJSON();
 	            if(httpEntity.isSuccess()) {
