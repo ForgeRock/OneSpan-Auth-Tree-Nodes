@@ -62,7 +62,7 @@ import com.google.common.collect.ImmutableList;
  * @since AM 5.5.0
  */
 public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
-	static private String currentVersion = "1.2.20";
+	static private String currentVersion = "1.2.21";
 	static final String logAppender = "[Version: " + currentVersion + "][Marketplace] ";
     private final Logger logger = LoggerFactory.getLogger(OSAuthNodePlugin.class);
 	private String loggerPrefix = "[OSAuthNodePlugin]" + OSAuthNodePlugin.logAppender;
