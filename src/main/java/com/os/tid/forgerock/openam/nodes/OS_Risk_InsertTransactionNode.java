@@ -194,7 +194,7 @@ public class OS_Risk_InsertTransactionNode implements Node {
                 } else{
                     riskTransactionOutcome = RiskTransactionOutcome.Challenge;
                 }
-                return goTo(riskTransactionOutcome).build();
+                return goTo(riskTransactionOutcome).replaceSharedState(sharedState).build();
             } else {
                 String log_correction_id = httpEntity.getLog_correlation_id();
                 String message = responseJSON.getString("message");

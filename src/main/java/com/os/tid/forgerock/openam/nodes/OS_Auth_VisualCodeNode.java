@@ -203,7 +203,7 @@ public class OS_Auth_VisualCodeNode implements Node {
 	        //2. go to next
 	        else if(hasConsumed) {
 	            sharedState.remove(config.visualCodeHiddenValueId());
-	            return goTo(VisualCodeOutcome.Next).build();	
+	            return goTo(VisualCodeOutcome.Next).replaceSharedState(sharedState).build();
 	        }
 	        //3. send to page
 	        else {

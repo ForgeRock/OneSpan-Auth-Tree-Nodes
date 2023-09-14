@@ -171,6 +171,7 @@ public class OS_Auth_ValidateEventNode implements Node {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_ValidateEventNode started");
 	        JsonValue sharedState = context.sharedState;
+            JsonValue transientState = context.transientState;
 
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
@@ -241,7 +242,7 @@ public class OS_Auth_ValidateEventNode implements Node {
                     credentials = String.format(Constants.OSTID_JSON_ADAPTIVE_CREDENTIALS_AUTHENTICATOR, sharedState.get("OTP").asString());
                     break;
                 case passKey:
-                    credentials = String.format(Constants.OSTID_JSON_ADAPTIVE_CREDENTIALS_PASSKEY, sharedState.get("password").asString());
+                    credentials = String.format(Constants.OSTID_JSON_ADAPTIVE_CREDENTIALS_PASSKEY, transientState.get("password").asString());
                     break;
             }
             //param3
@@ -348,7 +349,7 @@ public class OS_Auth_ValidateEventNode implements Node {
 	            }
 	                
 	            logger.debug(loggerPrefix + "OS_Auth_ValidateEventNode user login outcome:" + eventValidationOutcome.name());
-	            return goTo(eventValidationOutcome).build();
+	            return goTo(eventValidationOutcome).replaceSharedState(sharedState).build();
             } else {
                 String log_correction_id = httpEntity.getLog_correlation_id();
                 String message = responseJSON.getString("message");

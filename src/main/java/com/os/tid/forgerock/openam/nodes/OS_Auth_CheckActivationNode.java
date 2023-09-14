@@ -123,17 +123,17 @@ public class OS_Auth_CheckActivationNode implements Node {
 	
 	        switch (activationStatusEnum) {
 	            case pending:
-	                return goTo(ActivationStatusOutcome.pending).build();
+	                return goTo(ActivationStatusOutcome.pending).replaceSharedState(sharedState).build();
 	            case activated:
-	                return goTo(ActivationStatusOutcome.activated).build();
+	                return goTo(ActivationStatusOutcome.activated).replaceSharedState(sharedState).build();
 	            case timeout:
 	                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Activation: Your session has timed out!");
-	                return goTo(ActivationStatusOutcome.timeout).build();
+	                return goTo(ActivationStatusOutcome.timeout).replaceSharedState(sharedState).build();
 	            case unknown:
 	                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Activation: Status Unknown!");
-	                return goTo(ActivationStatusOutcome.unknown).build();
+	                return goTo(ActivationStatusOutcome.unknown).replaceSharedState(sharedState).build();
 	            default:
-	                return goTo(ActivationStatusOutcome.pending).build();
+	                return goTo(ActivationStatusOutcome.pending).replaceSharedState(sharedState).build();
 	        }
     	}catch (Exception ex) {
     		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);

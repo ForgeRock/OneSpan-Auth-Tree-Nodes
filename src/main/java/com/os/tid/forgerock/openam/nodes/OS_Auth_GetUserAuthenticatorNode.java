@@ -173,17 +173,17 @@ public class OS_Auth_GetUserAuthenticatorNode implements Node {
 	            
 	            	
 		            if(hasVIR10Authenticator && hasTYPAuthenticator) {
-		                return goTo(OS_Auth_GetUserAuthenticatorNode.GetUserAuthenticatorOutcome.Both).build();
+		                return goTo(OS_Auth_GetUserAuthenticatorNode.GetUserAuthenticatorOutcome.Both).replaceSharedState(sharedState).build();
 		            }else if(hasVIR10Authenticator && !hasTYPAuthenticator) {
-		            	 return goTo(OS_Auth_GetUserAuthenticatorNode.GetUserAuthenticatorOutcome.VIR10).build();
+		            	 return goTo(OS_Auth_GetUserAuthenticatorNode.GetUserAuthenticatorOutcome.VIR10).replaceSharedState(sharedState).build();
 		            }else if(!hasVIR10Authenticator && hasTYPAuthenticator) {
-		            	 return goTo(OS_Auth_GetUserAuthenticatorNode.GetUserAuthenticatorOutcome.TYP).build();
+		            	 return goTo(OS_Auth_GetUserAuthenticatorNode.GetUserAuthenticatorOutcome.TYP).replaceSharedState(sharedState).build();
 		            }else {
-		            	 return goTo(OS_Auth_GetUserAuthenticatorNode.GetUserAuthenticatorOutcome.None).build();
+		            	 return goTo(OS_Auth_GetUserAuthenticatorNode.GetUserAuthenticatorOutcome.None).replaceSharedState(sharedState).build();
 		            }
 				}
             
-            return goTo(OS_Auth_GetUserAuthenticatorNode.GetUserAuthenticatorOutcome.None).build();
+            return goTo(OS_Auth_GetUserAuthenticatorNode.GetUserAuthenticatorOutcome.None).replaceSharedState(sharedState).build();
     	}catch (Exception ex) {
 	   		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
 			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);

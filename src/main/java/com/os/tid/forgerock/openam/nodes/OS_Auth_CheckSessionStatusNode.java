@@ -109,23 +109,23 @@ public class OS_Auth_CheckSessionStatusNode implements Node {
 	
 	        switch (checkSessionStatusEnum) {
 	            case pending:
-	                return goTo(CheckSessionStatusOutcome.pending).build();
+	                return goTo(CheckSessionStatusOutcome.pending).replaceSharedState(sharedState).build();
 	            case accepted:
-	                return goTo(CheckSessionStatusOutcome.accepted).build();
+	                return goTo(CheckSessionStatusOutcome.accepted).replaceSharedState(sharedState).build();
 	            case refused:
 	                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: End user refused to validate the event!");
-	                return goTo(CheckSessionStatusOutcome.refused).build();
+	                return goTo(CheckSessionStatusOutcome.refused).replaceSharedState(sharedState).build();
 	            case failure:
                     sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: End user failed to validate the event!");
-	                return goTo(CheckSessionStatusOutcome.failure).build();
+	                return goTo(CheckSessionStatusOutcome.failure).replaceSharedState(sharedState).build();
 	            case timeout:
                     sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: The session has been expired!");
-	                return goTo(CheckSessionStatusOutcome.timeout).build();
+	                return goTo(CheckSessionStatusOutcome.timeout).replaceSharedState(sharedState).build();
 	            case unknown:
                     sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: The event validation status is unknown!");
-	                return goTo(CheckSessionStatusOutcome.unknown).build();
+	                return goTo(CheckSessionStatusOutcome.unknown).replaceSharedState(sharedState).build();
 	            default:
-	                return goTo(CheckSessionStatusOutcome.pending).build();
+	                return goTo(CheckSessionStatusOutcome.pending).replaceSharedState(sharedState).build();
 	        }
     	}catch (Exception ex) {
 	   		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);

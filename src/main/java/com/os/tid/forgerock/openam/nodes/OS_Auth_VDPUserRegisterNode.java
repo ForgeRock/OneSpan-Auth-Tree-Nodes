@@ -120,6 +120,7 @@ public class OS_Auth_VDPUserRegisterNode implements Node {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_VDPUserRegisterNode started");
 	        JsonValue sharedState = context.sharedState;
+            JsonValue transientState = context.transientState;
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
@@ -132,7 +133,7 @@ public class OS_Auth_VDPUserRegisterNode implements Node {
 	        for (Map.Entry<String, String> entrySet : optionalAttributesMap.entrySet()) {
 	        	JsonValue jsonValue;
 	        	if(Constants.OSTID_STATIC_PASSWORD.equalsIgnoreCase(entrySet.getKey())) {
-	        		jsonValue = sharedState.get(entrySet.getValue());
+	        		jsonValue = transientState.get(entrySet.getValue());
 	        	}else {
 	        		jsonValue = sharedState.get(entrySet.getValue());
 	        	}
@@ -168,7 +169,7 @@ public class OS_Auth_VDPUserRegisterNode implements Node {
                 JSONObject responseJSON = httpEntity.getResponseJSON();
 
                 if (httpEntity.isSuccess()) {
-                    return goTo(VDPUserRegisterOutcome.Success).replaceSharedState(sharedState).build();
+                    return goTo(VDPUserRegisterOutcome.Success).replaceSharedState(sharedState).replaceTransientState(transientState).build();
                 } else {
                     String log_correction_id = httpEntity.getLog_correlation_id();
                     String message = responseJSON.getString("message");

@@ -144,6 +144,7 @@ public class OS_Auth_UserRegisterNode implements Node {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_UserRegisterNode started");
 	        JsonValue sharedState = context.sharedState;
+            JsonValue transientState = context.transientState;
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
             String customUrl = serviceConfig.customUrl().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
@@ -161,7 +162,7 @@ public class OS_Auth_UserRegisterNode implements Node {
 	        for (Map.Entry<String, String> entrySet : optionalAttributesMap.entrySet()) {
 	        	JsonValue jsonValue;
 	        	if(Constants.OSTID_STATIC_PASSWORD.equalsIgnoreCase(entrySet.getKey())) {
-	        		jsonValue = sharedState.get(entrySet.getValue());
+	        		jsonValue = transientState.get(entrySet.getValue());
 	        	}else {
 	        		jsonValue = sharedState.get(entrySet.getValue());
 	        	} 
@@ -257,7 +258,8 @@ public class OS_Auth_UserRegisterNode implements Node {
                 } else if (config.nodeFunction() == NodeFunction.UserUnregister) {
                 	sharedState.put(Constants.OSTID_SESSIONID, sessionId);
                 }
-                return goTo(UserRegisterOutcome.Success).build();
+                return goTo(UserRegisterOutcome.Success).replaceSharedState(sharedState)
+                        .replaceTransientState(transientState).build();
             } else {
                 String log_correction_id = httpEntity.getLog_correlation_id();
                 String message = responseJSON.getString("message");
