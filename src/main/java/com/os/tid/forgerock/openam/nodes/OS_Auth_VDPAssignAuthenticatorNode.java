@@ -26,6 +26,7 @@ import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
@@ -58,10 +59,10 @@ import com.sun.identity.sm.SMSException;
                 configClass = OS_Auth_VDPAssignAuthenticatorNode.Config.class,
                 tags = {"OneSpan", "multi-factor authentication", "marketplace", "trustnetwork"})
 public class OS_Auth_VDPAssignAuthenticatorNode implements Node {
-    private final Logger logger = LoggerFactory.getLogger("amAuth");
+    private final Logger logger = LoggerFactory.getLogger(OS_Auth_VDPAssignAuthenticatorNode.class);
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_VDPAssignAuthenticatorNode";
     private final OSConfigurationsService serviceConfig;
-    private static final String loggerPrefix = "[OneSpan Auth VDP Assign Authenticator][Marketplace] ";
+    private static final String loggerPrefix = "[OneSpan Auth VDP Assign Authenticator]" + OSAuthNodePlugin.logAppender;
     private final OS_Auth_VDPAssignAuthenticatorNode.Config config;
 
     /**
@@ -105,7 +106,8 @@ public class OS_Auth_VDPAssignAuthenticatorNode implements Node {
 	        
     		
 	        //API1: GET /v1/users/duotest2305011@duoliang-onespan
-            String getUserURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_VDP_GET_USER,usernameJsonValue.asString(),config.domain());
+            String customUrl = serviceConfig.customUrl().toLowerCase();
+            String getUserURL = StringUtils.getAPIEndpoint(tenantName,environment, customUrl) + String.format(Constants.OSTID_API_VDP_GET_USER,usernameJsonValue.asString(),config.domain());
             HttpEntity getUserHttpEntity = RestUtils.doGet(getUserURL,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
             JSONObject getUserResponseJSON = getUserHttpEntity.getResponseJSON();
             if(!getUserHttpEntity.isSuccess()) {
@@ -136,7 +138,7 @@ public class OS_Auth_VDPAssignAuthenticatorNode implements Node {
 	            List<String> authenticatorsList = authenticatorsJsonArray.toJavaList(String.class);
 	            String vir10SerialNumber = null;
 	            for (String authenticator : authenticatorsList) {
-	                String getAuthenticatorURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_VDP_GET_AUTHENTICATOR,authenticator,config.domain());
+	                String getAuthenticatorURL = StringUtils.getAPIEndpoint(tenantName,environment, customUrl) + String.format(Constants.OSTID_API_VDP_GET_VIR10_AUTHENTICATOR,authenticator,config.domain());
 	                HttpEntity getAuthenticatorHttpEntity = RestUtils.doGet(getAuthenticatorURL,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
 	                JSONObject getAuthenticatorResponseJSON = getAuthenticatorHttpEntity.getResponseJSON();
 	                if(getAuthenticatorHttpEntity.isSuccess()) {
@@ -157,14 +159,12 @@ public class OS_Auth_VDPAssignAuthenticatorNode implements Node {
 				}
 	            
 	            if(!StringUtils.isEmpty(vir10SerialNumber)) {
-	                return goTo(OS_Auth_VDPAssignAuthenticatorNode.VDPAssignAuthenticatorOutcome.success)
-	                        .replaceSharedState(sharedState)
-	                        .build();
+	                return goTo(OS_Auth_VDPAssignAuthenticatorNode.VDPAssignAuthenticatorOutcome.success).replaceSharedState(sharedState).build();
 	            }
             }
 	        
 	        //API3: GET /v1/authenticators?type=VIR10&assigned=false&offset=0&limit=20
-            String getVIR10AuthenticatorsURL = StringUtils.getAPIEndpoint(tenantName,environment) + Constants.OSTID_API_VDP_GET_VIR10_AUTHENTICATORS;
+            String getVIR10AuthenticatorsURL = StringUtils.getAPIEndpoint(tenantName,environment, customUrl) + Constants.OSTID_API_VDP_GET_VIR10_AUTHENTICATORS;
             HttpEntity getVIR10AuthenticatorsHttpEntity = RestUtils.doGet(getVIR10AuthenticatorsURL,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
             JSONObject getVIR10AuthenticatorsResponseJSON = getVIR10AuthenticatorsHttpEntity.getResponseJSON();
             if(!getVIR10AuthenticatorsHttpEntity.isSuccess()) {
@@ -203,7 +203,7 @@ public class OS_Auth_VDPAssignAuthenticatorNode implements Node {
             		usernameJsonValue.asString()                                //param2
             );
 
-            String assignAuthenticatorURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_VDP_ASSIGN_AUTHENTICATOR,serialNumber);
+            String assignAuthenticatorURL = StringUtils.getAPIEndpoint(tenantName,environment, customUrl) + String.format(Constants.OSTID_API_VDP_ASSIGN_AUTHENTICATOR,serialNumber);
             HttpEntity assignAuthenticatorHttpEntity = RestUtils.doPostJSON(assignAuthenticatorURL, assignAuthenticatorJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
             JSONObject assignAuthenticatorResponseJSON = assignAuthenticatorHttpEntity.getResponseJSON();
             if(!assignAuthenticatorHttpEntity.isSuccess()) {
@@ -227,20 +227,14 @@ public class OS_Auth_VDPAssignAuthenticatorNode implements Node {
                 }
             }
             
-            return goTo(OS_Auth_VDPAssignAuthenticatorNode.VDPAssignAuthenticatorOutcome.success)
-                    .replaceSharedState(sharedState)
-                    .build();
+            return goTo(OS_Auth_VDPAssignAuthenticatorNode.VDPAssignAuthenticatorOutcome.success).replaceSharedState(sharedState).build();
     	}catch (Exception ex) {
 	   		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
 			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
-			JsonValue sharedState = context.sharedState;
-		    JsonValue transientState = context.transientState;
-			sharedState.put("OS_Auth_VDPAssignAuthenticatorNode Exception", new Date() + ": " + ex.getMessage());
-			sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan VDP Assign Authenticator process: " + ex.getMessage());
-			return goTo(VDPAssignAuthenticatorOutcome.error)
-                     .replaceSharedState(sharedState)
-                     .replaceTransientState(transientState)
-                     .build();	
+			context.getStateFor(this).putShared(loggerPrefix + "StackTrace", new Date() + ": " + stackTrace);
+			context.getStateFor(this).putShared(loggerPrefix + "OS_Auth_VDPAssignAuthenticatorNode Exception", new Date() + ": " + ex.getMessage());
+			context.getStateFor(this).putShared(loggerPrefix + Constants.OSTID_ERROR_MESSAGE, "OneSpan VDP Assign Authenticator process: " + ex.getMessage());
+			return goTo(VDPAssignAuthenticatorOutcome.error).build();	
 	    }
     }
 

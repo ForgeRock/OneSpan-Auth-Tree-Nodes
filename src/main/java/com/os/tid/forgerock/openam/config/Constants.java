@@ -28,9 +28,10 @@ public class Constants {
     public static final String OSTID_API_RISK_SEND_TRANSACTION = "/v1/transactions";
     public static final String OSTID_API_VDP_USER_REGISTER = "/v1/users/%1$s@%2$s";
     public static final String OSTID_API_VDP_GET_VIR10_AUTHENTICATORS = "/v1/authenticators?type=VIR10&assigned=false&offset=0&limit=20";
+    public static final String OSTID_API_VDP_GET_VIR10_AUTHENTICATOR = "/v1/authenticators?serialNumber=%1$s&domain=%2$s&type=VIR10&assigned=true&offset=0&limit=20";
+    public static final String OSTID_API_GET_USER_AUTHENTICATOR = "/v1/authenticators?serialNumber=%1$s&domain=%2$s&assigned=true&offset=0&limit=20";
     public static final String OSTID_API_VDP_ASSIGN_AUTHENTICATOR = "/v1/authenticators/%1$s/assign";
     public static final String OSTID_API_VDP_GET_USER = "/v1/users/%1$s@%2$s";
-    public static final String OSTID_API_VDP_GET_AUTHENTICATOR = "/v1/authenticators?serialNumber=%1$s&domain=%2$s&type=VIR10&assigned=true&offset=0&limit=20";
     public static final String OSTID_API_VDP_GENERATE_VOTP = "/v1/authenticators/%1$s/applications/%2$s/generate-votp";
 
     //deprecated API Endpoints
@@ -111,6 +112,7 @@ public class Constants {
             .put(EnvOptions.Staging_EU1, "staging.eu1")
             .put(EnvOptions.Staging_EU2, "staging.eu2")
             .put(EnvOptions.UAT_EU1, "uat.eu1")
+            .put(EnvOptions.CUSTOMIZED, "CUSTOMIZED")
             .build();
     
     

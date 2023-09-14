@@ -15,8 +15,6 @@
  */
 package com.os.tid.forgerock.openam.nodes;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +27,7 @@ import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
@@ -47,7 +46,6 @@ import com.google.inject.assistedinject.Assisted;
 import com.iplanet.sso.SSOException;
 import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.models.HttpEntity;
-import com.os.tid.forgerock.openam.nodes.OS_Auth_VDPAssignAuthenticatorNode.VDPAssignAuthenticatorOutcome;
 import com.os.tid.forgerock.openam.utils.CollectionsUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
 import com.os.tid.forgerock.openam.utils.SslUtils;
@@ -62,11 +60,11 @@ import com.sun.identity.sm.SMSException;
                 configClass = OS_Auth_VDPGenerateVOTPNode.Config.class,
                 tags = {"OneSpan", "multi-factor authentication", "marketplace", "trustnetwork"})
 public class OS_Auth_VDPGenerateVOTPNode implements Node {
-    private final Logger logger = LoggerFactory.getLogger("amAuth");
+    private final Logger logger = LoggerFactory.getLogger(OS_Auth_VDPGenerateVOTPNode.class);
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_VDPGenerateVOTPNode";
     private final OSConfigurationsService serviceConfig;
     private final OS_Auth_VDPGenerateVOTPNode.Config config;
-    private static final String loggerPrefix = "[OneSpan Auth VDP Generate VOTP][Marketplace] ";
+    private static final String loggerPrefix = "[OneSpan Auth VDP Generate VOTP]" + OSAuthNodePlugin.logAppender;
 
     /**
      * Configuration for the OS Auth Generate Challenge Node.
@@ -148,7 +146,8 @@ public class OS_Auth_VDPGenerateVOTPNode implements Node {
 	        
     		
 	        //API1: GET /v1/users/duotest2305011@duoliang-onespan
-            String getUserURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_VDP_GET_USER,usernameJsonValue.asString(),config.domain());
+            String customUrl = serviceConfig.customUrl().toLowerCase();
+            String getUserURL = StringUtils.getAPIEndpoint(tenantName,environment, customUrl) + String.format(Constants.OSTID_API_VDP_GET_USER,usernameJsonValue.asString(),config.domain());
             HttpEntity getUserHttpEntity = RestUtils.doGet(getUserURL,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
             JSONObject getUserResponseJSON = getUserHttpEntity.getResponseJSON();
             if(!getUserHttpEntity.isSuccess()) {
@@ -184,7 +183,7 @@ public class OS_Auth_VDPGenerateVOTPNode implements Node {
             String vir10SerialNumber = null;
             String applicationName = null;
             for (String authenticator : authenticatorsList) {
-                String getAuthenticatorURL = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_VDP_GET_AUTHENTICATOR,authenticator,config.domain());
+                String getAuthenticatorURL = StringUtils.getAPIEndpoint(tenantName,environment, customUrl) + String.format(Constants.OSTID_API_VDP_GET_VIR10_AUTHENTICATOR,authenticator,config.domain());
                 HttpEntity getAuthenticatorHttpEntity = RestUtils.doGet(getAuthenticatorURL,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
                 JSONObject getAuthenticatorResponseJSON = getAuthenticatorHttpEntity.getResponseJSON();
                 if(getAuthenticatorHttpEntity.isSuccess()) {
@@ -219,7 +218,7 @@ public class OS_Auth_VDPGenerateVOTPNode implements Node {
             }
             
             //API3: POST /v1/authenticators/VDP4957024/applications/PASSWORD/generate-votp
-            String generateVotpURL = StringUtils.getAPIEndpoint(tenantName, environment) + String.format(Constants.OSTID_API_VDP_GENERATE_VOTP,vir10SerialNumber,applicationName);
+            String generateVotpURL = StringUtils.getAPIEndpoint(tenantName, environment, customUrl) + String.format(Constants.OSTID_API_VDP_GENERATE_VOTP,vir10SerialNumber,applicationName);
 
             String generateVotpJSON = String.format(Constants.OSTID_JSON_VDP_GENERATE_VOTP,
                     optionalAttributesStringBuilder.toString(),                              //param1
@@ -249,20 +248,14 @@ public class OS_Auth_VDPGenerateVOTPNode implements Node {
                 }
             }
             
-	        return goTo(OS_Auth_VDPGenerateVOTPNode.GenerateVOTPOutcome.success)
-	                  .replaceSharedState(sharedState)
-	                  .build();
+	        return goTo(OS_Auth_VDPGenerateVOTPNode.GenerateVOTPOutcome.success).replaceSharedState(sharedState).build();
     	}catch (Exception ex) {
 	   		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
 			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
-			JsonValue sharedState = context.sharedState;
-		    JsonValue transientState = context.transientState;
-			sharedState.put("OS_Auth_VDPGenerateVOTP Exception", new Date() + ": " + ex.getMessage());
-			sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Generate VOTP: " + ex.getMessage());
-			return goTo(GenerateVOTPOutcome.error)
-                     .replaceSharedState(sharedState)
-                     .replaceTransientState(transientState)
-                     .build();	
+			context.getStateFor(this).putShared(loggerPrefix + "StackTrace", new Date() + ": " + stackTrace);
+			context.getStateFor(this).putShared(loggerPrefix + "OS_Auth_VDPGenerateVOTP Exception", new Date() + ": " + ex.getMessage());
+			context.getStateFor(this).putShared(loggerPrefix + Constants.OSTID_ERROR_MESSAGE, "OneSpan Generate VOTP: " + ex.getMessage());
+			return goTo(GenerateVOTPOutcome.error).build();	
 	    }
     }
 
@@ -271,7 +264,7 @@ public class OS_Auth_VDPGenerateVOTPNode implements Node {
     }
 
     public enum DeliveryMethod {
-    	SMS, Email, Response
+    	Email, SMS, Voice, Response
     }
 
     

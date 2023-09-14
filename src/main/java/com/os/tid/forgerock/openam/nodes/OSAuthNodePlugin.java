@@ -16,27 +16,18 @@
 
 package com.os.tid.forgerock.openam.nodes;
 
-import java.security.AccessController;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.ImmutableList;
-import com.iplanet.sso.SSOException;
-import com.iplanet.sso.SSOToken;
-import com.sun.identity.security.AdminTokenAction;
-import com.sun.identity.sm.SMSException;
-import com.sun.identity.sm.ServiceManager;
-import com.sun.identity.sm.ServiceSchemaManager;
-
 import org.forgerock.openam.auth.node.api.AbstractNodeAmPlugin;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.plugins.PluginException;
-import org.forgerock.openam.plugins.PluginTools;
 import org.forgerock.openam.plugins.StartupType;
-import org.forgerock.openam.sm.ServiceSchemaManagerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.ImmutableList;
 
 
 /**
@@ -71,8 +62,11 @@ import org.slf4j.LoggerFactory;
  * @since AM 5.5.0
  */
 public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
-	static private String currentVersion = "1.2.14";
+	static private String currentVersion = "1.2.23";
+	static final String logAppender = "[Version: " + currentVersion + "][Marketplace] ";
     private final Logger logger = LoggerFactory.getLogger(OSAuthNodePlugin.class);
+	private String loggerPrefix = "[OSAuthNodePlugin]" + OSAuthNodePlugin.logAppender;
+
 
 	private final List<Class<? extends Node>> nodeList = ImmutableList.of(
 			//OCA
@@ -87,6 +81,7 @@ public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
 			OS_Auth_UserLoginNode.class,
 			OS_Auth_ValidateTransactionNode.class,
 			OS_Auth_ValidateEventNode.class,
+			OS_Auth_GetUserAuthenticatorNode.class,
 			
 			//VDP
 			OS_Auth_VDPAssignAuthenticatorNode.class,
@@ -129,7 +124,7 @@ public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
      */
 	@Override
 	public void onInstall() throws PluginException {
-        logger.info("Installing OSConfigurationsService");
+        logger.info(loggerPrefix + "Installing OSConfigurationsService");
 		pluginTools.installService(OSConfigurationsService.class);
 		super.onInstall();
 	}
@@ -146,7 +141,7 @@ public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
 	 */
 	@Override
 	public void onStartup(StartupType startupType) throws PluginException {
-        logger.info("Starting OSConfigurationsService");
+        logger.info(loggerPrefix + "Starting OSConfigurationsService");
 		pluginTools.startService(OSConfigurationsService.class);
 		super.onStartup(startupType);
 	}
@@ -178,6 +173,7 @@ public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
 			pluginTools.upgradeAuthNode(OS_Auth_UserLoginNode.class);
 			pluginTools.upgradeAuthNode(OS_Auth_ValidateTransactionNode.class);
 			pluginTools.upgradeAuthNode(OS_Auth_ValidateEventNode.class);
+			pluginTools.upgradeAuthNode(OS_Auth_GetUserAuthenticatorNode.class);
 
 			//Risk
 			pluginTools.upgradeAuthNode(OS_Risk_CDDCNode.class);
@@ -198,6 +194,7 @@ public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
 
 			pluginTools.upgradeIdRepo(OSConfigurationsService.class);
 		} catch(Exception e) {
+			logger.error(loggerPrefix + e.getLocalizedMessage());
 	    	e.printStackTrace();
 	    }
 		super.upgrade(fromVersion);

@@ -15,8 +15,6 @@
  */
 package com.os.tid.forgerock.openam.nodes;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -33,6 +31,7 @@ import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
@@ -50,7 +49,6 @@ import com.iplanet.sso.SSOException;
 import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.models.GeneralResponseOutput;
 import com.os.tid.forgerock.openam.models.HttpEntity;
-import com.os.tid.forgerock.openam.nodes.OS_Auth_UserRegisterNode.UserRegisterOutcome;
 import com.os.tid.forgerock.openam.utils.CollectionsUtils;
 import com.os.tid.forgerock.openam.utils.DateUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
@@ -67,10 +65,10 @@ import com.sun.identity.sm.SMSException;
                 tags = {"OneSpan", "multi-factor authentication", "marketplace", "trustnetwork"})
 public class OS_Auth_ValidateEventNode implements Node {
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_ValidateEventNode";
-    private final Logger logger = LoggerFactory.getLogger("amAuth");
+    private final Logger logger = LoggerFactory.getLogger(OS_Auth_ValidateEventNode.class);
     private final OS_Auth_ValidateEventNode.Config config;
     private final OSConfigurationsService serviceConfig;
-    private static final String loggerPrefix = "[OneSpan Auth Validate Event][Marketplace] ";
+    private static final String loggerPrefix = "[OneSpan Auth Validate Event]" + OSAuthNodePlugin.logAppender;
 
     /**
      * Configuration for the OneSpan Auth Validate Event Node.
@@ -173,7 +171,8 @@ public class OS_Auth_ValidateEventNode implements Node {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_ValidateEventNode started");
 	        JsonValue sharedState = context.sharedState;
-	        JsonValue transientState = context.transientState;
+            JsonValue transientState = context.transientState;
+
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
@@ -290,7 +289,8 @@ public class OS_Auth_ValidateEventNode implements Node {
             );
             logger.debug(loggerPrefix + "OS_Auth_ValidateEventNode request JSON:" + eventValidationJSON);
 
-            HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, eventValidationJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
+            String customUrl = serviceConfig.customUrl().toLowerCase();
+            HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment, customUrl) + APIUrl, eventValidationJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
             JSONObject responseJSON = httpEntity.getResponseJSON();
 
             if (httpEntity.isSuccess()) {
@@ -318,15 +318,15 @@ public class OS_Auth_ValidateEventNode implements Node {
                     break;
                 case timeout:
                 	eventValidationOutcome = EventValidationOutcome.Error;
-                    sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Event: Request times out!");
+                	sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Event: Request times out!");
                     break;
                 case unknown:
                 	eventValidationOutcome = EventValidationOutcome.Error;
-                    sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Event: Request status unknown!");
+                	sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Event: Request status unknown!");
                     break;
                 case pending:
                     if(irmResponse > -1) {
-                        sharedState.put(Constants.OSTID_IRM_RESPONSE, irmResponse);
+                    	sharedState.put(Constants.OSTID_IRM_RESPONSE, irmResponse);
                         if(irmResponse == 0){
                             eventValidationOutcome = EventValidationOutcome.Accept;
                         }else if(irmResponse == 1){
@@ -337,7 +337,7 @@ public class OS_Auth_ValidateEventNode implements Node {
                         }
                         switch (config.visualCodeMessageOptions()) {
                             case sessionID:
-                                sharedState.put(Constants.OSTID_CRONTO_MSG, StringUtils.stringToHex(sessionID));
+                            	sharedState.put(Constants.OSTID_CRONTO_MSG, StringUtils.stringToHex(sessionID));
                                 break;
                             case requestID:
                                 String crontoMsg = StringUtils.stringToHex(responseOutput.getRequestID() == null ? "" : responseOutput.getRequestID());
@@ -349,13 +349,11 @@ public class OS_Auth_ValidateEventNode implements Node {
 	            }
 	                
 	            logger.debug(loggerPrefix + "OS_Auth_ValidateEventNode user login outcome:" + eventValidationOutcome.name());
-	            return goTo(eventValidationOutcome)
-	                    .replaceSharedState(sharedState)
-	                    .build();
+	            return goTo(eventValidationOutcome).replaceSharedState(sharedState).build();
             } else {
                 String log_correction_id = httpEntity.getLog_correlation_id();
                 String message = responseJSON.getString("message");
-                String requestJSON = "POST " + StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl + " : " + eventValidationJSON;
+                String requestJSON = "POST " + StringUtils.getAPIEndpoint(tenantName, environment, customUrl) + APIUrl + " : " + eventValidationJSON;
 
                 if (Stream.of(log_correction_id, message).anyMatch(Objects::isNull)) {
                     throw new NodeProcessException("Fail to parse response: " + JSON.toJSONString(responseJSON));
@@ -373,14 +371,10 @@ public class OS_Auth_ValidateEventNode implements Node {
     	}catch (Exception ex) {
 	   		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
 			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
-			JsonValue sharedState = context.sharedState;
-		    JsonValue transientState = context.transientState;
-			sharedState.put("OS_Auth_ValidateEventNode Exception", new Date() + ": " + ex.getMessage());
-			sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Event Validation process: " + ex.getMessage());
-			return goTo(EventValidationOutcome.Error)
-                     .replaceSharedState(sharedState)
-                     .replaceTransientState(transientState)
-                     .build();	
+			context.getStateFor(this).putShared(loggerPrefix + "StackTrace", new Date() + ": " + stackTrace);
+			context.getStateFor(this).putShared(loggerPrefix + "OS_Auth_ValidateEventNode Exception", new Date() + ": " + ex.getMessage());
+			context.getStateFor(this).putShared(loggerPrefix + Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Event Validation process: " + ex.getMessage());
+			return goTo(EventValidationOutcome.Error).build();	
 	    }
         
     }

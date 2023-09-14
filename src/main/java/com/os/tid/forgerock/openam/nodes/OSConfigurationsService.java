@@ -31,14 +31,15 @@ public interface OSConfigurationsService {
     EnvOptions environment();
 
     @Attribute(order = 3)
-    String applicationRef();
-
-
+    default String customUrl() { return ""; };
 
     @Attribute(order = 4)
-    String publicKey();
+    String applicationRef();
 
     @Attribute(order = 5)
+    String publicKey();
+
+    @Attribute(order = 6)
     String privateKey();
 
     
@@ -52,7 +53,8 @@ public interface OSConfigurationsService {
         Staging_NA1,
         Staging_EU1,
         Staging_EU2,
-        UAT_EU1;
+        UAT_EU1,
+    	CUSTOMIZED;
     }
     
 }

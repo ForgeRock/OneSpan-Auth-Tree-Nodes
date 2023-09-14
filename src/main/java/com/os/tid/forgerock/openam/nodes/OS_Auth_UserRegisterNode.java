@@ -15,6 +15,31 @@
  */
 package com.os.tid.forgerock.openam.nodes;
 
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.ResourceBundle;
+import java.util.UUID;
+import java.util.stream.Stream;
+
+import javax.inject.Inject;
+
+import org.forgerock.json.JsonValue;
+import org.forgerock.openam.annotations.sm.Attribute;
+import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.Node;
+import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
+import org.forgerock.openam.auth.node.api.OutcomeProvider;
+import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.sm.AnnotatedServiceRegistry;
+import org.forgerock.util.i18n.PreferredLocales;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -24,8 +49,6 @@ import com.iplanet.sso.SSOException;
 import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.models.HttpEntity;
 import com.os.tid.forgerock.openam.models.UserRegisterOutputEx;
-import com.os.tid.forgerock.openam.nodes.OS_Auth_ActivateDeviceNode.OSTIDActivateDeviceOutcome;
-import com.os.tid.forgerock.openam.nodes.OS_Auth_UserLoginNode.UserLoginOutcome;
 import com.os.tid.forgerock.openam.utils.CollectionsUtils;
 import com.os.tid.forgerock.openam.utils.DateUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
@@ -33,21 +56,6 @@ import com.os.tid.forgerock.openam.utils.SslUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
 import com.sun.identity.sm.RequiredValueValidator;
 import com.sun.identity.sm.SMSException;
-import org.forgerock.json.JsonValue;
-import org.forgerock.openam.annotations.sm.Attribute;
-import org.forgerock.openam.auth.node.api.*;
-import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.sm.AnnotatedServiceRegistry;
-import org.forgerock.util.i18n.PreferredLocales;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.*;
-import java.util.stream.Stream;
 
 /**
  * This node invokes the User Register/Unregister API, which validates and processes the registration/unregistration of a user.
@@ -57,10 +65,10 @@ import java.util.stream.Stream;
                 tags = {"OneSpan", "multi-factor authentication", "marketplace", "trustnetwork"})
 public class OS_Auth_UserRegisterNode implements Node {
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_UserRegisterNode";
-    private final Logger logger = LoggerFactory.getLogger("amAuth");
+    private final Logger logger = LoggerFactory.getLogger(OS_Auth_UserRegisterNode.class);
     private final OS_Auth_UserRegisterNode.Config config;
     private final OSConfigurationsService serviceConfig;
-    private static final String loggerPrefix = "[OneSpan Auth User Register][Marketplace] ";
+    private static final String loggerPrefix = "[OneSpan Auth User Register]" + OSAuthNodePlugin.logAppender;
 
     /**
      * Configuration for the OneSpan Auth User Register Node.
@@ -136,8 +144,9 @@ public class OS_Auth_UserRegisterNode implements Node {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_UserRegisterNode started");
 	        JsonValue sharedState = context.sharedState;
-	        JsonValue transientState = context.transientState;
+            JsonValue transientState = context.transientState;
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
+            String customUrl = serviceConfig.customUrl().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
 	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
@@ -213,7 +222,7 @@ public class OS_Auth_UserRegisterNode implements Node {
             );
             logger.debug(loggerPrefix + "OS_Auth_UserRegisterNode userRegisterJSON:" + userRegisterJSON);
 
-            HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl, userRegisterJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
+            HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment, customUrl) + APIUrl, userRegisterJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
             JSONObject responseJSON = httpEntity.getResponseJSON();
 
             if (httpEntity.isSuccess()) {
@@ -239,24 +248,22 @@ public class OS_Auth_UserRegisterNode implements Node {
                     sharedState.put(Constants.OSTID_DIGI_SERIAL, userRegisterOutputEx.getSerialNumber());
                     sharedState.put(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.activationTokenExpiry()));
                 } else if (config.nodeFunction() == NodeFunction.UserRegister && config.activationType() == ActivationType.offlineMDL) {
-                    sharedState.put(Constants.OSTID_SESSIONID, sessionId);
-                    sharedState.put(Constants.OSTID_ACTIVATION_CODE, activationCode);
-                    sharedState.put(Constants.OSTID_ACTIVATION_CODE2, activationCode);
-                    sharedState.put(Constants.OSTID_CRONTO_MSG, activationCode);
-                    sharedState.put(Constants.OSTID_DIGI_SERIAL, userRegisterOutputEx.getSerialNumber());
-                    sharedState.put(Constants.OSTID_REGISTRATION_ID, userRegisterOutputEx.getRegistrationID());
-                    sharedState.put(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.activationTokenExpiry()));
+                	sharedState.put(Constants.OSTID_SESSIONID, sessionId);
+                	sharedState.put(Constants.OSTID_ACTIVATION_CODE, activationCode);
+                	sharedState.put(Constants.OSTID_ACTIVATION_CODE2, activationCode);
+                	sharedState.put(Constants.OSTID_CRONTO_MSG, activationCode);
+                	sharedState.put(Constants.OSTID_DIGI_SERIAL, userRegisterOutputEx.getSerialNumber());
+                	sharedState.put(Constants.OSTID_REGISTRATION_ID, userRegisterOutputEx.getRegistrationID());
+                	sharedState.put(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.activationTokenExpiry()));
                 } else if (config.nodeFunction() == NodeFunction.UserUnregister) {
-                    sharedState.put(Constants.OSTID_SESSIONID, sessionId);
+                	sharedState.put(Constants.OSTID_SESSIONID, sessionId);
                 }
-                return goTo(UserRegisterOutcome.Success)
-                        .replaceSharedState(sharedState)
-                        .replaceTransientState(transientState)
-                        .build();
+                return goTo(UserRegisterOutcome.Success).replaceSharedState(sharedState)
+                        .replaceTransientState(transientState).build();
             } else {
                 String log_correction_id = httpEntity.getLog_correlation_id();
                 String message = responseJSON.getString("message");
-                String requestJSON = "POST " + StringUtils.getAPIEndpoint(tenantName, environment) + APIUrl + " : " + userRegisterJSON;
+                String requestJSON = "POST " + StringUtils.getAPIEndpoint(tenantName, environment, customUrl) + APIUrl + " : " + userRegisterJSON;
 
                 if (Stream.of(log_correction_id, message).anyMatch(Objects::isNull)) {
                     throw new NodeProcessException("Fail to parse response: " + JSON.toJSONString(responseJSON));
@@ -274,14 +281,10 @@ public class OS_Auth_UserRegisterNode implements Node {
     	}catch (Exception ex) {
 	   		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
 			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
-			JsonValue sharedState = context.sharedState;
-		    JsonValue transientState = context.transientState;
-			sharedState.put("OS_Auth_UserRegisterNode Exception", new Date() + ": " + ex.getMessage());
-			sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan User Register process: " + ex.getMessage());
-			return goTo(UserRegisterOutcome.Error)
-                     .replaceSharedState(sharedState)
-                     .replaceTransientState(transientState)
-                     .build();	
+			context.getStateFor(this).putShared(loggerPrefix + "StackTrace", new Date() + ": " + stackTrace);
+			context.getStateFor(this).putShared(loggerPrefix + "OS_Auth_UserRegisterNode Exception", new Date() + ": " + ex.getMessage());
+			context.getStateFor(this).putShared(loggerPrefix + Constants.OSTID_ERROR_MESSAGE, "OneSpan User Register process: " + ex.getMessage());
+			return goTo(UserRegisterOutcome.Error).build();	
 	    }
     }
 
