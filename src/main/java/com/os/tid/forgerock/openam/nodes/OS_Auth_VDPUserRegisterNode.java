@@ -200,7 +200,7 @@ public class OS_Auth_VDPUserRegisterNode implements Node {
                 JSONObject responseJSON = httpEntity.getResponseJSON();
 
                 if (httpEntity.isSuccess()) {
-                    return goTo(VDPUserRegisterOutcome.Success).replaceSharedState(sharedState).build();
+                    return goTo(VDPUserRegisterOutcome.Success).replaceSharedState(sharedState).replaceTransientState(transientState).build();
                 } else {
                     String log_correction_id = httpEntity.getLog_correlation_id();
                     String message = responseJSON.getString("message");
