@@ -78,17 +78,17 @@ public class OS_Auth_CheckSessionStatusNode implements Node {
     public Action process(TreeContext context) {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_CheckSessionStatusNode started");
-	        NodeState ns = context.getStateFor(this);
+            JsonValue sharedState = context.sharedState;
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
-	        JsonValue eventExpiryJsonValue = ns.get(Constants.OSTID_EVENT_EXPIRY_DATE);
-	        JsonValue requestIdJsonValue = ns.get(Constants.OSTID_REQUEST_ID);
+	        JsonValue eventExpiryJsonValue = sharedState.get(Constants.OSTID_EVENT_EXPIRY_DATE);
+	        JsonValue requestIdJsonValue =  sharedState.get(Constants.OSTID_REQUEST_ID);
 	        CheckSessionStatusOutcome checkSessionStatusEnum;
 	        if (!requestIdJsonValue.isString() || requestIdJsonValue.asString().isEmpty()) {
 	            throw new NodeProcessException("Request ID is missing!");
 	        }else if(DateUtils.hasExpired(eventExpiryJsonValue.asString())){
-	            ns.putShared(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: Your session has timed out!");
+	            sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: Your session has timed out!");
 	            checkSessionStatusEnum = CheckSessionStatusOutcome.timeout;
 	        }else {
                 String customUrl = serviceConfig.customUrl().toLowerCase();
@@ -113,16 +113,16 @@ public class OS_Auth_CheckSessionStatusNode implements Node {
 	            case accepted:
 	                return goTo(CheckSessionStatusOutcome.accepted).build();
 	            case refused:
-	                ns.putShared(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: End user refused to validate the event!");
+	                sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: End user refused to validate the event!");
 	                return goTo(CheckSessionStatusOutcome.refused).build();
 	            case failure:
-	            	ns.putShared(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: End user failed to validate the event!");
+                    sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: End user failed to validate the event!");
 	                return goTo(CheckSessionStatusOutcome.failure).build();
 	            case timeout:
-	            	ns.putShared(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: The session has been expired!");
+                    sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: The session has been expired!");
 	                return goTo(CheckSessionStatusOutcome.timeout).build();
 	            case unknown:
-	            	ns.putShared(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: The event validation status is unknown!");
+                    sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: The event validation status is unknown!");
 	                return goTo(CheckSessionStatusOutcome.unknown).build();
 	            default:
 	                return goTo(CheckSessionStatusOutcome.pending).build();

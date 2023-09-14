@@ -100,12 +100,12 @@ public class OS_Auth_GetUserAuthenticatorNode implements Node {
     public Action process(TreeContext context) {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_GetUserAuthenticatorNode started");
-	        NodeState ns = context.getStateFor(this);
+            JsonValue sharedState = context.sharedState;
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
-	        JsonValue usernameJsonValue = ns.get(config.userNameInSharedData());
-	        ns.putShared(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
+	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
+	        sharedState.put(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
 	        
 	
 	        if(CollectionsUtils.hasAnyNullValues(ImmutableList.of(usernameJsonValue))){

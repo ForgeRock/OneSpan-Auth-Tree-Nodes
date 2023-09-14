@@ -84,13 +84,14 @@ public class OS_Auth_ActivateDeviceNode implements Node {
     public Action process(TreeContext context) {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_ActivateDeviceNode started");
-	        NodeState ns = context.getStateFor(this);
+
+            JsonValue sharedState = context.sharedState;
 	       
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
-	        JsonValue registration_id = ns.get(Constants.OSTID_REGISTRATION_ID);
-	        JsonValue signature = ns.get(Constants.OSTID_SIGNATURE);
+	        JsonValue registration_id = sharedState.get(Constants.OSTID_REGISTRATION_ID);
+	        JsonValue signature = sharedState.get(Constants.OSTID_SIGNATURE);
 	
 	
 	        if(CollectionsUtils.hasAnyNullValues(ImmutableList.of(
@@ -108,7 +109,7 @@ public class OS_Auth_ActivateDeviceNode implements Node {
                 HttpEntity httpEntity = RestUtils.doPostJSON(url, activateDeviceJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
                 JSONObject responseJSON = httpEntity.getResponseJSON();
                 if(httpEntity.isSuccess()) {
-                    return goTo(OSTIDActivateDeviceOutcome.success).build();
+                    return goTo(OSTIDActivateDeviceOutcome.success).replaceSharedState(sharedState).build();
                 }else{
                     String error = responseJSON.getString("error");
                     String message = responseJSON.getString("message");

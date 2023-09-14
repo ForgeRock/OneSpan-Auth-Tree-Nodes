@@ -170,22 +170,22 @@ public class OS_Auth_ValidateEventNode implements Node {
     public Action process(TreeContext context) {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_ValidateEventNode started");
-	        NodeState ns = context.getStateFor(this);
+	        JsonValue sharedState = context.sharedState;
 
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
-	        JsonValue usernameJsonValue = ns.get(config.userNameInSharedData());
-	        JsonValue cddcJsonJsonValue = ns.get(Constants.OSTID_CDDC_JSON);
-	        JsonValue cddcHashJsonValue = ns.get(Constants.OSTID_CDDC_HASH);
-	        JsonValue cddcIpJsonValue = ns.get(Constants.OSTID_CDDC_IP);
-	        ns.putShared(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
+	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
+	        JsonValue cddcJsonJsonValue = sharedState.get(Constants.OSTID_CDDC_JSON);
+	        JsonValue cddcHashJsonValue = sharedState.get(Constants.OSTID_CDDC_HASH);
+	        JsonValue cddcIpJsonValue = sharedState.get(Constants.OSTID_CDDC_IP);
+	        sharedState.put(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
 	
 	        boolean missOptionalAttr = false;
 	        StringBuilder optionalAttributesStringBuilder = new StringBuilder(1000);
 	        Map<String, String> optionalAttributesMap = config.optionalAttributes();
 	        for (Map.Entry<String, String> entrySet : optionalAttributesMap.entrySet()) {
-	            JsonValue jsonValue = ns.get(entrySet.getValue());
+	            JsonValue jsonValue = sharedState.get(entrySet.getValue());
 	            if (jsonValue.isString()) {
 	                optionalAttributesStringBuilder.append("\"").append(entrySet.getKey()).append("\":\"").append(jsonValue.asString()).append("\",");
 	            } else {
@@ -224,7 +224,7 @@ public class OS_Auth_ValidateEventNode implements Node {
                     eventType = config.specifyEventType();
                     break;
                 case ReadFromSharedState:
-                    eventType = ns.get(config.eventTypeInSharedState()).asString();
+                    eventType = sharedState.get(config.eventTypeInSharedState()).asString();
                     break;
                 default:
                     break;
@@ -234,18 +234,18 @@ public class OS_Auth_ValidateEventNode implements Node {
             String fido = "";
             switch (config.credentialsType()) {
                 case fidoAuthenticator:
-                    credentials = String.format(Constants.OSTID_JSON_ADAPTIVE_CREDENTIALS_FIDOAUTHENTICATOR, ns.get("authenticationResponse").asString());
-                    fido = String.format(Constants.OSTID_JSON_ADAPTIVE_CREDENTIALS_FIDOAUTHENTICATOR_2, ns.get("fidoProtocol").asString());
+                    credentials = String.format(Constants.OSTID_JSON_ADAPTIVE_CREDENTIALS_FIDOAUTHENTICATOR, sharedState.get("authenticationResponse").asString());
+                    fido = String.format(Constants.OSTID_JSON_ADAPTIVE_CREDENTIALS_FIDOAUTHENTICATOR_2, sharedState.get("fidoProtocol").asString());
                     break;
                 case authenticator:
-                    credentials = String.format(Constants.OSTID_JSON_ADAPTIVE_CREDENTIALS_AUTHENTICATOR, ns.get("OTP").asString());
+                    credentials = String.format(Constants.OSTID_JSON_ADAPTIVE_CREDENTIALS_AUTHENTICATOR, sharedState.get("OTP").asString());
                     break;
                 case passKey:
-                    credentials = String.format(Constants.OSTID_JSON_ADAPTIVE_CREDENTIALS_PASSKEY, ns.get("password").asString());
+                    credentials = String.format(Constants.OSTID_JSON_ADAPTIVE_CREDENTIALS_PASSKEY, sharedState.get("password").asString());
                     break;
             }
             //param3
-            String requestID = ns.get(Constants.OSTID_REQUEST_ID).isString() ? String.format(Constants.OSTID_JSON_ADAPTIVE_REQUESTID, ns.get(Constants.OSTID_REQUEST_ID).asString()) : "";
+            String requestID = sharedState.get(Constants.OSTID_REQUEST_ID).isString() ? String.format(Constants.OSTID_JSON_ADAPTIVE_REQUESTID, sharedState.get(Constants.OSTID_REQUEST_ID).asString()) : "";
             //param4
             String orchestrationDelivery = "";
             switch (config.orchestrationDelivery()) {
@@ -264,8 +264,8 @@ public class OS_Auth_ValidateEventNode implements Node {
             //param5: for now, API timeout will always set to 0, timeout specified in config will be used for visual code time out
             String timeout = String.format(Constants.OSTID_JSON_ADAPTIVE_TIMEOUT, 0);
             //param6
-            String sessionID = ns.get(Constants.OSTID_SESSIONID).isString() ? ns.get(Constants.OSTID_SESSIONID).asString() : StringUtils.stringToHex(UUID.randomUUID().toString());
-            String relationshipRef = ns.get("relationshipRef").isString() ? ns.get("relationshipRef").asString():usernameJsonValue.asString();
+            String sessionID = sharedState.get(Constants.OSTID_SESSIONID).isString() ? sharedState.get(Constants.OSTID_SESSIONID).asString() : StringUtils.stringToHex(UUID.randomUUID().toString());
+            String relationshipRef = sharedState.get("relationshipRef").isString() ? sharedState.get("relationshipRef").asString():usernameJsonValue.asString();
 
             String IAA = String.format(Constants.OSTID_JSON_ADAPTIVE_USER_LOGIN_IAA,
                     cddcIpJsonValue.asString(),                         //param6.1
@@ -295,11 +295,11 @@ public class OS_Auth_ValidateEventNode implements Node {
             if (httpEntity.isSuccess()) {
                 GeneralResponseOutput responseOutput = JSON.toJavaObject(responseJSON, GeneralResponseOutput.class);
                 int irmResponse = responseOutput.getRiskResponseCode();
-                ns.putShared(Constants.OSTID_IRM_RESPONSE,irmResponse);
-                ns.putShared(Constants.OSTID_SESSIONID,sessionID);
-                ns.putShared(Constants.OSTID_REQUEST_ID, StringUtils.isEmpty(responseOutput.getRequestID())? requestID : responseOutput.getRequestID());
-                ns.putShared(Constants.OSTID_COMMAND,responseOutput.getRequestMessage());
-                ns.putShared(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.timeout()));
+                sharedState.put(Constants.OSTID_IRM_RESPONSE,irmResponse);
+                sharedState.put(Constants.OSTID_SESSIONID,sessionID);
+                sharedState.put(Constants.OSTID_REQUEST_ID, StringUtils.isEmpty(responseOutput.getRequestID())? requestID : responseOutput.getRequestID());
+                sharedState.put(Constants.OSTID_COMMAND,responseOutput.getRequestMessage());
+                sharedState.put(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.timeout()));
 
                 EventValidationOutcome eventValidationOutcome = EventValidationOutcome.Error;
 
@@ -309,38 +309,38 @@ public class OS_Auth_ValidateEventNode implements Node {
                     break;
                 case failed:
                     eventValidationOutcome = EventValidationOutcome.Error;
-                    ns.putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Event: User failed to authenticate!");
+                    sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Event: User failed to authenticate!");
                     break;
                 case refused:
                     eventValidationOutcome = EventValidationOutcome.Decline;
-                    ns.putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Event: User declined to authenticate!");
+                    sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Event: User declined to authenticate!");
                     break;
                 case timeout:
                 	eventValidationOutcome = EventValidationOutcome.Error;
-                	ns.putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Event: Request times out!");
+                	sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Event: Request times out!");
                     break;
                 case unknown:
                 	eventValidationOutcome = EventValidationOutcome.Error;
-                	ns.putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Event: Request status unknown!");
+                	sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Event: Request status unknown!");
                     break;
                 case pending:
                     if(irmResponse > -1) {
-                    	ns.putShared(Constants.OSTID_IRM_RESPONSE, irmResponse);
+                    	sharedState.put(Constants.OSTID_IRM_RESPONSE, irmResponse);
                         if(irmResponse == 0){
                             eventValidationOutcome = EventValidationOutcome.Accept;
                         }else if(irmResponse == 1){
                             eventValidationOutcome = EventValidationOutcome.Decline;
-                            ns.putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Event Validation process: Request has been declined!");
+                            sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Event Validation process: Request has been declined!");
                         }else if(Constants.OSTID_API_CHALLANGE_MAP.containsKey(irmResponse)){
                             eventValidationOutcome = EventValidationOutcome.StepUp;
                         }
                         switch (config.visualCodeMessageOptions()) {
                             case sessionID:
-                            	ns.putShared(Constants.OSTID_CRONTO_MSG, StringUtils.stringToHex(sessionID));
+                            	sharedState.put(Constants.OSTID_CRONTO_MSG, StringUtils.stringToHex(sessionID));
                                 break;
                             case requestID:
                                 String crontoMsg = StringUtils.stringToHex(responseOutput.getRequestID() == null ? "" : responseOutput.getRequestID());
-                                ns.putShared(Constants.OSTID_CRONTO_MSG, crontoMsg);
+                                sharedState.put(Constants.OSTID_CRONTO_MSG, crontoMsg);
                                 break;
                         }
                     }

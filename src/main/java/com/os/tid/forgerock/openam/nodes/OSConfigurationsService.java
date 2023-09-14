@@ -31,7 +31,7 @@ public interface OSConfigurationsService {
     EnvOptions environment();
 
     @Attribute(order = 3)
-    String customUrl();
+    default String customUrl() { return ""; };
 
     @Attribute(order = 4)
     String applicationRef();

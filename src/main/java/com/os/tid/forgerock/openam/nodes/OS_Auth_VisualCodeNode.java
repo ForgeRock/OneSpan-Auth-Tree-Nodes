@@ -179,12 +179,13 @@ public class OS_Auth_VisualCodeNode implements Node {
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
     	try {
+
 	        logger.debug(loggerPrefix + "OS_Auth_VisualCodeNode started");
-	        NodeState ns = context.getStateFor(this);
+            JsonValue sharedState = context.sharedState;
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
-	        JsonValue crontoMsgJsonValue = config.visualCodeMessageOption() == VisualCodeMessageOptions.CustomCrontoMessage ? ns.get(config.customMessageInSharedState()) : ns.get(Constants.OSTID_CRONTO_MSG);
+	        JsonValue crontoMsgJsonValue = config.visualCodeMessageOption() == VisualCodeMessageOptions.CustomCrontoMessage ? sharedState.get(config.customMessageInSharedState()) : sharedState.get(Constants.OSTID_CRONTO_MSG);
 	        boolean hasConsumed = false;
 	        if(context.getCallbacks(HiddenValueCallback.class) != null && context.getCallbacks(HiddenValueCallback.class).size() >= 1){
 	            for (HiddenValueCallback hiddenValueCallback : context.getCallbacks(HiddenValueCallback.class)) {
@@ -201,7 +202,7 @@ public class OS_Auth_VisualCodeNode implements Node {
 	        }
 	        //2. go to next
 	        else if(hasConsumed) {
-	            ns.remove(config.visualCodeHiddenValueId());
+	            sharedState.remove(config.visualCodeHiddenValueId());
 	            return goTo(VisualCodeOutcome.Next).build();	
 	        }
 	        //3. send to page
@@ -210,18 +211,18 @@ public class OS_Auth_VisualCodeNode implements Node {
 	
 	            //return visual code URL as hiddenValueCallback
 	            String crontURL = "";
-	            if (ns.get(config.visualCodeHiddenValueId()).isNull()) {
+	            if (sharedState.get(config.visualCodeHiddenValueId()).isNull()) {
                     String customUrl = serviceConfig.customUrl().toLowerCase();
 	                crontURL = StringUtils.getAPIEndpoint(tenantName,environment, customUrl) + String.format(Constants.OSTID_API_ADAPTIVE_CRTONTO_RENDER,
 	                        config.visualCodeType().name().toUpperCase(),
 	                        crontoMsgJsonValue.asString());
 	                crontURL = RestUtils.doGetImage(crontURL, SslUtils.getSSLConnectionSocketFactory(serviceConfig));
-	                ns.putShared(config.visualCodeHiddenValueId(), crontURL);
+                    sharedState.put(config.visualCodeHiddenValueId(), crontURL);
 	            } else {
-	                crontURL = ns.get(config.visualCodeHiddenValueId()).asString();
+	                crontURL = sharedState.get(config.visualCodeHiddenValueId()).asString();
 	            }
 	            HiddenValueCallback hiddenValueCDDCJson = new HiddenValueCallback(config.visualCodeHiddenValueId(), crontURL);
-	            HiddenValueCallback expiryDateCallback = new HiddenValueCallback(Constants.OSTID_EVENT_EXPIRY_DATE, getExpiryString(ns));
+	            HiddenValueCallback expiryDateCallback = new HiddenValueCallback(Constants.OSTID_EVENT_EXPIRY_DATE, getExpiryString(sharedState));
 	            HiddenValueCallback hasConsumedCallback = new HiddenValueCallback(Constants.OSTID_CRONTO_HAS_RENDERED, Constants.OSTID_CRONTO_HAS_RENDERED);
 	            returnCallback.add(hiddenValueCDDCJson);
 	            returnCallback.add(expiryDateCallback);
@@ -229,14 +230,14 @@ public class OS_Auth_VisualCodeNode implements Node {
 	
 	            //return Visual Code Script if required
 	            if (config.renderVisualCodeInCallback() ) {
-	                if(ns.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()) {
+	                if(sharedState.get(Constants.OSTID_CRONTO_PUSH_JS).isNull()) {
 	                    addCrontoScript(returnCallback);
-	                    ns.putShared(Constants.OSTID_CRONTO_PUSH_JS, true);
+                        sharedState.put(Constants.OSTID_CRONTO_PUSH_JS, true);
 	                }
-	                addStartScript(ns, crontURL, returnCallback);
+	                addStartScript(sharedState, crontURL, returnCallback);
 	            }
 	
-	            return Action.send(returnCallback).build();
+	            return Action.send(returnCallback).replaceSharedState(sharedState).build();
 	        }
         
     	}catch (Exception ex) {
@@ -315,8 +316,8 @@ public class OS_Auth_VisualCodeNode implements Node {
         returnCallback.add(displayScriptCallback);
     }
 
-    private void addStartScript(NodeState ns, String crontURL, List<Callback> returnCallback ){
-        String expiryDateInMilli = getExpiryString(ns);
+    private void addStartScript(JsonValue sharedState, String crontURL, List<Callback> returnCallback ){
+        String expiryDateInMilli = getExpiryString(sharedState);
 
         String displayScriptBase =
                 "if (typeof window.CDDC_display == 'function') { " +
@@ -366,8 +367,8 @@ public class OS_Auth_VisualCodeNode implements Node {
         Next, Error
     }
 
-    private String getExpiryString(NodeState ns){
-        JsonValue activationTokenExpiryDateJsonValue = ns.get(Constants.OSTID_EVENT_EXPIRY_DATE);
+    private String getExpiryString(JsonValue sharedState){
+        JsonValue activationTokenExpiryDateJsonValue = sharedState.get(Constants.OSTID_EVENT_EXPIRY_DATE);
         String expiryDateInMilli =  activationTokenExpiryDateJsonValue.isNull() ? DateUtils.getMilliStringAfterCertainSecs(Constants.OSTID_DEFAULT_EVENT_EXPIRY) :
                 activationTokenExpiryDateJsonValue.asString();
         return expiryDateInMilli;

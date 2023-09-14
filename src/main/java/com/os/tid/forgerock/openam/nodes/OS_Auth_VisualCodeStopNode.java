@@ -58,13 +58,13 @@ public class OS_Auth_VisualCodeStopNode implements Node {
     public Action process(TreeContext context) throws NodeProcessException {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_VisualCodeNode started");
-	        NodeState ns = context.getStateFor(this);
+	        JsonValue sharedState = context.sharedState;
 	
-	        if (ns.get("os_tid_visualcodestop").isBoolean()) {
-	        	return goTo(VisualCodeStopOutcome.Next).build();
+	        if (sharedState.get("os_tid_visualcodestop").isBoolean()) {
+	        	return goTo(VisualCodeStopOutcome.Next).replaceSharedState(sharedState).build();
 	        } else {
-	            ns.putShared("os_tid_visualcodestop",true);
-	            return Action.send(getStopCrontoCallback()).build();
+	            sharedState.put("os_tid_visualcodestop",true);
+	            return Action.send(getStopCrontoCallback()).replaceSharedState(sharedState).build();
 	        }
     	}catch (Exception ex) {
     		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);

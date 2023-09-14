@@ -119,12 +119,12 @@ public class OS_Auth_VDPUserRegisterNode implements Node {
     public Action process(TreeContext context) {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_VDPUserRegisterNode started");
-	        NodeState ns = context.getStateFor(this);
+	        JsonValue sharedState = context.sharedState;
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
-	        JsonValue usernameJsonValue = ns.get(config.userNameInSharedData());
-	        ns.putShared(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
+	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
+	        sharedState.put(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
 	
 	        boolean allOptionalFieldsIncluded = true;
 	        StringBuilder optionalAttributesStringBuilder = new StringBuilder(1000);
@@ -132,9 +132,9 @@ public class OS_Auth_VDPUserRegisterNode implements Node {
 	        for (Map.Entry<String, String> entrySet : optionalAttributesMap.entrySet()) {
 	        	JsonValue jsonValue;
 	        	if(Constants.OSTID_STATIC_PASSWORD.equalsIgnoreCase(entrySet.getKey())) {
-	        		jsonValue = ns.get(entrySet.getValue());
+	        		jsonValue = sharedState.get(entrySet.getValue());
 	        	}else {
-	        		jsonValue = ns.get(entrySet.getValue());
+	        		jsonValue = sharedState.get(entrySet.getValue());
 	        	}
 	        	
 	            if (jsonValue.isString()) {
@@ -168,7 +168,7 @@ public class OS_Auth_VDPUserRegisterNode implements Node {
                 JSONObject responseJSON = httpEntity.getResponseJSON();
 
                 if (httpEntity.isSuccess()) {
-                    return goTo(VDPUserRegisterOutcome.Success).build();
+                    return goTo(VDPUserRegisterOutcome.Success).replaceSharedState(sharedState).build();
                 } else {
                     String log_correction_id = httpEntity.getLog_correlation_id();
                     String message = responseJSON.getString("message");
@@ -199,7 +199,7 @@ public class OS_Auth_VDPUserRegisterNode implements Node {
                 JSONObject responseJSON = httpEntity.getResponseJSON();
 
                 if (httpEntity.isSuccess()) {
-                    return goTo(VDPUserRegisterOutcome.Success).build();
+                    return goTo(VDPUserRegisterOutcome.Success).replaceSharedState(sharedState).build();
                 } else {
                     String log_correction_id = httpEntity.getLog_correlation_id();
                     String message = responseJSON.getString("message");

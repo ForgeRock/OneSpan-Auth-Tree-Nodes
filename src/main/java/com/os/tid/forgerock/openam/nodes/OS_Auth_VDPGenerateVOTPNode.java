@@ -118,19 +118,19 @@ public class OS_Auth_VDPGenerateVOTPNode implements Node {
     public Action process(TreeContext context) {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_VDPGenerateVOTPNode started");
-	        NodeState ns = context.getStateFor(this);
+	        JsonValue sharedState = context.sharedState;
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
-	        JsonValue usernameJsonValue = ns.get(config.userNameInSharedData());
-	        ns.putShared(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
+	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
+	        sharedState.put(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
 	
 	        boolean allOptionalFieldsIncluded = true;
 	        StringBuilder optionalAttributesStringBuilder = new StringBuilder(1000);
 	        Map<String, String> optionalAttributesMap = config.optionalAttributes();
 	        for (Map.Entry<String, String> entrySet : optionalAttributesMap.entrySet()) {
 	        	JsonValue jsonValue;
-        		jsonValue = ns.get(entrySet.getValue());
+        		jsonValue = sharedState.get(entrySet.getValue());
 	        	
 	            if (jsonValue.isString()) {
 	                optionalAttributesStringBuilder.append("\"").append(entrySet.getKey()).append("\":\"").append(jsonValue.asString()).append("\",");
@@ -248,7 +248,7 @@ public class OS_Auth_VDPGenerateVOTPNode implements Node {
                 }
             }
             
-	        return goTo(OS_Auth_VDPGenerateVOTPNode.GenerateVOTPOutcome.success).build();
+	        return goTo(OS_Auth_VDPGenerateVOTPNode.GenerateVOTPOutcome.success).replaceSharedState(sharedState).build();
     	}catch (Exception ex) {
 	   		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
 			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);

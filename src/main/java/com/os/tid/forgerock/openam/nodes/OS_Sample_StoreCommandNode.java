@@ -111,13 +111,14 @@ public class OS_Sample_StoreCommandNode implements Node {
     public Action process(TreeContext context){
     	try {
 	        logger.debug(loggerPrefix + "OSTID_DEMO_BackCommandsNode started");
-	        NodeState ns = context.getStateFor(this);
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
+
+            JsonValue sharedState=context.sharedState;
 	
-	        JsonValue ostid_sessionid = ns.get(Constants.OSTID_SESSIONID);
-	        JsonValue ostid_irm_response = ns.get(Constants.OSTID_IRM_RESPONSE);
-	        JsonValue ostid_command = ns.get(Constants.OSTID_COMMAND);
-	        String requestId = ns.get(Constants.OSTID_REQUEST_ID).isString() ? ns.get(Constants.OSTID_REQUEST_ID).asString() : ""; //temporary, the request ID is not mandatory
+	        JsonValue ostid_sessionid = sharedState.get(Constants.OSTID_SESSIONID);
+	        JsonValue ostid_irm_response = sharedState.get(Constants.OSTID_IRM_RESPONSE);
+	        JsonValue ostid_command = sharedState.get(Constants.OSTID_COMMAND);
+	        String requestId = sharedState.get(Constants.OSTID_REQUEST_ID).isString() ? sharedState.get(Constants.OSTID_REQUEST_ID).asString() : ""; //temporary, the request ID is not mandatory
             //build payload
             String demo_cmd_payload = String.format(Constants.OSTID_JSON_DEMO_COMMANDS, ostid_command.asString(), ostid_irm_response.asInteger() + "", ostid_sessionid.asString());
 
@@ -127,12 +128,12 @@ public class OS_Sample_StoreCommandNode implements Node {
                 put("sessionIdentifier", StringUtils.hexToString(ostid_sessionid.asString()));
                 put("sessionID", ostid_sessionid.asString());
                 put("requestID", requestId);
-                put("username", ns.get(Constants.OSTID_DEFAULT_USERNAME).isString() ? ns.get(Constants.OSTID_DEFAULT_USERNAME).asString() : "username");
+                put("username", sharedState.get(Constants.OSTID_DEFAULT_USERNAME).isString() ? sharedState.get(Constants.OSTID_DEFAULT_USERNAME).asString() : "username");
                 put("hexRequestID", StringUtils.stringToHex(requestId));
             }};
 
             for (Map.Entry<String, String> entry : config.placeholderMap().entrySet()) {
-                placeholders.put(entry.getKey(), ns.get(entry.getValue()).isString() ? ns.get(entry.getValue()).asString() : entry.getValue());
+                placeholders.put(entry.getKey(), sharedState.get(entry.getValue()).isString() ? sharedState.get(entry.getValue()).asString() : entry.getValue());
             }
 
             String commandURL = config.javascript();
@@ -142,7 +143,7 @@ public class OS_Sample_StoreCommandNode implements Node {
             HttpEntity httpEntity = RestUtils.doHttpRequestWithoutResponse(commandURLFinal, demo_cmd_payload,config.httpmethod().name(),config.requestHeaders(),null);
 
             if (httpEntity.isSuccess()) {
-                return goTo(OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome.Success).build();
+                return goTo(OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome.Success).replaceSharedState(sharedState).build();
             } else {
                 throw new NodeProcessException(httpEntity.getResponseJSON().toJSONString());
             }

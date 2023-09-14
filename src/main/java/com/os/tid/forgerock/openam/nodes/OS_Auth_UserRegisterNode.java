@@ -143,17 +143,17 @@ public class OS_Auth_UserRegisterNode implements Node {
     public Action process(TreeContext context) {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_UserRegisterNode started");
-	        NodeState ns = context.getStateFor(this);
+	        JsonValue sharedState = context.sharedState;
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
             String customUrl = serviceConfig.customUrl().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
-	        JsonValue usernameJsonValue = ns.get(config.userNameInSharedData());
-	        JsonValue cddcJsonJsonValue = ns.get(Constants.OSTID_CDDC_JSON);
-	        JsonValue cddcHashJsonValue = ns.get(Constants.OSTID_CDDC_HASH);
-	        JsonValue cddcIpJsonValue = ns.get(Constants.OSTID_CDDC_IP);
+	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
+	        JsonValue cddcJsonJsonValue = sharedState.get(Constants.OSTID_CDDC_JSON);
+	        JsonValue cddcHashJsonValue = sharedState.get(Constants.OSTID_CDDC_HASH);
+	        JsonValue cddcIpJsonValue = sharedState.get(Constants.OSTID_CDDC_IP);
 	
-	        ns.putShared(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
+	        sharedState.put(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
 	
 	        boolean allOptionalFieldsIncluded = true;
 	        StringBuilder optionalAttributesStringBuilder = new StringBuilder(1000);
@@ -161,9 +161,9 @@ public class OS_Auth_UserRegisterNode implements Node {
 	        for (Map.Entry<String, String> entrySet : optionalAttributesMap.entrySet()) {
 	        	JsonValue jsonValue;
 	        	if(Constants.OSTID_STATIC_PASSWORD.equalsIgnoreCase(entrySet.getKey())) {
-	        		jsonValue = ns.get(entrySet.getValue());
+	        		jsonValue = sharedState.get(entrySet.getValue());
 	        	}else {
-	        		jsonValue = ns.get(entrySet.getValue());
+	        		jsonValue = sharedState.get(entrySet.getValue());
 	        	} 
 	            if (jsonValue.isString()) {
 	                optionalAttributesStringBuilder.append("\"").append(entrySet.getKey()).append("\":\"").append(jsonValue.asString()).append("\",");
@@ -199,10 +199,10 @@ public class OS_Auth_UserRegisterNode implements Node {
             //param 7
             String applicationRef = config.objectType() == ObjectType.IAA ? String.format(Constants.OSTID_JSON_ADAPTIVE_APPLICATIONREF, serviceConfig.applicationRef()) : "";
             //param 8
-            String sessionId = ns.get(Constants.OSTID_SESSIONID).isString() ? ns.get(Constants.OSTID_SESSIONID).asString() : StringUtils.stringToHex(UUID.randomUUID().toString());
+            String sessionId = sharedState.get(Constants.OSTID_SESSIONID).isString() ? sharedState.get(Constants.OSTID_SESSIONID).asString() : StringUtils.stringToHex(UUID.randomUUID().toString());
             String sessionIdJSON = config.objectType() == ObjectType.IAA ? String.format(Constants.OSTID_JSON_ADAPTIVE_SESSIONID, sessionId) : "";
             //param 9
-            String relationshipRef = ns.get("relationshipRef").isString() ? ns.get("relationshipRef").asString():usernameJsonValue.asString();
+            String relationshipRef = sharedState.get("relationshipRef").isString() ? sharedState.get("relationshipRef").asString():usernameJsonValue.asString();
             relationshipRef = config.objectType() == ObjectType.IAA ? String.format(Constants.OSTID_JSON_ADAPTIVE_USER_REGISTER_RELATIONSHIPREF, relationshipRef) : "";
             //param 10
             String activationType = String.format(Constants.OSTID_JSON_ADAPTIVE_USER_REGISTER_ACTIVATIONTYPE, config.activationType().name());
@@ -229,7 +229,7 @@ public class OS_Auth_UserRegisterNode implements Node {
                 String activationCode = userRegisterOutputEx.getActivationPassword();
                 if (config.nodeFunction() == NodeFunction.UserRegister && config.activationType() == ActivationType.onlineMDL) {
                     //"02;user01211;111;duoliang11071-mailin;3zE6RNH5;duoliang11071-mailin"
-                	String userProfile = ns.get(Constants.OSTID_USERPROFILE_IN_SHARED_STATE).isNull() ? "0" : ns.get(Constants.OSTID_USERPROFILE_IN_SHARED_STATE).asString();            	
+                	String userProfile = sharedState.get(Constants.OSTID_USERPROFILE_IN_SHARED_STATE).isNull() ? "0" : sharedState.get(Constants.OSTID_USERPROFILE_IN_SHARED_STATE).asString();            	
                     String crontoValueRaw = String.format(Constants.OSTID_CRONTO_FORMULA,
                             Constants.OSTID_API_VERSION,                        //param1
                             usernameJsonValue.asString(),                       //param2
@@ -240,22 +240,22 @@ public class OS_Auth_UserRegisterNode implements Node {
                     );
                     String crontoValueHex = StringUtils.stringToHex(crontoValueRaw);
 
-                    ns.putShared(Constants.OSTID_SESSIONID, sessionId);
-                    ns.putShared(Constants.OSTID_ACTIVATION_CODE, activationCode);
-                    ns.putShared(Constants.OSTID_ACTIVATION_CODE2, activationCode);
-                    ns.putShared(Constants.OSTID_CRONTO_MSG, crontoValueHex);
-                    ns.putShared(Constants.OSTID_DIGI_SERIAL, userRegisterOutputEx.getSerialNumber());
-                    ns.putShared(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.activationTokenExpiry()));
+                    sharedState.put(Constants.OSTID_SESSIONID, sessionId);
+                    sharedState.put(Constants.OSTID_ACTIVATION_CODE, activationCode);
+                    sharedState.put(Constants.OSTID_ACTIVATION_CODE2, activationCode);
+                    sharedState.put(Constants.OSTID_CRONTO_MSG, crontoValueHex);
+                    sharedState.put(Constants.OSTID_DIGI_SERIAL, userRegisterOutputEx.getSerialNumber());
+                    sharedState.put(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.activationTokenExpiry()));
                 } else if (config.nodeFunction() == NodeFunction.UserRegister && config.activationType() == ActivationType.offlineMDL) {
-                	ns.putShared(Constants.OSTID_SESSIONID, sessionId);
-                	ns.putShared(Constants.OSTID_ACTIVATION_CODE, activationCode);
-                	ns.putShared(Constants.OSTID_ACTIVATION_CODE2, activationCode);
-                	ns.putShared(Constants.OSTID_CRONTO_MSG, activationCode);
-                	ns.putShared(Constants.OSTID_DIGI_SERIAL, userRegisterOutputEx.getSerialNumber());
-                	ns.putShared(Constants.OSTID_REGISTRATION_ID, userRegisterOutputEx.getRegistrationID());
-                	ns.putShared(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.activationTokenExpiry()));
+                	sharedState.put(Constants.OSTID_SESSIONID, sessionId);
+                	sharedState.put(Constants.OSTID_ACTIVATION_CODE, activationCode);
+                	sharedState.put(Constants.OSTID_ACTIVATION_CODE2, activationCode);
+                	sharedState.put(Constants.OSTID_CRONTO_MSG, activationCode);
+                	sharedState.put(Constants.OSTID_DIGI_SERIAL, userRegisterOutputEx.getSerialNumber());
+                	sharedState.put(Constants.OSTID_REGISTRATION_ID, userRegisterOutputEx.getRegistrationID());
+                	sharedState.put(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.activationTokenExpiry()));
                 } else if (config.nodeFunction() == NodeFunction.UserUnregister) {
-                	ns.putShared(Constants.OSTID_SESSIONID, sessionId);
+                	sharedState.put(Constants.OSTID_SESSIONID, sessionId);
                 }
                 return goTo(UserRegisterOutcome.Success).build();
             } else {

@@ -120,19 +120,19 @@ public class OS_Risk_InsertTransactionNode implements Node {
     public Action process(TreeContext context) {
     	try {
 	        logger.debug(loggerPrefix + "OS_Risk_InsertTransactionNode started");
-	        NodeState ns = context.getStateFor(this);
+            JsonValue sharedState = context.sharedState;
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
 	        boolean missAttr = false;
-	        JsonValue usernameJsonValue = ns.get(config.userNameInSharedData());
+	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
 	        missAttr |= !usernameJsonValue.isString();
-	        ns.putShared(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
+            sharedState.put(Constants.OSTID_USERNAME_IN_SHARED_STATE, config.userNameInSharedData());
 	
 	        StringBuilder attributesStringBuilder = new StringBuilder(1000);
 	        Map<String, String> attributesMap = config.adaptiveAttributes();
 	        for (Map.Entry<String, String> entrySet : attributesMap.entrySet()) {
-	            JsonValue jsonValue = ns.get(entrySet.getValue());
+	            JsonValue jsonValue = sharedState.get(entrySet.getValue());
 	            if (jsonValue.isString()) {
 	                attributesStringBuilder.append("\"").append(entrySet.getKey()).append("\":\"").append(jsonValue.asString()).append("\",");
 	            } else {
@@ -140,17 +140,17 @@ public class OS_Risk_InsertTransactionNode implements Node {
 	            }
 	        }
 	
-	        String sessionID = ns.get(Constants.OSTID_SESSIONID).isString() ? ns.get(Constants.OSTID_SESSIONID).asString() : StringUtils.stringToHex(UUID.randomUUID().toString());
+	        String sessionID = sharedState.get(Constants.OSTID_SESSIONID).isString() ? sharedState.get(Constants.OSTID_SESSIONID).asString() : StringUtils.stringToHex(UUID.randomUUID().toString());
 	
 	        missAttr |= CollectionsUtils.hasAnyNullValues(ImmutableList.of(
-	                ns.get(Constants.OSTID_CDDC_JSON),
-	                ns.get(Constants.OSTID_CDDC_HASH),
-	                ns.get(Constants.OSTID_CDDC_IP)
+	                sharedState.get(Constants.OSTID_CDDC_JSON),
+	                sharedState.get(Constants.OSTID_CDDC_HASH),
+	                sharedState.get(Constants.OSTID_CDDC_IP)
 	        ));
 	        String applicationRef = serviceConfig.applicationRef() != null ? serviceConfig.applicationRef() : "";
 	
 	        if(missAttr) { //missing data
-	            logger.debug(loggerPrefix + JSON.toJSONString(ns));
+	            logger.debug(loggerPrefix + JSON.toJSONString(sharedState));
 	            throw new NodeProcessException("Oopts, there are missing data for OneSpan Risk Insert Transaction Node!");
 	        }
 	        
@@ -164,13 +164,13 @@ public class OS_Risk_InsertTransactionNode implements Node {
 	         * 7.relationship ID
 	         **/
 	        
-            String relationshipRef = ns.get("relationshipRef").isString() ? ns.get("relationshipRef").asString():usernameJsonValue.asString();
+            String relationshipRef = sharedState.get("relationshipRef").isString() ? sharedState.get("relationshipRef").asString():usernameJsonValue.asString();
 	        
             String sendTransactionJSON = String.format(Constants.OSTID_JSON_RISK_SEND_TRANSACTION,
                     attributesStringBuilder.toString(),                              //param1
-                    ns.get(Constants.OSTID_CDDC_IP).asString(),             //param2
-                    ns.get(Constants.OSTID_CDDC_HASH).asString(),           //param3
-                    ns.get(Constants.OSTID_CDDC_JSON).asString(),           //param4
+                    sharedState.get(Constants.OSTID_CDDC_IP).asString(),             //param2
+                    sharedState.get(Constants.OSTID_CDDC_HASH).asString(),           //param3
+                    sharedState.get(Constants.OSTID_CDDC_JSON).asString(),           //param4
                     sessionID,                                                       //param5
                     applicationRef,                                                  //param6
                     relationshipRef                                     			 //param7
@@ -182,15 +182,15 @@ public class OS_Risk_InsertTransactionNode implements Node {
 
             if (httpEntity.isSuccess()) {
                 int riskResponseCode = responseJSON.getIntValue("riskResponseCode");
-                ns.putShared(Constants.OSTID_RISK_RESPONSE_CODE, riskResponseCode);
-                ns.putShared(Constants.OSTID_RISK_RESPONSE_CODE2, riskResponseCode);
+                sharedState.put(Constants.OSTID_RISK_RESPONSE_CODE, riskResponseCode);
+                sharedState.put(Constants.OSTID_RISK_RESPONSE_CODE2, riskResponseCode);
 
                 RiskTransactionOutcome riskTransactionOutcome = RiskTransactionOutcome.Error;
                 if (riskResponseCode == 0) {
                     riskTransactionOutcome = RiskTransactionOutcome.Accept;
                 } else if (riskResponseCode == 1) {
                     riskTransactionOutcome = RiskTransactionOutcome.Decline;
-                    ns.putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Risk Insert Transaction: Request has been declined!");
+                    sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Risk Insert Transaction: Request has been declined!");
                 } else{
                     riskTransactionOutcome = RiskTransactionOutcome.Challenge;
                 }

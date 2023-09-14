@@ -114,10 +114,10 @@ public class OS_Auth_GenerateChallengeNode implements Node {
     public Action process(TreeContext context) {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_GenerateChallengeNode started");
-	        NodeState ns = context.getStateFor(this);
+            JsonValue sharedState = context.sharedState;
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
-	        JsonValue usernameJsonValue = ns.get(config.userNameInSharedData());
+	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
 	
 	        String generateChallengeJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_GENERATE_CHALLENGE,
 	                config.length(),                                    //param1
@@ -129,10 +129,10 @@ public class OS_Auth_GenerateChallengeNode implements Node {
             JSONObject responseJSON = httpEntity.getResponseJSON();
             if (httpEntity.isSuccess()) {
                 GenerateChallengeOutput generateChallengeOutput = JSON.toJavaObject(responseJSON, GenerateChallengeOutput.class);
-                ns.putShared(Constants.OSTID_REQUEST_ID, generateChallengeOutput.getRequestID());
-                ns.putShared(Constants.OSTID_CRONTO_MSG, StringUtils.stringToHex2(generateChallengeOutput.getChallenge()));
+                sharedState.put(Constants.OSTID_REQUEST_ID, generateChallengeOutput.getRequestID());
+                sharedState.put(Constants.OSTID_CRONTO_MSG, StringUtils.stringToHex2(generateChallengeOutput.getChallenge()));
 
-                return goTo(OS_Auth_GenerateChallengeNode.GenerateChallengeOutcome.success).build();
+                return goTo(OS_Auth_GenerateChallengeNode.GenerateChallengeOutcome.success).replaceSharedState(sharedState).build();
             } else {
                 String error = responseJSON.getString("error");
                 String message = responseJSON.getString("message");

@@ -82,12 +82,12 @@ public class OS_Auth_AddDeviceNode implements Node {
     public Action process(TreeContext context) {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_AddDeviceNode started");
-	        NodeState ns = context.getStateFor(this);
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
-	
-	        JsonValue registration_id = ns.get(Constants.OSTID_REGISTRATION_ID);
-	        JsonValue device_code = ns.get(Constants.OSTID_DEVICE_CODE);
+			JsonValue sharedState = context.sharedState;
+
+	        JsonValue registration_id = sharedState.get(Constants.OSTID_REGISTRATION_ID);
+	        JsonValue device_code = sharedState.get(Constants.OSTID_DEVICE_CODE);
 	
 	        if(CollectionsUtils.hasAnyNullValues(ImmutableList.of(
 	                registration_id,
@@ -105,10 +105,10 @@ public class OS_Auth_AddDeviceNode implements Node {
 	            JSONObject responseJSON = httpEntity.getResponseJSON();
 	            if(httpEntity.isSuccess()) {
 	                AddDeviceOutput addDeviceOutput = JSON.toJavaObject(responseJSON, AddDeviceOutput.class);
-	                ns.putShared(Constants.OSTID_CRONTO_MSG, addDeviceOutput.getActivationMessage2());
-	                ns.putShared(Constants.OSTID_ACTIVATION_MESSAGE2, addDeviceOutput.getActivationMessage2());
+	                sharedState.put(Constants.OSTID_CRONTO_MSG, addDeviceOutput.getActivationMessage2());
+	                sharedState.put(Constants.OSTID_ACTIVATION_MESSAGE2, addDeviceOutput.getActivationMessage2());
 	
-	                return goTo(AddDeviceOutcome.success).build();
+	                return goTo(AddDeviceOutcome.success).replaceSharedState(sharedState).build();
 	            }else{
 	                String error = responseJSON.getString("error");
 	                String message = responseJSON.getString("message");
@@ -136,7 +136,7 @@ public class OS_Auth_AddDeviceNode implements Node {
 			context.getStateFor(this).putShared(loggerPrefix + "StackTrace", new Date() + ": " + stackTrace);
 			context.getStateFor(this).putShared(loggerPrefix + "OS_Auth_AddDeviceNode Exception", new Date() + ": " + ex.getMessage());
 			context.getStateFor(this).putShared(loggerPrefix + Constants.OSTID_ERROR_MESSAGE, "OneSpan OCA Add Device process: " + ex.getMessage());
-			return goTo(AddDeviceOutcome.error).build();	 
+			return goTo(AddDeviceOutcome.error).build();
 	    }
     }
 

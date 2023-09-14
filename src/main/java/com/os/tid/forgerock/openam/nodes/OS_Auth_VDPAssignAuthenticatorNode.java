@@ -92,12 +92,12 @@ public class OS_Auth_VDPAssignAuthenticatorNode implements Node {
     public Action process(TreeContext context) {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_VDPAssignAuthenticatorNode started");
-	        NodeState ns = context.getStateFor(this);
+	        JsonValue sharedState = context.sharedState;
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
-	        String usernameInSharedState = ns.get(Constants.OSTID_USERNAME_IN_SHARED_STATE) == null ? Constants.OSTID_DEFAULT_USERNAME : ns.get(Constants.OSTID_USERNAME_IN_SHARED_STATE).asString();
-	        JsonValue usernameJsonValue = ns.get(usernameInSharedState);
+	        String usernameInSharedState = sharedState.get(Constants.OSTID_USERNAME_IN_SHARED_STATE) == null ? Constants.OSTID_DEFAULT_USERNAME : sharedState.get(Constants.OSTID_USERNAME_IN_SHARED_STATE).asString();
+	        JsonValue usernameJsonValue = sharedState.get(usernameInSharedState);
 
 	
 	        if(CollectionsUtils.hasAnyNullValues(ImmutableList.of(usernameJsonValue))){
@@ -159,7 +159,7 @@ public class OS_Auth_VDPAssignAuthenticatorNode implements Node {
 				}
 	            
 	            if(!StringUtils.isEmpty(vir10SerialNumber)) {
-	                return goTo(OS_Auth_VDPAssignAuthenticatorNode.VDPAssignAuthenticatorOutcome.success).build();
+	                return goTo(OS_Auth_VDPAssignAuthenticatorNode.VDPAssignAuthenticatorOutcome.success).replaceSharedState(sharedState).build();
 	            }
             }
 	        
@@ -227,7 +227,7 @@ public class OS_Auth_VDPAssignAuthenticatorNode implements Node {
                 }
             }
             
-            return goTo(OS_Auth_VDPAssignAuthenticatorNode.VDPAssignAuthenticatorOutcome.success).build();
+            return goTo(OS_Auth_VDPAssignAuthenticatorNode.VDPAssignAuthenticatorOutcome.success).replaceSharedState(sharedState).build();
     	}catch (Exception ex) {
 	   		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
 			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
