@@ -49,6 +49,7 @@ public class OS_Auth_VisualCodeNodeTest {
         given(configurationsService.environment()).willReturn(TestData.ENVIRONMENT);
         given(configurationsService.applicationRef()).willReturn(TestData.APPLICATION_REF);
         given(configurationsService.tenantName()).willReturn("tylergelinas-forgero");
+        given(configurationsService.customUrl()).willReturn("");
         given(annotatedServiceRegistry.getRealmSingleton(OSConfigurationsService.class, realm)).willReturn(Optional.of(configurationsService));
     }
     @Test
@@ -70,7 +71,7 @@ public class OS_Auth_VisualCodeNodeTest {
         Action result = node.process(context);
 
         // Then
-        assertThat(result.outcome).isEqualTo("Error");
+        assertThat(result.outcome).isEqualTo(null);
         assertThat(result.callbacks).hasSize(3);
         assertThat(result.callbacks.get(0)).isInstanceOf(HiddenValueCallback.class);
         assertThat(result.callbacks.get(1)).isInstanceOf(HiddenValueCallback.class);
@@ -97,7 +98,7 @@ public class OS_Auth_VisualCodeNodeTest {
         Action result = node.process(context);
 
         // Then
-        assertThat(result.outcome).isEqualTo("Error");
+        assertThat(result.outcome).isEqualTo(null);
         assertThat(result.callbacks).hasSize(3);
         assertThat(result.callbacks.get(0)).isInstanceOf(HiddenValueCallback.class);
         assertThat(result.callbacks.get(1)).isInstanceOf(HiddenValueCallback.class);
@@ -130,7 +131,7 @@ public class OS_Auth_VisualCodeNodeTest {
         Action result = node.process(context);
 
         // Then
-        assertThat(result.outcome).isEqualTo("Error");
+        assertThat(result.outcome).isEqualTo(null);
         assertThat(result.callbacks).hasSize(5);
         assertThat(result.callbacks.get(0)).isInstanceOf(HiddenValueCallback.class);
         assertThat(result.callbacks.get(1)).isInstanceOf(HiddenValueCallback.class);

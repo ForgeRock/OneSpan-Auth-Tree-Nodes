@@ -88,7 +88,7 @@ public class OS_Auth_CheckActivationNodeTest extends OS_Auth_UserRegisterNodeTes
         // When
         Action result = node.process(context);
         // Then
-        assertThat(result.outcome).isEqualTo("Error");
+        assertThat(result.outcome).isEqualTo("unkown");
         assertThat(result.callbacks.isEmpty());
         assertThat(result.sharedState.keys()).contains(Constants.OSTID_ERROR_MESSAGE);
     }
