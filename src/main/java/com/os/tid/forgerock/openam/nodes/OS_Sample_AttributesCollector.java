@@ -15,10 +15,17 @@
  */
 package com.os.tid.forgerock.openam.nodes;
 
-import com.google.inject.Inject;
-import com.google.inject.assistedinject.Assisted;
-import com.os.tid.forgerock.openam.config.Constants;
-import com.os.tid.forgerock.openam.utils.CollectionsUtils;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.NameCallback;
+
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
@@ -29,9 +36,10 @@ import org.forgerock.openam.auth.node.api.TreeContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.NameCallback;
-import java.util.*;
+import com.google.inject.Inject;
+import com.google.inject.assistedinject.Assisted;
+import com.os.tid.forgerock.openam.config.Constants;
+import com.os.tid.forgerock.openam.utils.CollectionsUtils;
 
 
 @Node.Metadata( outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
@@ -87,11 +95,10 @@ public class OS_Sample_AttributesCollector extends SingleOutcomeNode {
 	            return Action.send(callbackList).build();
 	        }
     	}catch (Exception ex) {
-			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
-			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
-			ex.printStackTrace();
-			context.getStateFor(this).putShared("OS_Sample_AttributesCollector Exception", new Date() + ": " + ex.getMessage())
-									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Sample Attributes Collector: " + ex.getMessage());
+    		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
+			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
+			context.getStateFor(this).putShared("OS_Sample_AttributesCollector Exception", new Date() + ": " + stackTrace)
+									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Sample Attributes Collector: " + stackTrace);
 			throw new NodeProcessException(ex.getMessage());
 	    }
     }

@@ -1,7 +1,9 @@
 package com.os.tid.forgerock.openam.config;
 
-import com.google.common.collect.ImmutableMap;
 import java.util.Map;
+
+import com.google.common.collect.ImmutableMap;
+import com.os.tid.forgerock.openam.nodes.OSConfigurationsService.EnvOptions;
 
 public class Constants {
 
@@ -24,6 +26,13 @@ public class Constants {
     public static final String OSTID_API_CHECK_SESSION_STATUS = "/v1/sessions/%1$s";
     public static final String OSTID_API_ADAPTIVE_CRTONTO_RENDER = "/v1/visualcodes/render?format=%1$s&message=%2$s";
     public static final String OSTID_API_RISK_SEND_TRANSACTION = "/v1/transactions";
+    public static final String OSTID_API_VDP_USER_REGISTER = "/v1/users/%1$s@%2$s";
+    public static final String OSTID_API_VDP_GET_VIR10_AUTHENTICATORS = "/v1/authenticators?type=VIR10&assigned=false&offset=0&limit=20";
+    public static final String OSTID_API_VDP_GET_VIR10_AUTHENTICATOR = "/v1/authenticators?serialNumber=%1$s&domain=%2$s&type=VIR10&assigned=true&offset=0&limit=20";
+    public static final String OSTID_API_GET_USER_AUTHENTICATOR = "/v1/authenticators?serialNumber=%1$s&domain=%2$s&assigned=true&offset=0&limit=20";
+    public static final String OSTID_API_VDP_ASSIGN_AUTHENTICATOR = "/v1/authenticators/%1$s/assign";
+    public static final String OSTID_API_VDP_GET_USER = "/v1/users/%1$s@%2$s";
+    public static final String OSTID_API_VDP_GENERATE_VOTP = "/v1/authenticators/%1$s/applications/%2$s/generate-votp";
 
     //deprecated API Endpoints
     public static final String OSTID_API_USER_REGISTER = "/userregister/v1/";
@@ -35,7 +44,7 @@ public class Constants {
     public static final String OSTID_API_DEMO_COMMANDS = "/back/commands";
 
     //JSON payload
-    public static final String OSTID_JSON_ADAPTIVE_USER_REGISTER = "{%7$s%8$s%9$s%10$s%11$s\"objectType\":\"%1$s\",\"userID\":\"%2$s\",%3$s\"clientIP\":\"%4$s\",\"cddc\":{\"browserCDDC\":{\"fingerprintHash\":\"%5$s\",\"fingerprintRaw\":%6$s}}}";
+    public static final String OSTID_JSON_ADAPTIVE_USER_REGISTER = "{%6$s%7$s%8$s%9$s%10$s\"objectType\":\"%1$s\",\"userID\":\"%2$s\",\"clientIP\":\"%3$s\",\"cddc\":{\"browserCDDC\":{\"fingerprintHash\":\"%4$s\",\"fingerprintRaw\":%5$s}}}";
     public static final String OSTID_JSON_ADAPTIVE_APPLICATIONREF = "\"applicationRef\":\"%1$s\",";
     public static final String OSTID_JSON_ADAPTIVE_SESSIONID = "\"sessionID\":\"%1$s\",";
     public static final String OSTID_JSON_ADAPTIVE_REQUESTID = "\"requestID\":\"%1$s\",";
@@ -61,6 +70,11 @@ public class Constants {
     public static final String OSTID_JSON_ADAPTIVE_DATATOSIGN_TRANSACTIONMESSAGE_DATAFIELDS = "{\"key\":{\"text\":\"%1$s\"},\"value\":{\"text\":\"%2$s\"}}";
     public static final String OSTID_JSON_RISK_SEND_TRANSACTION =  "{%1$s\"clientIP\":\"%2$s\",\"cddc\":{\"browserCDDC\":{\"fingerprintHash\":\"%3$s\",\"fingerprintRaw\":%4$s}},\"relationshipRef\":\"%7$s\",\"sessionID\":\"%5$s\",\"applicationRef\":\"%6$s\"}";
 
+    public static final String OSTID_JSON_VDP_USER_REGISTER = "{%1$s\"vdpDeliveryMethod\":\"%2$s\"}";
+    public static final String OSTID_JSON_VDP_ASSIGN_AUTHENTICATOR = "{\"domain\":\"%1$s\",\"userID\":\"%2$s\"}";
+    public static final String OSTID_JSON_VDP_GENERATE_VOTP = "{%1$s\"deliveryMethod\":\"%2$s\"}";
+
+    
     //deprecated JSON payload
     public static final String OSTID_JSON_USER_REGISTER = "{%7$s%6$s\"login\":\"%1$s\",\"clientIP\":\"%2$s\",\"browserCDDC\":{\"fingerprintHash\":\"%3$s\",\"fingerprintRaw\":%4$s},\"sessionIdentifier\":\"%5$s\",\"applicationRef\":\"%8$s\"}";
     public static final String OSTID_JSON_CHECK_ACTIVATION = "{\"login\":\"%1$s\",\"timeoutSeconds\":\"%2$d\"}";
@@ -87,10 +101,25 @@ public class Constants {
             .put(25, "ChallengeFido")
             .build();
 
+    public static final Map<EnvOptions,String> OSTID_ENV_MAP = ImmutableMap.<EnvOptions, String>builder()
+            .put(EnvOptions.sdb, "sdb")
+            .put(EnvOptions.prod, "prod")
+            .put(EnvOptions.Sandbox, "sdb")
+            .put(EnvOptions.Production_NA1, "prod.na1")
+            .put(EnvOptions.Production_EU1, "prod.eu1")
+            .put(EnvOptions.Production_EU2, "prod.eu2")
+            .put(EnvOptions.Staging_NA1, "staging.na1")
+            .put(EnvOptions.Staging_EU1, "staging.eu1")
+            .put(EnvOptions.Staging_EU2, "staging.eu2")
+            .put(EnvOptions.UAT_EU1, "uat.eu1")
+            .put(EnvOptions.CUSTOMIZED, "CUSTOMIZED")
+            .build();
+    
+    
     /**
      * Attributes Keys in Shared/Transient State
      */
-    public static final String OSTID_CRONTO_FORMULA = "%1$s;%2$s;001;%3$s;%4$s;%5$s";
+    public static final String OSTID_CRONTO_FORMULA = "%1$s;%2$s;%6$s;%3$s;%4$s;%5$s";
     public static final String OSTID_RESPONSE_CHECK_ACTIVATION_STATUS = "activationStatus";
     public static final String OSTID_ERROR_MESSAGE = "ostid_error_message";
 
@@ -99,10 +128,12 @@ public class Constants {
     public static final String OSTID_CDDC_IP = "ostid_cddc_ip";
     public static final String OSTID_CDDC_HAS_PUSHED_JS = "ostid_cddc_has_pushed_js";
     public static final String OSTID_USERNAME_IN_SHARED_STATE = "ostid_username_in_shared_state";
+    public static final String OSTID_USERPROFILE_IN_SHARED_STATE = "ostid_userprofile_in_shared_state";
 
     public static final String OSTID_DIGI_SERIAL = "ostid_digi_serial";
     public static final String OSTID_REGISTRATION_ID = "ostid_registration_id";
     public static final String OSTID_CRONTO = "ostid_cronto";
+
     public static final String OSTID_ACTIVATION_CODE = "ostid_activationPassword";
     public static final String OSTID_ACTIVATION_CODE2 = "activationPassword";
     public static final String OSTID_IRM_RESPONSE = "ostid_irm_response";
@@ -139,6 +170,9 @@ public class Constants {
     public static final String OSTID_DEFAULT_CREDITORNAME = "creditorName";
     public static final String OSTID_DEFAULT_CREDITORBANK = "creditorBank";
     public static final String OSTID_DEFAULT_DEBTORIBAN = "debtorIBAN";
+    public static final String OSTID_STATIC_PASSWORD = "staticPassword";
+    public static final String OSTID_KEYSTORE_ALIAS = "os_asp";
+    public static final String OSTID_DEFAULT_DOMAIN = "master";
 
     public static final int OSTID_DEFAULT_CHECK_ACTIVATION_TIMEOUT = 0;
     public static final int OSTID_DEFAULT_EVENT_EXPIRY = 60;

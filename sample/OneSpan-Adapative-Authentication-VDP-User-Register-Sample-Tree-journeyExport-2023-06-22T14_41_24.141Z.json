@@ -1,0 +1,234 @@
+{
+
+  "trees": {
+    "OneSpan-Adapative-Authentication-VDP-User-Register-Sample-Tree": {
+      "tree": {
+        "_id": "OneSpan-Adapative-Authentication-VDP-User-Register-Sample-Tree",
+        "_rev": "-2016441792",
+        "identityResource": "managed/alpha_user",
+        "uiConfig": {
+          "categories": "[\"Registration\",\"Authentication\"]"
+        },
+        "entryNodeId": "41c47925-df59-4ebe-a9d9-1166d1a36b11",
+        "nodes": {
+          "36a9805b-fc30-43a7-9805-3ecd1c805bf0": {
+            "connections": {
+              "Error": "875813f2-1798-46a3-b4e1-df65952871a3",
+              "Success": "ba608062-c6fe-4c3e-b5d6-50ed1fcad458"
+            },
+            "displayName": "OneSpan Auth VDP User Register",
+            "nodeType": "OS_Auth_VDPUserRegisterNode",
+            "x": 569.015625,
+            "y": 116.5078125
+          },
+          "41c47925-df59-4ebe-a9d9-1166d1a36b11": {
+            "connections": {
+              "outcome": "36a9805b-fc30-43a7-9805-3ecd1c805bf0"
+            },
+            "displayName": "Page Node",
+            "nodeType": "PageNode",
+            "x": 282.015625,
+            "y": 78.5078125
+          },
+          "875813f2-1798-46a3-b4e1-df65952871a3": {
+            "connections": {
+              "outcome": "f57c928e-3313-4b47-8b03-1841bb11a185"
+            },
+            "displayName": "OneSpan Sample Error Display",
+            "nodeType": "OS_Sample_ErrorDisplayNode",
+            "x": 672.6796875,
+            "y": 518.5078125
+          },
+          "ba608062-c6fe-4c3e-b5d6-50ed1fcad458": {
+            "connections": {
+              "error": "875813f2-1798-46a3-b4e1-df65952871a3",
+              "success": "70e691a5-1e33-4ac3-a356-e7b6d60d92e0"
+            },
+            "displayName": "OneSpan Auth Assign Authenticator",
+            "nodeType": "OS_Auth_VDPAssignAuthenticatorNode",
+            "x": 1044.6171875,
+            "y": 120.5078125
+          },
+          "f57c928e-3313-4b47-8b03-1841bb11a185": {
+            "connections": {
+              "Reject": "e301438c-0bd0-429c-ab0c-66126501069a",
+              "Retry": "41c47925-df59-4ebe-a9d9-1166d1a36b11"
+            },
+            "displayName": "Retry Limit Decision",
+            "nodeType": "RetryLimitDecisionNode",
+            "x": 1067.515625,
+            "y": 486.5078125
+          }
+        },
+        "staticNodes": {
+          "70e691a5-1e33-4ac3-a356-e7b6d60d92e0": {
+            "x": 1496,
+            "y": 143
+          },
+          "e301438c-0bd0-429c-ab0c-66126501069a": {
+            "x": 1461,
+            "y": 529
+          },
+          "startNode": {
+            "x": 72,
+            "y": 103
+          }
+        },
+        "enabled": true
+      },
+      "nodes": {
+        "36a9805b-fc30-43a7-9805-3ecd1c805bf0": {
+          "_id": "36a9805b-fc30-43a7-9805-3ecd1c805bf0",
+          "_rev": "1913435700",
+          "domain": "master",
+          "optionalAttributes": {
+            "emailAddress": "emailAddress"
+          },
+          "userNameInSharedData": "username",
+          "vdpDeliveryMethod": "Email",
+          "_type": {
+            "_id": "OS_Auth_VDPUserRegisterNode",
+            "name": "OneSpan Auth VDP User Register",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "Success",
+              "displayName": "Success"
+            },
+            {
+              "id": "Error",
+              "displayName": "Error"
+            }
+          ]
+        },
+        "41c47925-df59-4ebe-a9d9-1166d1a36b11": {
+          "_id": "41c47925-df59-4ebe-a9d9-1166d1a36b11",
+          "_rev": "393218221",
+          "nodes": [
+            {
+              "_id": "a2ddde67-5983-4a8c-ab93-436c5caa9232",
+              "nodeType": "UsernameCollectorNode",
+              "displayName": "Username Collector"
+            },
+            {
+              "_id": "1bda5a4e-b126-4d58-8899-a5350c602076",
+              "nodeType": "OS_Sample_AttributesCollector",
+              "displayName": "OneSpan Sample Attributes Collector"
+            }
+          ],
+          "pageDescription": {},
+          "pageHeader": {},
+          "_type": {
+            "_id": "PageNode",
+            "name": "Page Node",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "outcome",
+              "displayName": "Outcome"
+            }
+          ]
+        },
+        "875813f2-1798-46a3-b4e1-df65952871a3": {
+          "_id": "875813f2-1798-46a3-b4e1-df65952871a3",
+          "_rev": "-941001877",
+          "_type": {
+            "_id": "OS_Sample_ErrorDisplayNode",
+            "name": "OneSpan Sample Error Display",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "outcome",
+              "displayName": "Outcome"
+            }
+          ]
+        },
+        "ba608062-c6fe-4c3e-b5d6-50ed1fcad458": {
+          "_id": "ba608062-c6fe-4c3e-b5d6-50ed1fcad458",
+          "_rev": "1448362000",
+          "domain": "master",
+          "_type": {
+            "_id": "OS_Auth_VDPAssignAuthenticatorNode",
+            "name": "OneSpan Auth Assign Authenticator",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "success",
+              "displayName": "Success"
+            },
+            {
+              "id": "error",
+              "displayName": "Error"
+            }
+          ]
+        },
+        "f57c928e-3313-4b47-8b03-1841bb11a185": {
+          "_id": "f57c928e-3313-4b47-8b03-1841bb11a185",
+          "_rev": "376566639",
+          "incrementUserAttributeOnFailure": true,
+          "retryLimit": 3,
+          "_type": {
+            "_id": "RetryLimitDecisionNode",
+            "name": "Retry Limit Decision",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "Retry",
+              "displayName": "Retry"
+            },
+            {
+              "id": "Reject",
+              "displayName": "Reject"
+            }
+          ]
+        }
+      },
+      "innerNodes": {
+        "a2ddde67-5983-4a8c-ab93-436c5caa9232": {
+          "_id": "a2ddde67-5983-4a8c-ab93-436c5caa9232",
+          "_rev": "-960347562",
+          "_type": {
+            "_id": "UsernameCollectorNode",
+            "name": "Username Collector",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "outcome",
+              "displayName": "Outcome"
+            }
+          ]
+        },
+        "1bda5a4e-b126-4d58-8899-a5350c602076": {
+          "_id": "1bda5a4e-b126-4d58-8899-a5350c602076",
+          "_rev": "-2132539492",
+          "attributes": [
+            "emailAddress"
+          ],
+          "_type": {
+            "_id": "OS_Sample_AttributesCollector",
+            "name": "OneSpan Sample Attributes Collector",
+            "collection": true
+          },
+          "_outcomes": [
+            {
+              "id": "outcome",
+              "displayName": "Outcome"
+            }
+          ]
+        }
+      },
+      "scripts": {},
+      "emailTemplates": {},
+      "socialIdentityProviders": {},
+      "themes": [],
+      "saml2Entities": {},
+      "circlesOfTrust": {}
+    }
+  }
+}

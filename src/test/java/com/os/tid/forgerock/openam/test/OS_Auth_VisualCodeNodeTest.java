@@ -49,6 +49,7 @@ public class OS_Auth_VisualCodeNodeTest {
         given(configurationsService.environment()).willReturn(TestData.ENVIRONMENT);
         given(configurationsService.applicationRef()).willReturn(TestData.APPLICATION_REF);
         given(configurationsService.tenantName()).willReturn("tylergelinas-forgero");
+        given(configurationsService.customUrl()).willReturn("");
         given(annotatedServiceRegistry.getRealmSingleton(OSConfigurationsService.class, realm)).willReturn(Optional.of(configurationsService));
     }
     @Test

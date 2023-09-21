@@ -16,24 +16,18 @@
 
 package com.os.tid.forgerock.openam.nodes;
 
-import java.security.AccessController;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.ImmutableList;
-import com.iplanet.sso.SSOException;
-import com.iplanet.sso.SSOToken;
-import com.sun.identity.security.AdminTokenAction;
-import com.sun.identity.sm.SMSException;
-import com.sun.identity.sm.ServiceManager;
 import org.forgerock.openam.auth.node.api.AbstractNodeAmPlugin;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.plugins.PluginException;
-import org.forgerock.openam.plugins.PluginTools;
 import org.forgerock.openam.plugins.StartupType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.ImmutableList;
 
 
 /**
@@ -68,8 +62,11 @@ import org.slf4j.LoggerFactory;
  * @since AM 5.5.0
  */
 public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
-	static private String currentVersion = "1.2.3";
+	static private String currentVersion = "1.2.23";
+	static final String logAppender = "[Version: " + currentVersion + "][Marketplace] ";
     private final Logger logger = LoggerFactory.getLogger(OSAuthNodePlugin.class);
+	private String loggerPrefix = "[OSAuthNodePlugin]" + OSAuthNodePlugin.logAppender;
+
 
 	private final List<Class<? extends Node>> nodeList = ImmutableList.of(
 			//OCA
@@ -84,7 +81,13 @@ public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
 			OS_Auth_UserLoginNode.class,
 			OS_Auth_ValidateTransactionNode.class,
 			OS_Auth_ValidateEventNode.class,
-
+			OS_Auth_GetUserAuthenticatorNode.class,
+			
+			//VDP
+			OS_Auth_VDPAssignAuthenticatorNode.class,
+			OS_Auth_VDPGenerateVOTPNode.class,
+			OS_Auth_VDPUserRegisterNode.class,
+			
 			//Risk
 			OS_Risk_CDDCNode.class,
 			OS_Risk_InsertTransactionNode.class,
@@ -95,9 +98,9 @@ public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
 
 			//Sample
 			OS_Sample_ErrorDisplayNode.class,
-			OS_Sample_TransactionCollector.class,
 			OS_Sample_StoreCommandNode.class,
-			OS_Sample_AttributesCollector.class	
+			OS_Sample_AttributesCollector.class,
+			OS_Sample_TransactionCollector.class
 	);
 
 //	private final Class serviceClass = OSConfigurationsService.class;
@@ -121,7 +124,7 @@ public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
      */
 	@Override
 	public void onInstall() throws PluginException {
-        logger.info("Installing OSConfigurationsService");
+        logger.info(loggerPrefix + "Installing OSConfigurationsService");
 		pluginTools.installService(OSConfigurationsService.class);
 		super.onInstall();
 	}
@@ -138,7 +141,7 @@ public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
 	 */
 	@Override
 	public void onStartup(StartupType startupType) throws PluginException {
-        logger.info("Starting OSConfigurationsService");
+        logger.info(loggerPrefix + "Starting OSConfigurationsService");
 		pluginTools.startService(OSConfigurationsService.class);
 		super.onStartup(startupType);
 	}
@@ -156,19 +159,45 @@ public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
 	@Override
 	public void upgrade(String fromVersion) throws PluginException {
 		try {
-		    SSOToken adminToken = AccessController.doPrivileged(AdminTokenAction.getInstance());
-		    if (fromVersion.equals(PluginTools.DEVELOPMENT_VERSION)) {
-		        ServiceManager sm = new ServiceManager(adminToken);
-		        if (sm.getServiceNames().contains("OSConfigurationsService")) {
-		            sm.removeService("OSConfigurationsService", fromVersion);
-		        }
-		        pluginTools.installService(OSConfigurationsService.class);
-		    }
-		} catch(SSOException | SMSException e) {
+			//OCA
+			pluginTools.upgradeAuthNode(OS_Auth_AddDeviceNode.class);
+			pluginTools.upgradeAuthNode(OS_Auth_ActivateDeviceNode.class);
+			pluginTools.upgradeAuthNode(OS_Auth_GenerateChallengeNode.class);
+
+			pluginTools.upgradeAuthNode(OS_Sample_TransactionCollector.class);
+
+			//Adaptive
+			pluginTools.upgradeAuthNode(OS_Auth_CheckActivationNode.class);
+			pluginTools.upgradeAuthNode(OS_Auth_CheckSessionStatusNode.class);
+			pluginTools.upgradeAuthNode(OS_Auth_UserRegisterNode.class);
+			pluginTools.upgradeAuthNode(OS_Auth_UserLoginNode.class);
+			pluginTools.upgradeAuthNode(OS_Auth_ValidateTransactionNode.class);
+			pluginTools.upgradeAuthNode(OS_Auth_ValidateEventNode.class);
+			pluginTools.upgradeAuthNode(OS_Auth_GetUserAuthenticatorNode.class);
+
+			//Risk
+			pluginTools.upgradeAuthNode(OS_Risk_CDDCNode.class);
+			pluginTools.upgradeAuthNode(OS_Risk_InsertTransactionNode.class);
+
+			//Util
+			pluginTools.upgradeAuthNode(OS_Auth_VisualCodeNode.class);
+			pluginTools.upgradeAuthNode(OS_Auth_VisualCodeStopNode.class);
+
+			//Sample
+			pluginTools.upgradeAuthNode(OS_Sample_ErrorDisplayNode.class);
+			pluginTools.upgradeAuthNode(OS_Sample_StoreCommandNode.class);
+			pluginTools.upgradeAuthNode(OS_Sample_AttributesCollector.class);
+
+			pluginTools.upgradeAuthNode(OS_Auth_VDPAssignAuthenticatorNode.class);
+			pluginTools.upgradeAuthNode(OS_Auth_VDPGenerateVOTPNode.class);
+			pluginTools.upgradeAuthNode(OS_Auth_VDPUserRegisterNode.class);
+
+			pluginTools.upgradeIdRepo(OSConfigurationsService.class);
+		} catch(Exception e) {
+			logger.error(loggerPrefix + e.getLocalizedMessage());
 	    	e.printStackTrace();
 	    }
 		super.upgrade(fromVersion);
-
 	}
 
     /** 

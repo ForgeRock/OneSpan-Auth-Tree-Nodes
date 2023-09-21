@@ -15,38 +15,48 @@
  */
 package com.os.tid.forgerock.openam.nodes;
 
-import com.google.common.collect.ImmutableList;
-import com.google.inject.Inject;
-import com.google.inject.assistedinject.Assisted;
-import com.iplanet.sso.SSOException;
-import com.os.tid.forgerock.openam.config.Constants;
-import com.os.tid.forgerock.openam.models.HttpEntity;
-import com.os.tid.forgerock.openam.nodes.OS_Auth_UserLoginNode.UserLoginOutcome;
-import com.os.tid.forgerock.openam.utils.RestUtils;
-import com.os.tid.forgerock.openam.utils.StringUtils;
-import com.sun.identity.sm.SMSException;
-import org.apache.commons.lang.exception.ExceptionUtils;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.ResourceBundle;
+
 import org.apache.commons.lang.text.StrSubstitutor;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
-import org.forgerock.openam.auth.node.api.*;
+import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.Node;
+import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
+import org.forgerock.openam.auth.node.api.OutcomeProvider;
+import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.sm.AnnotatedServiceRegistry;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import com.google.common.collect.ImmutableList;
+import com.google.inject.Inject;
+import com.google.inject.assistedinject.Assisted;
+import com.iplanet.sso.SSOException;
+import com.os.tid.forgerock.openam.config.Constants;
+import com.os.tid.forgerock.openam.models.HttpEntity;
+import com.os.tid.forgerock.openam.utils.RestUtils;
+import com.os.tid.forgerock.openam.utils.StringUtils;
+import com.sun.identity.sm.RequiredValueValidator;
+import com.sun.identity.sm.SMSException;
 
 @Node.Metadata(outcomeProvider = OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_OutcomeProvider.class,
         configClass = OS_Sample_StoreCommandNode.Config.class,
         tags = {"OneSpan", "multi-factor authentication", "marketplace", "trustnetwork"})
 public class OS_Sample_StoreCommandNode implements Node {
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Sample_StoreCommandNode";
-    private final Logger logger = LoggerFactory.getLogger("amAuth");
+    private final Logger logger = LoggerFactory.getLogger(OS_Sample_StoreCommandNode.class);
     private final OS_Sample_StoreCommandNode.Config config;
     private final OSConfigurationsService serviceConfig;
-    private static final String loggerPrefix = "[OneSpan Sample Store Command][Marketplace] ";
+    private static final String loggerPrefix = "[OneSpan Sample Store Command]" + OSAuthNodePlugin.logAppender;
 
     /**
      * Configuration for the OS_Sample_StoreCommandNode.
@@ -76,6 +86,14 @@ public class OS_Sample_StoreCommandNode implements Node {
        default Map<String, String> requestHeaders() {
            return Collections.emptyMap();
        }
+       
+       /**
+       *
+       */
+       @Attribute(order = 400, validators = RequiredValueValidator.class)
+       default HttpMethod httpmethod() {
+           return HttpMethod.POST;
+       }
         
     }
 
@@ -93,8 +111,9 @@ public class OS_Sample_StoreCommandNode implements Node {
     public Action process(TreeContext context){
     	try {
 	        logger.debug(loggerPrefix + "OSTID_DEMO_BackCommandsNode started");
-	        JsonValue sharedState = context.sharedState;
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
+
+            JsonValue sharedState=context.sharedState;
 	
 	        JsonValue ostid_sessionid = sharedState.get(Constants.OSTID_SESSIONID);
 	        JsonValue ostid_irm_response = sharedState.get(Constants.OSTID_IRM_RESPONSE);
@@ -121,22 +140,20 @@ public class OS_Sample_StoreCommandNode implements Node {
             StrSubstitutor sub = new StrSubstitutor(placeholders, "{", "}");
             String commandURLFinal = sub.replace(commandURL);
 
-            HttpEntity httpEntity = RestUtils.doPostJSONWithoutResponse(commandURLFinal, demo_cmd_payload,config.requestHeaders());
+            HttpEntity httpEntity = RestUtils.doHttpRequestWithoutResponse(commandURLFinal, demo_cmd_payload,config.httpmethod().name(),config.requestHeaders(),null);
 
             if (httpEntity.isSuccess()) {
-                return goTo(OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome.Success)
-                        .replaceSharedState(sharedState)
-                        .build();
+                return goTo(OS_Sample_StoreCommandNode.OSTID_DEMO_StoreCommandNode_Outcome.Success).replaceSharedState(sharedState).build();
             } else {
                 throw new NodeProcessException(httpEntity.getResponseJSON().toJSONString());
             }
     	}catch (Exception ex) {
-			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
-			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
-			ex.printStackTrace();
-			context.getStateFor(this).putShared("OSTID_DEMO_BackCommandsNode Exception", new Date() + ": " + ex.getMessage())
-									 .putShared(Constants.OSTID_ERROR_MESSAGE, "Fail to Store Command in backoffice: " + ex.getMessage());
-			return goTo(OSTID_DEMO_StoreCommandNode_Outcome.Error).build();
+	   		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
+			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
+		    context.getStateFor(this).putShared(loggerPrefix + "StackTrace", new Date() + ": " + stackTrace);
+		    context.getStateFor(this).putShared(loggerPrefix + "OSTID_DEMO_BackCommandsNode Exception", new Date() + ": " + ex.getMessage());
+		    context.getStateFor(this).putShared(loggerPrefix + Constants.OSTID_ERROR_MESSAGE, "Fail to Store Command in backoffice: " + ex.getMessage());
+			return goTo(OSTID_DEMO_StoreCommandNode_Outcome.Error).build();	
 	    }
     }
 
@@ -146,6 +163,10 @@ public class OS_Sample_StoreCommandNode implements Node {
 
     public enum OSTID_DEMO_StoreCommandNode_Outcome {
         Success, Error
+    }
+    
+    public enum HttpMethod {
+    	POST,PUT,GET,DELETE,PATCH
     }
 
     /**

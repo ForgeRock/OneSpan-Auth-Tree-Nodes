@@ -27,6 +27,7 @@ import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
@@ -46,6 +47,7 @@ import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.models.HttpEntity;
 import com.os.tid.forgerock.openam.utils.CollectionsUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
+import com.os.tid.forgerock.openam.utils.SslUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
 import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
 import com.sun.identity.sm.SMSException;
@@ -58,10 +60,10 @@ import com.sun.identity.sm.SMSException;
                 configClass = OS_Auth_ActivateDeviceNode.Config.class,
                 tags = {"OneSpan", "multi-factor authentication", "marketplace", "trustnetwork"})
 public class OS_Auth_ActivateDeviceNode implements Node {
-    private final Logger logger = LoggerFactory.getLogger("amAuth");
+    private final Logger logger = LoggerFactory.getLogger(OS_Auth_ActivateDeviceNode.class);
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_ActivateDeviceNode";
     private final OSConfigurationsService serviceConfig;
-    private static final String loggerPrefix = "[OneSpan Auth Activate Device][Marketplace] ";
+    private static final String loggerPrefix = "[OneSpan Auth Activate Device]" + OSAuthNodePlugin.logAppender;
 
     /**
      * Configuration for the OS Auth Add Device Node.
@@ -82,9 +84,11 @@ public class OS_Auth_ActivateDeviceNode implements Node {
     public Action process(TreeContext context) {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_ActivateDeviceNode started");
-	        JsonValue sharedState = context.sharedState;
+
+            JsonValue sharedState = context.sharedState;
+	       
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
-	        String environment = serviceConfig.environment().name();
+	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
 	        JsonValue registration_id = sharedState.get(Constants.OSTID_REGISTRATION_ID);
 	        JsonValue signature = sharedState.get(Constants.OSTID_SIGNATURE);
@@ -99,9 +103,10 @@ public class OS_Auth_ActivateDeviceNode implements Node {
 	            String activateDeviceJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_ACTIVATE_DEVICE,
 	                    signature.asString()                                //param1
 	            );
-	
-                String url = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_ADAPTIVE_ACTIVATE_DEVICE,registration_id.asString());
-                HttpEntity httpEntity = RestUtils.doPostJSON(url, activateDeviceJSON);
+
+                String customUrl = serviceConfig.customUrl().toLowerCase();
+                String url = StringUtils.getAPIEndpoint(tenantName,environment, customUrl) + String.format(Constants.OSTID_API_ADAPTIVE_ACTIVATE_DEVICE,registration_id.asString());
+                HttpEntity httpEntity = RestUtils.doPostJSON(url, activateDeviceJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
                 JSONObject responseJSON = httpEntity.getResponseJSON();
                 if(httpEntity.isSuccess()) {
                     return goTo(OSTIDActivateDeviceOutcome.success).replaceSharedState(sharedState).build();
@@ -126,13 +131,13 @@ public class OS_Auth_ActivateDeviceNode implements Node {
                     }
                 }
 	        }
-    	}catch (Exception ex) {
-			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
-			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
-			ex.printStackTrace();
-			context.getStateFor(this).putShared("OS_Auth_ActivateDeviceNode Exception", new Date() + ": " + ex.getMessage())
-									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan OCA Activate Device process: " + ex.getMessage());
-			return goTo(OSTIDActivateDeviceOutcome.error).build();
+    	}catch (Exception ex) {			
+			String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
+			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
+			context.getStateFor(this).putShared(loggerPrefix + "StackTrace", new Date() + ": " + stackTrace);
+			context.getStateFor(this).putShared(loggerPrefix + "OS_Auth_ActivateDeviceNode Exception", new Date() + ": " + ex.getMessage());
+			context.getStateFor(this).putShared(loggerPrefix + Constants.OSTID_ERROR_MESSAGE, "OneSpan OCA Activate Device process: " + ex.getMessage());
+			return Action.goTo(OSTIDActivateDeviceOutcome.error.name()).build();
 	    }
 
         

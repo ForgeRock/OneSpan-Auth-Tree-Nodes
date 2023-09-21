@@ -15,6 +15,25 @@
  */
 package com.os.tid.forgerock.openam.nodes;
 
+import java.util.Date;
+import java.util.List;
+import java.util.Objects;
+import java.util.ResourceBundle;
+import java.util.stream.Stream;
+
+import org.forgerock.json.JsonValue;
+import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.Node;
+import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
+import org.forgerock.openam.auth.node.api.OutcomeProvider;
+import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.sm.AnnotatedServiceRegistry;
+import org.forgerock.util.i18n.PreferredLocales;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -25,25 +44,11 @@ import com.iplanet.sso.SSOException;
 import com.os.tid.forgerock.openam.config.Constants;
 import com.os.tid.forgerock.openam.models.AddDeviceOutput;
 import com.os.tid.forgerock.openam.models.HttpEntity;
-import com.os.tid.forgerock.openam.nodes.OS_Auth_ActivateDeviceNode.OSTIDActivateDeviceOutcome;
 import com.os.tid.forgerock.openam.utils.CollectionsUtils;
 import com.os.tid.forgerock.openam.utils.RestUtils;
+import com.os.tid.forgerock.openam.utils.SslUtils;
 import com.os.tid.forgerock.openam.utils.StringUtils;
 import com.sun.identity.sm.SMSException;
-import org.forgerock.json.JsonValue;
-import org.forgerock.openam.auth.node.api.*;
-import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.sm.AnnotatedServiceRegistry;
-import org.forgerock.util.i18n.PreferredLocales;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
-import java.util.ResourceBundle;
-import java.util.stream.Stream;
 
 /**
  * This node invokes the Add Device API, which continues and proceeds the OCA provisioning process.
@@ -53,10 +58,10 @@ import java.util.stream.Stream;
                 configClass = OS_Auth_AddDeviceNode.Config.class,
                 tags = {"OneSpan", "multi-factor authentication", "marketplace", "trustnetwork"})
 public class OS_Auth_AddDeviceNode implements Node {
-    private final Logger logger = LoggerFactory.getLogger("amAuth");
+    private final Logger logger = LoggerFactory.getLogger(OS_Auth_AddDeviceNode.class);
     private static final String BUNDLE = "com/os/tid/forgerock/openam/nodes/OS_Auth_AddDeviceNode";
     private final OSConfigurationsService serviceConfig;
-    private static final String loggerPrefix = "[OneSpan Auth Add Device][Marketplace] ";
+    private static final String loggerPrefix = "[OneSpan Auth Add Device]" + OSAuthNodePlugin.logAppender;;
 
     /**
      * Configuration for the OS Auth Add Device Node.
@@ -77,10 +82,10 @@ public class OS_Auth_AddDeviceNode implements Node {
     public Action process(TreeContext context) {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_AddDeviceNode started");
-	        JsonValue sharedState = context.sharedState;
 	        String tenantName = serviceConfig.tenantName().toLowerCase();
-	        String environment = serviceConfig.environment().name();
-	
+	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
+			JsonValue sharedState = context.sharedState;
+
 	        JsonValue registration_id = sharedState.get(Constants.OSTID_REGISTRATION_ID);
 	        JsonValue device_code = sharedState.get(Constants.OSTID_DEVICE_CODE);
 	
@@ -93,18 +98,17 @@ public class OS_Auth_AddDeviceNode implements Node {
 	            String deviceCodeJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_ADD_DEVICE,
 	                    device_code.asString()                                //param1
 	            );
-	
-	            String url = StringUtils.getAPIEndpoint(tenantName,environment) + String.format(Constants.OSTID_API_ADAPTIVE_ADD_DEVICE,registration_id.asString());
-	            HttpEntity httpEntity = RestUtils.doPostJSON(url, deviceCodeJSON);
+
+				String customUrl = serviceConfig.customUrl().toLowerCase();
+	            String url = StringUtils.getAPIEndpoint(tenantName,environment, customUrl) + String.format(Constants.OSTID_API_ADAPTIVE_ADD_DEVICE,registration_id.asString());
+	            HttpEntity httpEntity = RestUtils.doPostJSON(url, deviceCodeJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
 	            JSONObject responseJSON = httpEntity.getResponseJSON();
 	            if(httpEntity.isSuccess()) {
 	                AddDeviceOutput addDeviceOutput = JSON.toJavaObject(responseJSON, AddDeviceOutput.class);
 	                sharedState.put(Constants.OSTID_CRONTO_MSG, addDeviceOutput.getActivationMessage2());
 	                sharedState.put(Constants.OSTID_ACTIVATION_MESSAGE2, addDeviceOutput.getActivationMessage2());
 	
-	                return goTo(AddDeviceOutcome.success)
-	                        .replaceSharedState(sharedState)
-	                        .build();
+	                return goTo(AddDeviceOutcome.success).replaceSharedState(sharedState).build();
 	            }else{
 	                String error = responseJSON.getString("error");
 	                String message = responseJSON.getString("message");
@@ -127,11 +131,11 @@ public class OS_Auth_AddDeviceNode implements Node {
 	            }
 	        }
     	}catch (Exception ex) {
-			logger.error(loggerPrefix + "Exception occurred: " + ex.getMessage());
-			logger.error(loggerPrefix + "Exception occurred: " + ex.getStackTrace());
-			ex.printStackTrace();
-			context.getStateFor(this).putShared("OS_Auth_AddDeviceNode Exception", new Date() + ": " + ex.getMessage())
-									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan OCA Add Device process " + ex.getMessage());
+    		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
+			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
+			context.getStateFor(this).putShared(loggerPrefix + "StackTrace", new Date() + ": " + stackTrace);
+			context.getStateFor(this).putShared(loggerPrefix + "OS_Auth_AddDeviceNode Exception", new Date() + ": " + ex.getMessage());
+			context.getStateFor(this).putShared(loggerPrefix + Constants.OSTID_ERROR_MESSAGE, "OneSpan OCA Add Device process: " + ex.getMessage());
 			return goTo(AddDeviceOutcome.error).build();
 	    }
     }
@@ -158,5 +162,6 @@ public class OS_Auth_AddDeviceNode implements Node {
                     new Outcome(AddDeviceOutcome.error.name(), bundle.getString("errorOutcome")));
         }
     }
+    
 }
 

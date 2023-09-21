@@ -31,10 +31,31 @@ public interface OSConfigurationsService {
     EnvOptions environment();
 
     @Attribute(order = 3)
+    default String customUrl() { return ""; };
+
+    @Attribute(order = 4)
     String applicationRef();
 
+    @Attribute(order = 5)
+    String publicKey();
+
+    @Attribute(order = 6)
+    String privateKey();
+
+    
     public enum EnvOptions {
-        sdb, prod
+        sdb,
+        prod,
+        Sandbox,
+        Production_NA1,
+        Production_EU1,
+        Production_EU2,
+        Staging_NA1,
+        Staging_EU1,
+        Staging_EU2,
+        UAT_EU1,
+    	CUSTOMIZED;
     }
+    
 }
 

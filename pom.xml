@@ -23,12 +23,12 @@
     <artifactId>OneSpan-Auth-Tree-Nodes</artifactId>
 
     <groupId>com.os.tid</groupId>
-    <version>1.2.3</version>
+    <version>1.2.23</version>
     <name>OneSpan Authentication Tree Node</name>
     <description>An Authentication Tree Node for ForgeRock's Identity Platform</description>
 
     <properties>
-        <am.version>7.2.0</am.version>
+        <am.version>LATEST</am.version>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

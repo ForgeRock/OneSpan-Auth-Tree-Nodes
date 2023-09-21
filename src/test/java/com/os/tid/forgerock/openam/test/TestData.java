@@ -9,7 +9,7 @@ public class TestData {
 
     public static final String APPLICATION_REF = "ForgeRock Identity Cloud";
     public static final String TENANT_NAME = "tylergelinas-forgero";
-    public static final OSConfigurationsService.EnvOptions ENVIRONMENT = OSConfigurationsService.EnvOptions.sdb;
+    public static final OSConfigurationsService.EnvOptions ENVIRONMENT = OSConfigurationsService.EnvOptions.Sandbox;
     public static final String TEST_USERNAME = "tyler4";
     public static final String TEST_PASS_KEY = "Test1234";
     public static final String TEST_CDDC_JSON = "{\"browser\":{\"userAgent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36\"},\"viewport\":{\"width\":1903,\"height\":969},\"support\":{\"ajax\":true,\"boxModel\":null,\"changeBubbles\":true,\"checkClone\":true,\"checkOn\":true,\"cors\":true,\"cssFloat\":true,\"hrefNormalized\":true,\"htmlSerialize\":true,\"leadingWhitespace\":true,\"noCloneChecked\":true,\"noCloneEvent\":true,\"opacity\":true,\"optDisabled\":true,\"style\":true,\"submitBubbles\":true,\"tbody\":true},\"computer\":{\"screenWidth\":1920,\"screenHeight\":1080,\"OS\":\"Microsoft Windows\",\"platform\":\"Win32\"},\"additional\":{}}";
