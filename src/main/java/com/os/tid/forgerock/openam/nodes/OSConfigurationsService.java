@@ -25,7 +25,7 @@ import org.forgerock.openam.annotations.sm.Config;
 public interface OSConfigurationsService {
 
     @Attribute(order = 1)
-    String tenantName();
+    default String tenantName(){ return ""; };
 
     @Attribute(order = 2)
     EnvOptions environment();
@@ -34,13 +34,13 @@ public interface OSConfigurationsService {
     default String customUrl() { return ""; };
 
     @Attribute(order = 4)
-    String applicationRef();
+    default String applicationRef(){ return ""; };
 
     @Attribute(order = 5)
-    String publicKey();
+    default String publicKey(){ return ""; };
 
     @Attribute(order = 6)
-    String privateKey();
+    default String privateKey(){ return ""; };
 
     
     public enum EnvOptions {

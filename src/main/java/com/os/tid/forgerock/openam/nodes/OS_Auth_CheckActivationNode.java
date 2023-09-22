@@ -80,7 +80,9 @@ public class OS_Auth_CheckActivationNode implements Node {
 	        logger.debug(loggerPrefix + "OS_Auth_CheckActivationNode started");
 	        JsonValue sharedState = context.sharedState;
 
-	        String tenantName = serviceConfig.tenantName().toLowerCase();
+	        String tenantName = StringUtils.isEmpty(serviceConfig.tenantName())? "" : serviceConfig.tenantName().toLowerCase();
+	        String customUrl = StringUtils.isEmpty(serviceConfig.customUrl())? "" : serviceConfig.customUrl().toLowerCase();      
+	        
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
 	        //1. go to next
@@ -105,7 +107,6 @@ public class OS_Auth_CheckActivationNode implements Node {
 	                    usernameJsonValue.asString(),                            //param1
 	                    Constants.OSTID_DEFAULT_CHECK_ACTIVATION_TIMEOUT         //param2
 	            );
-                String customUrl = serviceConfig.customUrl().toLowerCase();
                 HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName,environment, customUrl) + Constants.OSTID_API_CHECK_ACTIVATION, checkActivationJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
                 JSONObject checkActivationResponseJSON = httpEntity.getResponseJSON();
                 if(httpEntity.isSuccess()){

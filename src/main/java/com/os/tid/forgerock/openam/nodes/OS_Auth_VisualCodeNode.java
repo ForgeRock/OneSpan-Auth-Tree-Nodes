@@ -182,7 +182,10 @@ public class OS_Auth_VisualCodeNode implements Node {
 
 	        logger.debug(loggerPrefix + "OS_Auth_VisualCodeNode started");
             JsonValue sharedState = context.sharedState;
-	        String tenantName = serviceConfig.tenantName().toLowerCase();
+            
+            
+	        String tenantName = StringUtils.isEmpty(serviceConfig.tenantName())? "" : serviceConfig.tenantName().toLowerCase();
+	        String customUrl = StringUtils.isEmpty(serviceConfig.customUrl())? "" : serviceConfig.customUrl().toLowerCase();   
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
 	        JsonValue crontoMsgJsonValue = config.visualCodeMessageOption() == VisualCodeMessageOptions.CustomCrontoMessage ? sharedState.get(config.customMessageInSharedState()) : sharedState.get(Constants.OSTID_CRONTO_MSG);
@@ -212,7 +215,6 @@ public class OS_Auth_VisualCodeNode implements Node {
 	            //return visual code URL as hiddenValueCallback
 	            String crontURL = "";
 	            if (sharedState.get(config.visualCodeHiddenValueId()).isNull()) {
-                    String customUrl = serviceConfig.customUrl().toLowerCase();
 	                crontURL = StringUtils.getAPIEndpoint(tenantName,environment, customUrl) + String.format(Constants.OSTID_API_ADAPTIVE_CRTONTO_RENDER,
 	                        config.visualCodeType().name().toUpperCase(),
 	                        crontoMsgJsonValue.asString());

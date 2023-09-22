@@ -93,7 +93,10 @@ public class OS_Auth_VDPAssignAuthenticatorNode implements Node {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_VDPAssignAuthenticatorNode started");
 	        JsonValue sharedState = context.sharedState;
-	        String tenantName = serviceConfig.tenantName().toLowerCase();
+	        
+	        
+	        String tenantName = StringUtils.isEmpty(serviceConfig.tenantName())? "" : serviceConfig.tenantName().toLowerCase();
+	        String customUrl = StringUtils.isEmpty(serviceConfig.customUrl())? "" : serviceConfig.customUrl().toLowerCase();   	        
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
 	        String usernameInSharedState = sharedState.get(Constants.OSTID_USERNAME_IN_SHARED_STATE) == null ? Constants.OSTID_DEFAULT_USERNAME : sharedState.get(Constants.OSTID_USERNAME_IN_SHARED_STATE).asString();
@@ -106,7 +109,6 @@ public class OS_Auth_VDPAssignAuthenticatorNode implements Node {
 	        
     		
 	        //API1: GET /v1/users/duotest2305011@duoliang-onespan
-            String customUrl = serviceConfig.customUrl().toLowerCase();
             String getUserURL = StringUtils.getAPIEndpoint(tenantName,environment, customUrl) + String.format(Constants.OSTID_API_VDP_GET_USER,usernameJsonValue.asString(),config.domain());
             HttpEntity getUserHttpEntity = RestUtils.doGet(getUserURL,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
             JSONObject getUserResponseJSON = getUserHttpEntity.getResponseJSON();

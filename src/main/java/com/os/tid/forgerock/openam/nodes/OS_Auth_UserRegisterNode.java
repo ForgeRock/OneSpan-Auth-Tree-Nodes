@@ -145,8 +145,10 @@ public class OS_Auth_UserRegisterNode implements Node {
 	        logger.debug(loggerPrefix + "OS_Auth_UserRegisterNode started");
 	        JsonValue sharedState = context.sharedState;
             JsonValue transientState = context.transientState;
-	        String tenantName = serviceConfig.tenantName().toLowerCase();
-            String customUrl = serviceConfig.customUrl().toLowerCase();
+            
+	        String tenantName = StringUtils.isEmpty(serviceConfig.tenantName())? "" : serviceConfig.tenantName().toLowerCase();
+	        String customUrl = StringUtils.isEmpty(serviceConfig.customUrl())? "" : serviceConfig.customUrl().toLowerCase();  
+            
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
 	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());

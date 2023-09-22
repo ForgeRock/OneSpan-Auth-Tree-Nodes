@@ -206,7 +206,9 @@ public class OS_Auth_ValidateTransactionNode implements Node {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_ValidateTransactionNode started");
 	        JsonValue sharedState = context.sharedState;
-	        String tenantName = serviceConfig.tenantName().toLowerCase();
+	        
+	        String tenantName = StringUtils.isEmpty(serviceConfig.tenantName())? "" : serviceConfig.tenantName().toLowerCase();
+	        String customUrl = StringUtils.isEmpty(serviceConfig.customUrl())? "" : serviceConfig.customUrl().toLowerCase();        
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
 	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
@@ -377,7 +379,6 @@ public class OS_Auth_ValidateTransactionNode implements Node {
             );
             logger.debug(loggerPrefix + "OS_Auth_ValidateTransactionNode JSON:" + sendTransactionJSON);
 
-            String customUrl = serviceConfig.customUrl().toLowerCase();
             HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment, customUrl) + APIUrl, sendTransactionJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
             JSONObject responseJSON = httpEntity.getResponseJSON();
 
@@ -421,7 +422,7 @@ public class OS_Auth_ValidateTransactionNode implements Node {
                         } else if (irmResponse == 1) {
                             sendTransactionOutcome = SendTransactionOutcome.Decline;
                             sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Transaction: Request been declined!");
-                        } else if (Constants.OSTID_API_CHALLANGE_MAP.containsKey(irmResponse)) {
+                        } else {
                             sendTransactionOutcome = SendTransactionOutcome.StepUp;
                         }
 

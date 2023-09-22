@@ -121,7 +121,10 @@ public class OS_Auth_VDPUserRegisterNode implements Node {
 	        logger.debug(loggerPrefix + "OS_Auth_VDPUserRegisterNode started");
 	        JsonValue sharedState = context.sharedState;
             JsonValue transientState = context.transientState;
-	        String tenantName = serviceConfig.tenantName().toLowerCase();
+            
+            
+	        String tenantName = StringUtils.isEmpty(serviceConfig.tenantName())? "" : serviceConfig.tenantName().toLowerCase();
+	        String customUrl = StringUtils.isEmpty(serviceConfig.customUrl())? "" : serviceConfig.customUrl().toLowerCase();   	        
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
 	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
@@ -153,7 +156,6 @@ public class OS_Auth_VDPUserRegisterNode implements Node {
             String APIUrl = String.format(Constants.OSTID_API_VDP_USER_REGISTER,usernameJsonValue.asString(),config.domain());
 
             //step1: GET /v1/users/user1@duoliang-onespan
-            String customUrl = serviceConfig.customUrl().toLowerCase();
             HttpEntity getUserHttpEntity = RestUtils.doGet(StringUtils.getAPIEndpoint(tenantName, environment, customUrl) + APIUrl,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
 
             

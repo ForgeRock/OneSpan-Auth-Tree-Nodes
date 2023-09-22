@@ -121,7 +121,9 @@ public class OS_Risk_InsertTransactionNode implements Node {
     	try {
 	        logger.debug(loggerPrefix + "OS_Risk_InsertTransactionNode started");
             JsonValue sharedState = context.sharedState;
-	        String tenantName = serviceConfig.tenantName().toLowerCase();
+            
+	        String tenantName = StringUtils.isEmpty(serviceConfig.tenantName())? "" : serviceConfig.tenantName().toLowerCase();
+	        String customUrl = StringUtils.isEmpty(serviceConfig.customUrl())? "" : serviceConfig.customUrl().toLowerCase();        
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
 	        boolean missAttr = false;
@@ -176,7 +178,6 @@ public class OS_Risk_InsertTransactionNode implements Node {
                     relationshipRef                                     			 //param7
             );
             String APIUrl = Constants.OSTID_API_RISK_SEND_TRANSACTION;
-            String customUrl = serviceConfig.customUrl().toLowerCase();
             HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment, customUrl) + APIUrl, sendTransactionJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
             JSONObject responseJSON = httpEntity.getResponseJSON();
 

@@ -115,15 +115,17 @@ public class OS_Auth_GenerateChallengeNode implements Node {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_GenerateChallengeNode started");
             JsonValue sharedState = context.sharedState;
-	        String tenantName = serviceConfig.tenantName().toLowerCase();
+            
+	        String tenantName = StringUtils.isEmpty(serviceConfig.tenantName())? "" : serviceConfig.tenantName().toLowerCase();
+	        String customUrl = StringUtils.isEmpty(serviceConfig.customUrl())? "" : serviceConfig.customUrl().toLowerCase();         	        
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
+	        
 	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
 	
 	        String generateChallengeJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_GENERATE_CHALLENGE,
 	                config.length(),                                    //param1
 	                config.checkDigit()                                 //param2
 	        );
-            String customUrl = serviceConfig.customUrl().toLowerCase();
             String url = StringUtils.getAPIEndpoint(tenantName, environment, customUrl) + String.format(Constants.OSTID_API_ADAPTIVE_GENERATE_CHALLENGE, usernameJsonValue.asString(), config.domain());
             HttpEntity httpEntity = RestUtils.doPostJSON(url, generateChallengeJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
             JSONObject responseJSON = httpEntity.getResponseJSON();

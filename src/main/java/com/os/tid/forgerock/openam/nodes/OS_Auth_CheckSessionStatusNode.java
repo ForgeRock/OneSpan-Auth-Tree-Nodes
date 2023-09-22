@@ -79,7 +79,9 @@ public class OS_Auth_CheckSessionStatusNode implements Node {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_CheckSessionStatusNode started");
             JsonValue sharedState = context.sharedState;
-	        String tenantName = serviceConfig.tenantName().toLowerCase();
+            
+	        String tenantName = StringUtils.isEmpty(serviceConfig.tenantName())? "" : serviceConfig.tenantName().toLowerCase();
+	        String customUrl = StringUtils.isEmpty(serviceConfig.customUrl())? "" : serviceConfig.customUrl().toLowerCase();       
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
 	        JsonValue eventExpiryJsonValue = sharedState.get(Constants.OSTID_EVENT_EXPIRY_DATE);
@@ -91,7 +93,6 @@ public class OS_Auth_CheckSessionStatusNode implements Node {
 	            sharedState.put(Constants.OSTID_ERROR_MESSAGE,"OneSpan Auth Check Session Status: Your session has timed out!");
 	            checkSessionStatusEnum = CheckSessionStatusOutcome.timeout;
 	        }else {
-                String customUrl = serviceConfig.customUrl().toLowerCase();
                 HttpEntity httpEntity = RestUtils.doGet(StringUtils.getAPIEndpoint(tenantName,environment, customUrl) + String.format(Constants.OSTID_API_CHECK_SESSION_STATUS,requestIdJsonValue.asString()),SslUtils.getSSLConnectionSocketFactory(serviceConfig));
                 JSONObject checkSessionStatusResponseJSON = httpEntity.getResponseJSON();
                 if(httpEntity.isSuccess()){
