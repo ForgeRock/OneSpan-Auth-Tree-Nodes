@@ -111,7 +111,9 @@ public class OS_Sample_StoreCommandNode implements Node {
     public Action process(TreeContext context){
     	try {
 	        logger.debug(loggerPrefix + "OSTID_DEMO_BackCommandsNode started");
-	        String tenantName = serviceConfig.tenantName().toLowerCase();
+	        
+	        String tenantName = StringUtils.isEmpty(serviceConfig.tenantName())? "" : serviceConfig.tenantName().toLowerCase();
+	        String customUrl = StringUtils.isEmpty(serviceConfig.customUrl())? "" : serviceConfig.customUrl().toLowerCase(); 
 
             JsonValue sharedState=context.sharedState;
 	
@@ -125,6 +127,7 @@ public class OS_Sample_StoreCommandNode implements Node {
             //build back command API URL
             Map<String, String> placeholders = new HashMap<String, String>() {{
                 put("tenantName", tenantName);
+                put("customUrl", customUrl);
                 put("sessionIdentifier", StringUtils.hexToString(ostid_sessionid.asString()));
                 put("sessionID", ostid_sessionid.asString());
                 put("requestID", requestId);

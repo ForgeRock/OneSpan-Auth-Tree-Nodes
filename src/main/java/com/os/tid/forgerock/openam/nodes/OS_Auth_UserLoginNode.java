@@ -155,7 +155,10 @@ public class OS_Auth_UserLoginNode implements Node {
 	        logger.debug(loggerPrefix + "OS_Auth_UserLoginNode started");
             JsonValue sharedState = context.sharedState;
             JsonValue transientState = context.transientState;
-	        String tenantName = serviceConfig.tenantName().toLowerCase();
+            
+            
+	        String tenantName = StringUtils.isEmpty(serviceConfig.tenantName())? "" : serviceConfig.tenantName().toLowerCase();
+	        String customUrl = StringUtils.isEmpty(serviceConfig.customUrl())? "" : serviceConfig.customUrl().toLowerCase();    	        
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
 	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
@@ -263,7 +266,6 @@ public class OS_Auth_UserLoginNode implements Node {
             );
             logger.debug(loggerPrefix + "OS_Auth_UserLoginNode user login JSON:" + userLoginJSON);
 
-            String customUrl = serviceConfig.customUrl().toLowerCase();
             HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment, customUrl) + APIUrl, userLoginJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
             JSONObject responseJSON = httpEntity.getResponseJSON();
 
@@ -307,7 +309,7 @@ public class OS_Auth_UserLoginNode implements Node {
                         }else if(irmResponse == 1){
                             userLoginOutcome = UserLoginOutcome.Decline;
                             sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth User Login: Request been declined!");
-                        }else if(Constants.OSTID_API_CHALLANGE_MAP.containsKey(irmResponse)){
+                        }else {
                             userLoginOutcome = UserLoginOutcome.StepUp;
                         }
                         switch (config.visualCodeMessageOptions()) {

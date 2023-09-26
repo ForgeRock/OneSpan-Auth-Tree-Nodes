@@ -43,7 +43,6 @@ public class StringUtils {
     	String ApiEndpoint = "";
     	if(ostid_environment.equalsIgnoreCase(Constants.OSTID_ENV_MAP.get(OSConfigurationsService.EnvOptions.CUSTOMIZED))) {
     		ApiEndpoint = ostid_custom_url;
-
     	}else {
     		ApiEndpoint = String.format("https://%1$s.%2$s.tid.onespan.cloud",ostid_tenant_name,ostid_environment);
     	}

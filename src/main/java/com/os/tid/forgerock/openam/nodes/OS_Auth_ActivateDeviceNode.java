@@ -87,7 +87,8 @@ public class OS_Auth_ActivateDeviceNode implements Node {
 
             JsonValue sharedState = context.sharedState;
 	       
-	        String tenantName = serviceConfig.tenantName().toLowerCase();
+	        String tenantName = StringUtils.isEmpty(serviceConfig.tenantName())? "" : serviceConfig.tenantName().toLowerCase();
+	        String customUrl = StringUtils.isEmpty(serviceConfig.customUrl())? "" : serviceConfig.customUrl().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
 	        JsonValue registration_id = sharedState.get(Constants.OSTID_REGISTRATION_ID);
@@ -104,7 +105,7 @@ public class OS_Auth_ActivateDeviceNode implements Node {
 	                    signature.asString()                                //param1
 	            );
 
-                String customUrl = serviceConfig.customUrl().toLowerCase();
+                
                 String url = StringUtils.getAPIEndpoint(tenantName,environment, customUrl) + String.format(Constants.OSTID_API_ADAPTIVE_ACTIVATE_DEVICE,registration_id.asString());
                 HttpEntity httpEntity = RestUtils.doPostJSON(url, activateDeviceJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
                 JSONObject responseJSON = httpEntity.getResponseJSON();

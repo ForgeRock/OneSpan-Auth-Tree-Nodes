@@ -82,7 +82,9 @@ public class OS_Auth_AddDeviceNode implements Node {
     public Action process(TreeContext context) {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_AddDeviceNode started");
-	        String tenantName = serviceConfig.tenantName().toLowerCase();
+	        
+	        String tenantName = StringUtils.isEmpty(serviceConfig.tenantName())? "" : serviceConfig.tenantName().toLowerCase();
+	        String customUrl = StringUtils.isEmpty(serviceConfig.customUrl())? "" : serviceConfig.customUrl().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 			JsonValue sharedState = context.sharedState;
 
@@ -99,7 +101,6 @@ public class OS_Auth_AddDeviceNode implements Node {
 	                    device_code.asString()                                //param1
 	            );
 
-				String customUrl = serviceConfig.customUrl().toLowerCase();
 	            String url = StringUtils.getAPIEndpoint(tenantName,environment, customUrl) + String.format(Constants.OSTID_API_ADAPTIVE_ADD_DEVICE,registration_id.asString());
 	            HttpEntity httpEntity = RestUtils.doPostJSON(url, deviceCodeJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
 	            JSONObject responseJSON = httpEntity.getResponseJSON();
