@@ -101,6 +101,8 @@ public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
 			OS_Sample_StoreCommandNode.class,
 			OS_Sample_AttributesCollector.class,
 			OS_Sample_TransactionCollector.class
+
+			OS_IDV_IdentityVerificationNode.class
 	);
 
 //	private final Class serviceClass = OSConfigurationsService.class;
@@ -191,6 +193,8 @@ public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
 			pluginTools.upgradeAuthNode(OS_Auth_VDPAssignAuthenticatorNode.class);
 			pluginTools.upgradeAuthNode(OS_Auth_VDPGenerateVOTPNode.class);
 			pluginTools.upgradeAuthNode(OS_Auth_VDPUserRegisterNode.class);
+
+			pluginTools.upgradeAuthNode(OS_IDV_IdentityVerificationNode.class);
 
 			pluginTools.upgradeIdRepo(OSConfigurationsService.class);
 		} catch(Exception e) {
