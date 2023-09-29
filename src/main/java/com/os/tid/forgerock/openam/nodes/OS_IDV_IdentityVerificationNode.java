@@ -131,53 +131,68 @@ public class OS_IDV_IdentityVerificationNode implements Node {
 
             if (parameters.containsKey("transaction"))
             {
+                if (!parameters.containsKey("opaqueId")) {
+                    return Action.goTo("fail").build();
+                }
                 String transactionId = parameters.get("transaction").get(0);
+                String sharedOpaqueId = ns.get("opaqueId").asString();
+                ns.remove("opaqueId");
+                String opaqueId = parameters.get("opaqueId").get(0);
+                if(!opaqueId.equals(sharedOpaqueId)) {
+                    return Action.goTo("fail").build();
+                }
+
+                //Do shared state stuff with opaqueId
+
                 HttpURLConnection conn = null;
                 URL url;
 
-                url = new URL(config.url() + "secure/transaction/" + transactionId);
+                url = new URL(config.url() + "transactions/" + transactionId +"/detailed-verification-report");
                 conn = (HttpURLConnection) url.openConnection();
                 conn.setDoOutput(true);
                 conn.setDoInput(true);
                 conn.setRequestMethod("GET");
+
                 conn.setRequestProperty("X-Tenant", config.XTenant());
                 conn.setRequestProperty("Content-Type", "application/json");
                 conn.setRequestProperty("Authorization", "Bearer " + config.authToken());
-                OutputStreamWriter wr;
                 int responseCode;
-
-
-                wr = new OutputStreamWriter(conn.getOutputStream());
-                wr.flush();
 
                 String streamToString;
                 streamToString = convertStreamToString(conn.getInputStream());
                 responseCode = conn.getResponseCode();
 
-                JSONObject jo = new JSONObject(streamToString);
-                ns.putShared("verificationResults", jo.toString());
+                ns.putShared("verificationResults", streamToString);
 
-                if (responseCode == 200 && parameters.containsKey("result") && (parameters.get("result").get(0) == "pass")) {
+                JSONObject jo = new JSONObject(streamToString);
+                String result = jo.getString("result");
+
+
+
+                if (responseCode == 200 && result.equals("Passed")) {
                     return Action.goTo("pass").build();
-                } else {
+                } else if (result.equals("Failed")){
                     return Action.goTo("fail").build();
                 }
+                return Action.goTo("error").build();
 
             }
 
-            HttpURLConnection conn = null;
+            String opaqueId = String.valueOf(UUID.randomUUID());
+            ns.putShared("opaqueId", opaqueId);
+            HttpURLConnection conn1 = null;
             URL url;
 
-            url = new URL(config.url() + "secure/transaction/");
+            url = new URL(config.url() + "transaction/");
 
 
-            conn = (HttpURLConnection) url.openConnection();
-            conn.setDoOutput(true);
-            conn.setDoInput(true);
-            conn.setRequestMethod("PUT");
-            conn.setRequestProperty("X-Tenant", config.XTenant());
-            conn.setRequestProperty("Content-Type", "application/json");
-            conn.setRequestProperty("Authorization", "Bearer " + config.authToken());
+            conn1 = (HttpURLConnection) url.openConnection();
+            conn1.setDoOutput(true);
+            conn1.setDoInput(true);
+            conn1.setRequestMethod("PUT");
+            conn1.setRequestProperty("X-Tenant", config.XTenant());
+            conn1.setRequestProperty("Content-Type", "application/json");
+            conn1.setRequestProperty("Authorization", "Bearer " + config.authToken());
 
             JSONObject bodyObject = new JSONObject();
             JSONObject userObject = new JSONObject();
@@ -218,22 +233,24 @@ public class OS_IDV_IdentityVerificationNode implements Node {
 
 
             bodyObject.put("workflow_id", config.workflowId());
+            bodyObject.put("opaque_id", opaqueId);
             bodyObject.put("language", config.language());
             bodyObject.put("brand_id", config.brandId());
             bodyObject.put("users", users);
 
             bodyObject.put("tokens", tokens);
-            OutputStreamWriter wr;
+            OutputStreamWriter wr1;
             int responseCode;
 
 
-            wr = new OutputStreamWriter(conn.getOutputStream());
-            wr.write(bodyObject.toString());
-            wr.flush();
+            wr1 = new OutputStreamWriter(conn1.getOutputStream());
+            wr1.write(bodyObject.toString());
+            wr1.flush();
 
             String streamToString, redirectURL;
-            streamToString = convertStreamToString(conn.getInputStream());
-            responseCode = conn.getResponseCode();
+            streamToString = convertStreamToString(conn1.getInputStream());
+            responseCode = conn1.getResponseCode();
+
             if (responseCode == 200) {
                 JSONObject jo = new JSONObject(streamToString);
                 redirectURL = (String) jo.getJSONArray("tokens").getJSONObject(0).getString("accessUrl");
