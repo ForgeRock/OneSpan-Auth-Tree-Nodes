@@ -32,7 +32,7 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <forgerockDistMgmtReleasesUrl>https://maven.forgerock.org/repo/internal-releases</forgerockDistMgmtReleasesUrl>
+        <forgerockDistMgmtReleasesUrl>https://maven.forgerock.org/artifactory/internal-releases</forgerockDistMgmtReleasesUrl>
     </properties>
 
 
@@ -139,7 +139,7 @@
             </snapshots>
             <id>forgerock-private-releases</id>
             <name>ForgeRock Private Release Repository</name>
-            <url>https://maven.forgerock.org/repo/private-releases</url>
+            <url>https://maven.forgerock.org/artifactory/private-releases</url>
         </repository>
 
         <repository>
@@ -148,7 +148,7 @@
             </snapshots>
             <id>openam-dependencies</id>
             <name>ForgeRock OpenAM Repository</name>
-            <url>https://maven.forgerock.org/repo/openam-dependencies</url>
+            <url>https://maven.forgerock.org/artifactory/openam-dependencies</url>
         </repository>
     </repositories>
 
