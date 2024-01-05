@@ -26,12 +26,12 @@ import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
-import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
@@ -269,12 +269,12 @@ public class OS_Auth_ValidateEventNode implements Node {
             String relationshipRef = sharedState.get("relationshipRef").isString() ? sharedState.get("relationshipRef").asString():usernameJsonValue.asString();
 
             String IAA = String.format(Constants.OSTID_JSON_ADAPTIVE_USER_LOGIN_IAA,
-                    cddcIpJsonValue.asString(),                         //param6.1
-                    cddcHashJsonValue.asString(),                       //param6.2
-                    cddcJsonJsonValue.asString(),                       //param6.3
-                    relationshipRef,      								//param6.4
-                    sessionID,                                          //param6.5
-                    serviceConfig.applicationRef()                      //param6.6
+                    cddcIpJsonValue.asString(),                         								//param6.1
+                    cddcHashJsonValue.asString(),                       								//param6.2
+                    StringEscapeUtils.escapeJava(cddcJsonJsonValue.asString()),                         //param6.3
+                    relationshipRef,      																//param6.4
+                    sessionID,                                          								//param6.5
+                    serviceConfig.applicationRef()                      								//param6.6
             );
 
             String eventValidationJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_EVENT_VALIDATION,

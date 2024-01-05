@@ -27,12 +27,12 @@ import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
-import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
@@ -326,7 +326,7 @@ public class OS_Auth_ValidateTransactionNode implements Node {
 	                    IAAJson = String.join(",",adaptiveAttributesList)+","+String.format(Constants.OSTID_JSON_ADAPTIVE_USER_LOGIN_IAA,
 	                            sharedState.get(Constants.OSTID_CDDC_IP).asString(),
 	                            sharedState.get(Constants.OSTID_CDDC_HASH).asString(),
-	                            sharedState.get(Constants.OSTID_CDDC_JSON).asString(),
+	                            StringEscapeUtils.escapeJava(sharedState.get(Constants.OSTID_CDDC_JSON).asString()),
 	                            relationshipRef,
 	                            sessionID,
 	                            applicationRef
