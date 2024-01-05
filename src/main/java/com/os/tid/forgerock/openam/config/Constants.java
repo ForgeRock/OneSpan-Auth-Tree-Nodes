@@ -94,7 +94,6 @@ public class Constants {
             .put(8, "ChallengeEmail")
             .put(10, "ChallengeCRDevice2FA")
             .put(11, "ChallengeCronto")
-            .put(13, "ChallengeVoice")
             .put(21, "ChallengeNoPIN")
             .put(22, "ChallengePIN")
             .put(23, "ChallengeFingerprint")
