@@ -27,12 +27,12 @@ import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
-import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
@@ -206,9 +206,7 @@ public class OS_Auth_ValidateTransactionNode implements Node {
     	try {
 	        logger.debug(loggerPrefix + "OS_Auth_ValidateTransactionNode started");
 	        JsonValue sharedState = context.sharedState;
-	        
-	        String tenantName = StringUtils.isEmpty(serviceConfig.tenantName())? "" : serviceConfig.tenantName().toLowerCase();
-	        String customUrl = StringUtils.isEmpty(serviceConfig.customUrl())? "" : serviceConfig.customUrl().toLowerCase();        
+	        String tenantName = serviceConfig.tenantName().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
 	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
@@ -328,7 +326,7 @@ public class OS_Auth_ValidateTransactionNode implements Node {
 	                    IAAJson = String.join(",",adaptiveAttributesList)+","+String.format(Constants.OSTID_JSON_ADAPTIVE_USER_LOGIN_IAA,
 	                            sharedState.get(Constants.OSTID_CDDC_IP).asString(),
 	                            sharedState.get(Constants.OSTID_CDDC_HASH).asString(),
-	                            sharedState.get(Constants.OSTID_CDDC_JSON).asString(),
+	                            StringEscapeUtils.escapeJava(sharedState.get(Constants.OSTID_CDDC_JSON).asString()),
 	                            relationshipRef,
 	                            sessionID,
 	                            applicationRef
@@ -379,6 +377,7 @@ public class OS_Auth_ValidateTransactionNode implements Node {
             );
             logger.debug(loggerPrefix + "OS_Auth_ValidateTransactionNode JSON:" + sendTransactionJSON);
 
+            String customUrl = serviceConfig.customUrl().toLowerCase();
             HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment, customUrl) + APIUrl, sendTransactionJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
             JSONObject responseJSON = httpEntity.getResponseJSON();
 
@@ -422,7 +421,7 @@ public class OS_Auth_ValidateTransactionNode implements Node {
                         } else if (irmResponse == 1) {
                             sendTransactionOutcome = SendTransactionOutcome.Decline;
                             sharedState.put(Constants.OSTID_ERROR_MESSAGE, "OneSpan Auth Validate Transaction: Request been declined!");
-                        } else {
+                        } else if (Constants.OSTID_API_CHALLANGE_MAP.containsKey(irmResponse)) {
                             sendTransactionOutcome = SendTransactionOutcome.StepUp;
                         }
 

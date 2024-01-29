@@ -26,12 +26,12 @@ import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
-import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
@@ -145,10 +145,8 @@ public class OS_Auth_UserRegisterNode implements Node {
 	        logger.debug(loggerPrefix + "OS_Auth_UserRegisterNode started");
 	        JsonValue sharedState = context.sharedState;
             JsonValue transientState = context.transientState;
-            
-	        String tenantName = StringUtils.isEmpty(serviceConfig.tenantName())? "" : serviceConfig.tenantName().toLowerCase();
-	        String customUrl = StringUtils.isEmpty(serviceConfig.customUrl())? "" : serviceConfig.customUrl().toLowerCase();  
-            
+	        String tenantName = serviceConfig.tenantName().toLowerCase();
+            String customUrl = serviceConfig.customUrl().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
 	        JsonValue usernameJsonValue = sharedState.get(config.userNameInSharedData());
@@ -215,7 +213,7 @@ public class OS_Auth_UserRegisterNode implements Node {
                     usernameJsonValue.asString(),                                                    //param2
                     cddcIpJsonValue.asString(),                                                      //param3
                     cddcHashJsonValue.asString(),                                                    //param4
-                    cddcJsonJsonValue.asString(),                                                    //param5
+                    StringEscapeUtils.escapeJava(cddcJsonJsonValue.asString()),                      //param5
                     applicationRef,                                                                  //param6
                     sessionIdJSON,                                                                   //param7
                     relationshipRef,                                                                 //param8
