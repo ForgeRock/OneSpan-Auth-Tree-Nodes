@@ -25,12 +25,12 @@ import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
-import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
@@ -121,9 +121,7 @@ public class OS_Risk_InsertTransactionNode implements Node {
     	try {
 	        logger.debug(loggerPrefix + "OS_Risk_InsertTransactionNode started");
             JsonValue sharedState = context.sharedState;
-            
-	        String tenantName = StringUtils.isEmpty(serviceConfig.tenantName())? "" : serviceConfig.tenantName().toLowerCase();
-	        String customUrl = StringUtils.isEmpty(serviceConfig.customUrl())? "" : serviceConfig.customUrl().toLowerCase();        
+	        String tenantName = serviceConfig.tenantName().toLowerCase();
 	        String environment = Constants.OSTID_ENV_MAP.get(serviceConfig.environment());
 	
 	        boolean missAttr = false;
@@ -169,15 +167,16 @@ public class OS_Risk_InsertTransactionNode implements Node {
             String relationshipRef = sharedState.get("relationshipRef").isString() ? sharedState.get("relationshipRef").asString():usernameJsonValue.asString();
 	        
             String sendTransactionJSON = String.format(Constants.OSTID_JSON_RISK_SEND_TRANSACTION,
-                    attributesStringBuilder.toString(),                              //param1
-                    sharedState.get(Constants.OSTID_CDDC_IP).asString(),             //param2
-                    sharedState.get(Constants.OSTID_CDDC_HASH).asString(),           //param3
-                    sharedState.get(Constants.OSTID_CDDC_JSON).asString(),           //param4
-                    sessionID,                                                       //param5
-                    applicationRef,                                                  //param6
-                    relationshipRef                                     			 //param7
+                    attributesStringBuilder.toString(),                              								//param1
+                    sharedState.get(Constants.OSTID_CDDC_IP).asString(),             								//param2
+                    sharedState.get(Constants.OSTID_CDDC_HASH).asString(),           								//param3
+                    StringEscapeUtils.escapeJava(sharedState.get(Constants.OSTID_CDDC_JSON).asString()),            //param4
+                    sessionID,                                                       								//param5
+                    applicationRef,                                                  								//param6
+                    relationshipRef                                     			 								//param7
             );
             String APIUrl = Constants.OSTID_API_RISK_SEND_TRANSACTION;
+            String customUrl = serviceConfig.customUrl().toLowerCase();
             HttpEntity httpEntity = RestUtils.doPostJSON(StringUtils.getAPIEndpoint(tenantName, environment, customUrl) + APIUrl, sendTransactionJSON,SslUtils.getSSLConnectionSocketFactory(serviceConfig));
             JSONObject responseJSON = httpEntity.getResponseJSON();
 

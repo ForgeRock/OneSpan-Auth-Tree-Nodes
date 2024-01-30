@@ -44,7 +44,7 @@ public class Constants {
     public static final String OSTID_API_DEMO_COMMANDS = "/back/commands";
 
     //JSON payload
-    public static final String OSTID_JSON_ADAPTIVE_USER_REGISTER = "{%6$s%7$s%8$s%9$s%10$s\"objectType\":\"%1$s\",\"userID\":\"%2$s\",\"clientIP\":\"%3$s\",\"cddc\":{\"browserCDDC\":{\"fingerprintHash\":\"%4$s\",\"fingerprintRaw\":%5$s}}}";
+    public static final String OSTID_JSON_ADAPTIVE_USER_REGISTER = "{%6$s%7$s%8$s%9$s%10$s\"objectType\":\"%1$s\",\"userID\":\"%2$s\",\"clientIP\":\"%3$s\",\"cddc\":{\"browserCDDC\":{\"fingerprintHash\":\"%4$s\",\"fingerprintRaw\":\"%5$s\"}}}";
     public static final String OSTID_JSON_ADAPTIVE_APPLICATIONREF = "\"applicationRef\":\"%1$s\",";
     public static final String OSTID_JSON_ADAPTIVE_SESSIONID = "\"sessionID\":\"%1$s\",";
     public static final String OSTID_JSON_ADAPTIVE_REQUESTID = "\"requestID\":\"%1$s\",";
@@ -61,14 +61,14 @@ public class Constants {
     public static final String OSTID_JSON_ADAPTIVE_USER_LOGIN = "{%8$s%7$s%2$s%3$s%4$s%5$s%6$s\"objectType\":\"%1$s\"}";
     public static final String OSTID_JSON_ADAPTIVE_EVENT_VALIDATION = "{%8$s%7$s%2$s%3$s%4$s%5$s%6$s\"eventType\":\"%1$s\"}";
     public static final String OSTID_JSON_ADAPTIVE_SEND_TRANSACTION = "{%2$s%3$s%4$s%5$s\"objectType\":\"%1$s\"}";
-    public static final String OSTID_JSON_ADAPTIVE_USER_LOGIN_IAA = "\"clientIP\":\"%1$s\",\"cddc\":{\"browserCDDC\":{\"fingerprintHash\":\"%2$s\",\"fingerprintRaw\":%3$s}},\"relationshipRef\":\"%4$s\",\"sessionID\":\"%5$s\",\"applicationRef\":\"%6$s\",";
+    public static final String OSTID_JSON_ADAPTIVE_USER_LOGIN_IAA = "\"clientIP\":\"%1$s\",\"cddc\":{\"browserCDDC\":{\"fingerprintHash\":\"%2$s\",\"fingerprintRaw\":\"%3$s\"}},\"relationshipRef\":\"%4$s\",\"sessionID\":\"%5$s\",\"applicationRef\":\"%6$s\",";
     public static final String OSTID_JSON_ADAPTIVE_GENERATE_CHALLENGE = "{\"length\":\"%1$s\",\"checkDigit\":\"%2$s\"}";
     public static final String OSTID_JSON_ADAPTIVE_DATATOSIGN_FIDO = "\"data\":{\"fido\":{%3$s\"fidoProtocol\":\"%1$s\",\"authenticationResponse\":\"%2$s\"}},";
     public static final String OSTID_JSON_ADAPTIVE_DATATOSIGN_STANDARD = "\"data\":{\"standard\":{\"dataFields\":[%1$s],\"signature\":\"%2$s\"}},";
     public static final String OSTID_JSON_ADAPTIVE_DATATOSIGN_SECURECHANNEL = "\"data\":{\"secureChannel\":{\"requestID\":\"%1$s\",\"signature\":\"%2$s\"}},";
     public static final String OSTID_JSON_ADAPTIVE_DATATOSIGN_TRANSACTIONMESSAGE = "\"data\":{\"transactionMessage\":{\"dataFields\":[%1$s]}},";
     public static final String OSTID_JSON_ADAPTIVE_DATATOSIGN_TRANSACTIONMESSAGE_DATAFIELDS = "{\"key\":{\"text\":\"%1$s\"},\"value\":{\"text\":\"%2$s\"}}";
-    public static final String OSTID_JSON_RISK_SEND_TRANSACTION =  "{%1$s\"clientIP\":\"%2$s\",\"cddc\":{\"browserCDDC\":{\"fingerprintHash\":\"%3$s\",\"fingerprintRaw\":%4$s}},\"relationshipRef\":\"%7$s\",\"sessionID\":\"%5$s\",\"applicationRef\":\"%6$s\"}";
+    public static final String OSTID_JSON_RISK_SEND_TRANSACTION =  "{%1$s\"clientIP\":\"%2$s\",\"cddc\":{\"browserCDDC\":{\"fingerprintHash\":\"%3$s\",\"fingerprintRaw\":\"%4$s\"}},\"relationshipRef\":\"%7$s\",\"sessionID\":\"%5$s\",\"applicationRef\":\"%6$s\"}";
 
     public static final String OSTID_JSON_VDP_USER_REGISTER = "{%1$s\"vdpDeliveryMethod\":\"%2$s\"}";
     public static final String OSTID_JSON_VDP_ASSIGN_AUTHENTICATOR = "{\"domain\":\"%1$s\",\"userID\":\"%2$s\"}";
@@ -76,15 +76,15 @@ public class Constants {
 
     
     //deprecated JSON payload
-    public static final String OSTID_JSON_USER_REGISTER = "{%7$s%6$s\"login\":\"%1$s\",\"clientIP\":\"%2$s\",\"browserCDDC\":{\"fingerprintHash\":\"%3$s\",\"fingerprintRaw\":%4$s},\"sessionIdentifier\":\"%5$s\",\"applicationRef\":\"%8$s\"}";
+    public static final String OSTID_JSON_USER_REGISTER = "{%7$s%6$s\"login\":\"%1$s\",\"clientIP\":\"%2$s\",\"browserCDDC\":{\"fingerprintHash\":\"%3$s\",\"fingerprintRaw\":\"%4$s\"},\"sessionIdentifier\":\"%5$s\",\"applicationRef\":\"%8$s\"}";
     public static final String OSTID_JSON_CHECK_ACTIVATION = "{\"login\":\"%1$s\",\"timeoutSeconds\":\"%2$d\"}";
-    public static final String OSTID_JSON_EVENT_VALIDATION = "{%10$s%1$s%2$s\"eventType\":\"%3$s\",\"login\":\"%4$s\",\"clientIP\":\"%5$s\",\"browserCDDC\":{\"fingerprintHash\":\"%6$s\",\"fingerprintRaw\":%7$s},\"sessionID\":\"%8$s\",\"digipassDomain\":\"%9$s\",\"dataToSign\":\"%4$s#%9$s\",\"applicationRef\":\"%11$s\"}";
-    public static final String OSTID_JSON_LOGIN = "{%9$s%1$s%2$s\"login\":\"%3$s\",\"clientIP\":\"%4$s\",\"browserCDDC\":{\"fingerprintHash\":\"%5$s\",\"fingerprintRaw\":%6$s},\"sessionID\":\"%7$s\",\"digipassDomain\":\"%8$s\",\"dataToSign\":\"%3$s#%8$s\"}";
+    public static final String OSTID_JSON_EVENT_VALIDATION = "{%10$s%1$s%2$s\"eventType\":\"%3$s\",\"login\":\"%4$s\",\"clientIP\":\"%5$s\",\"browserCDDC\":{\"fingerprintHash\":\"%6$s\",\"fingerprintRaw\":\"%7$s\"},\"sessionID\":\"%8$s\",\"digipassDomain\":\"%9$s\",\"dataToSign\":\"%4$s#%9$s\",\"applicationRef\":\"%11$s\"}";
+    public static final String OSTID_JSON_LOGIN = "{%9$s%1$s%2$s\"login\":\"%3$s\",\"clientIP\":\"%4$s\",\"browserCDDC\":{\"fingerprintHash\":\"%5$s\",\"fingerprintRaw\":\"%6$s\"},\"sessionID\":\"%7$s\",\"digipassDomain\":\"%8$s\",\"dataToSign\":\"%3$s#%8$s\"}";
     public static final String OSTID_JSON_PASSKEY = "\"passKey\":\"%1$s\",";
     public static final String OSTID_JSON_ADAPTIVE_STATICPWD= "\"staticPassword\":\"%1$s\",";
     public static final String OSTID_JSON_ISNOTIFIED = "\"notificationsActivated\":%1$s,";
     public static final String OSTID_JSON_DEMO_COMMANDS= "{\"commandString\":\"%1$s\",\"irmResponse\":\"%2$s\",\"sessionId\":\"%3$s\"}";
-    public static final String OSTID_JSON_TRANSACTIONS = "{%1$s%13$s%14$s\"accountRef\":\"%2$s\",\"amount\":\"%3$s\",\"currency\":\"%4$s\",\"transactionType\":\"%5$s\",\"creditorIBAN\":\"%6$s\",\"creditorName\":\"%7$s\",\"dataToSign\":[\"{\\\"amount\\\": \\\"%3$s\\\",\\\"beneficiary\\\": \\\"%7$s\\\",\\\"currency\\\": \\\"%4$s\\\",\\\"iban\\\": \\\"%6$s\\\"}\"],\"login\":\"%8$s\",\"sessionID\":\"%9$s\",\"browserCDDC\":{\"fingerprintRaw\":%10$s,\"fingerprintHash\":\"%11$s\"},\"clientIP\":\"%12$s\",\"applicationRef\":\"%15$s\"}";
+    public static final String OSTID_JSON_TRANSACTIONS = "{%1$s%13$s%14$s\"accountRef\":\"%2$s\",\"amount\":\"%3$s\",\"currency\":\"%4$s\",\"transactionType\":\"%5$s\",\"creditorIBAN\":\"%6$s\",\"creditorName\":\"%7$s\",\"dataToSign\":[\"{\\\"amount\\\": \\\"%3$s\\\",\\\"beneficiary\\\": \\\"%7$s\\\",\\\"currency\\\": \\\"%4$s\\\",\\\"iban\\\": \\\"%6$s\\\"}\"],\"login\":\"%8$s\",\"sessionID\":\"%9$s\",\"browserCDDC\":{\"fingerprintRaw\":\"%10$s\",\"fingerprintHash\":\"%11$s\"},\"clientIP\":\"%12$s\",\"applicationRef\":\"%15$s\"}";
 
     public static final Map<Integer, String> OSTID_API_CHALLANGE_MAP = ImmutableMap.<Integer, String>builder()
             .put(2, "Challenge")
@@ -94,7 +94,6 @@ public class Constants {
             .put(8, "ChallengeEmail")
             .put(10, "ChallengeCRDevice2FA")
             .put(11, "ChallengeCronto")
-            .put(13, "ChallengeVoice")
             .put(21, "ChallengeNoPIN")
             .put(22, "ChallengePIN")
             .put(23, "ChallengeFingerprint")
