@@ -87,6 +87,18 @@ public class OS_IDV_IdentityVerificationNode implements Node {
         default String passUrl() {
             return "";
         }
+        @Attribute(order = 810)
+        default String sessionTimeoutUrl() {
+            return "";
+        }
+        @Attribute(order = 820)
+        default String errorUrl() {
+            return "";
+        }
+        @Attribute(order = 830)
+        default String defaultUrl() {
+            return "";
+        }
 
         @Attribute(order = 900)
         default String role() {
@@ -224,8 +236,23 @@ public class OS_IDV_IdentityVerificationNode implements Node {
             redirectPassObject.put("id", "REDIRECT_DOCID_PASS");
             redirectPassObject.put("url", config.passUrl());
 
+            JSONObject redirectTimeoutObject = new JSONObject();
+            redirectTimeoutObject.put("id", "REDIRECT_SESSION_TIMEOUT");
+            redirectTimeoutObject.put("url", config.sessionTimeoutUrl());
+
+            JSONObject redirectErrorObject = new JSONObject();
+            redirectErrorObject.put("id", "REDIRECT_ERROR");
+            redirectErrorObject.put("url", config.errorUrl());
+
+            JSONObject redirectDefaultObject = new JSONObject();
+            redirectDefaultObject.put("id", "REDIRECT_DEFAULT_URL");
+            redirectDefaultObject.put("url", config.defaultUrl());
+
             redirects.add(redirectFailObject);
             redirects.add(redirectPassObject);
+            redirects.add(redirectTimeoutObject);
+            redirects.add(redirectErrorObject);
+            redirects.add(redirectDefaultObject);
 
             configurationObject.put("redirects", redirects);
 
