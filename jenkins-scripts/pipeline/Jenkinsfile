@@ -11,9 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2022 ForgeRock AS.
+ * Copyright 2024 ForgeRock AS.
  */
 
 @Library(['forgerock-pipeline-libs', 'partner-nodes-libs']) _
 
-buildPartnerNodes()
+def mavenRunDir = "."   // The location of your maven project within the repository. Defaults to current directory.
+def javaVersion = "17"  // Version of java used within the maven build. Defaults to version 17.
+
+buildPartnerNodes(mavenRunDir, javaVersion)
