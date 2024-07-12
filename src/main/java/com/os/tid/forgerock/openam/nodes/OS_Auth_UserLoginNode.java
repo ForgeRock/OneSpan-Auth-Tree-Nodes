@@ -270,6 +270,7 @@ public class OS_Auth_UserLoginNode implements Node {
             if (httpEntity.isSuccess()) {
                 GeneralResponseOutput loginOutput = JSON.toJavaObject(responseJSON, GeneralResponseOutput.class);
                 int irmResponse = loginOutput.getRiskResponseCode();
+                sharedState.put(Constants.OSTID_LOGIN_OUTPUT, loginOutput);
                 sharedState.put(Constants.OSTID_IRM_RESPONSE,irmResponse);
                 sharedState.put(Constants.OSTID_SESSIONID,sessionID);
                 sharedState.put(Constants.OSTID_REQUEST_ID, org.apache.commons.lang.StringUtils.isEmpty(loginOutput.getRequestID())? requestID : loginOutput.getRequestID());
