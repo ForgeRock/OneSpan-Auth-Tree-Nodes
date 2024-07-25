@@ -273,6 +273,7 @@ public class OS_Auth_UserLoginNode implements Node {
                 sharedState.put(Constants.OSTID_LOGIN_OUTPUT, loginOutput);
                 sharedState.put(Constants.OSTID_IRM_RESPONSE,irmResponse);
                 sharedState.put(Constants.OSTID_SESSIONID,sessionID);
+                sharedState.put(Constants.OSTID_EVENT_ID,loginOutput.getEventId());
                 sharedState.put(Constants.OSTID_REQUEST_ID, org.apache.commons.lang.StringUtils.isEmpty(loginOutput.getRequestID())? requestID : loginOutput.getRequestID());
                 sharedState.put(Constants.OSTID_COMMAND,loginOutput.getRequestMessage());
                 sharedState.put(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.timeout()));

@@ -140,6 +140,7 @@ public class Constants {
     public static final String OSTID_ACTIVATION_CODE2 = "activationPassword";
     public static final String OSTID_IRM_RESPONSE = "ostid_irm_response";
     public static final String OSTID_LOGIN_OUTPUT = "ostid_login_output";
+    public static final String OSTID_EVENT_ID = "ostid_event_id";
     public static final String OSTID_COMMAND = "ostid_command";
     public static final String OSTID_CRONTO_STATUS = "ostid_cronto_status";   //true:display, false:hide
     public static final String OSTID_CRONTO_HAS_RENDERED = "ostid_cronto_has_rendered";   //true:display, false:hide
