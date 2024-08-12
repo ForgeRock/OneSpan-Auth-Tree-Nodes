@@ -4,6 +4,7 @@ public class GeneralResponseOutput {
       public String challenge;
       public String requestID;
       public int riskResponseCode = -1;
+      public int eventId;
       public String sessionStatus;
       public String requestMessage;
       public String fidoAuthenticationRequest;
@@ -12,12 +13,13 @@ public class GeneralResponseOutput {
     public GeneralResponseOutput() {
     }
 
-    public GeneralResponseOutput(String challenge, String requestID, int riskResponseCode, String sessionStatus, String requestMessage) {
+    public GeneralResponseOutput(String challenge, String requestID, int riskResponseCode, String sessionStatus, String requestMessage, int eventId) {
         this.challenge = challenge;
         this.requestID = requestID;
         this.riskResponseCode = riskResponseCode;
         this.sessionStatus = sessionStatus;
         this.requestMessage = requestMessage;
+        this.eventId = eventId;
     }
 
     public String getChallenge() {
@@ -40,6 +42,10 @@ public class GeneralResponseOutput {
         return riskResponseCode;
     }
 
+    public int getEventId() {
+        return eventId;
+    }
+
     public void setRiskResponseCode(int riskResponseCode) {
         this.riskResponseCode = riskResponseCode;
     }
@@ -55,6 +61,8 @@ public class GeneralResponseOutput {
     public String getRequestMessage() {
         return requestMessage;
     }
+
+
 
     public void setRequestMessage(String requestMessage) {
         this.requestMessage = requestMessage;
