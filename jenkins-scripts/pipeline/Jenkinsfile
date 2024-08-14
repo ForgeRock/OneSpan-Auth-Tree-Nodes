@@ -18,5 +18,5 @@
 
 def mavenRunDir = "."   // The location of your maven project within the repository. Defaults to current directory.
 def javaVersion = "17"  // Version of java used within the maven build. Defaults to version 17.
-
+def mavenVersion = "3.8.5"
 buildPartnerNodes(mavenRunDir, javaVersion)
