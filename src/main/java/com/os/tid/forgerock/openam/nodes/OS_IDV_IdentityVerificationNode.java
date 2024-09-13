@@ -24,7 +24,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.net.URI;
-
+import org.json.JSONObject;
 /*
  * This code is to be used exclusively in connection with ForgeRock’s software or services.
  * ForgeRock only offers ForgeRock software or services to legal entities who have entered
@@ -201,24 +201,28 @@ public class OS_IDV_IdentityVerificationNode implements Node {
             ns.putShared("opaqueId", opaqueId);
             int responseCode = 0;
             String redirectURL = null;
-            if(config.customPayload()) {
 
-                logger.error("Here");
+            if(config.customPayload()) {
                 HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(60)).build();
                 HttpRequest.Builder requestBuilder;
-                requestBuilder = HttpRequest.newBuilder().PUT(HttpRequest.BodyPublishers.ofString(ns.get("os_payload_body").asString()));
+                String osBody = ns.get("os_payload_body").asString();
+                JSONObject jsonBody = new JSONObject(osBody);
+                jsonBody.put("opaqueId", opaqueId);
+
+                requestBuilder = HttpRequest.newBuilder().PUT(HttpRequest.BodyPublishers.ofString(jsonBody.toString()));
 
                 requestBuilder.header("Authorization", "Bearer " + config.authToken());
                 requestBuilder.header("X-Tenant", config.XTenant());
                 requestBuilder.header("Content-Type", "application/json");
                 
-                logger.error(ns.get("os_payload_body").asString());
                 HttpRequest request = requestBuilder.uri(URI.create(config.url() + "transaction/")).timeout(Duration.ofSeconds(60)).build();
 
                 HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-                logger.error(loggerPrefix + "HttpRequest response body: " + response.body());
-                logger.error(loggerPrefix + "HttpRequest response status code: " + response.statusCode());
+
                 responseCode =  response.statusCode();
+
+                JSONObject jo = new JSONObject(response.body());
+                redirectURL = (String) jo.getJSONArray("tokens").getJSONObject(0).getString("accessUrl");
 
                 
             } else {
@@ -245,7 +249,7 @@ public class OS_IDV_IdentityVerificationNode implements Node {
                 userObject.put("last_name", ns.get("objectAttributes").get("sn").asString());
                 userObject.put("role", config.role());
                 userObject.put("phone_number", ns.get("objectAttributes").get("telephoneNumber").asString());
-                if(ns.get("objectAttributes").get("mail").asString() != null) {
+                if(ns.get("objectAttributes") != null && ns.get("objectAttributes").get("mail") != null) {
                     userObject.put("email", ns.get("objectAttributes").get("mail").asString());
                 }
 
@@ -301,7 +305,6 @@ public class OS_IDV_IdentityVerificationNode implements Node {
 
                 bodyObject.put("tokens", tokens);
                 OutputStreamWriter wr1;
-                
 
 
                 wr1 = new OutputStreamWriter(conn1.getOutputStream());
