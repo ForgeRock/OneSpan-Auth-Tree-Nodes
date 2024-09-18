@@ -19,7 +19,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.net.URL;
 import com.google.inject.assistedinject.Assisted;
-
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.net.URI;
+import org.json.JSONObject;
 /*
  * This code is to be used exclusively in connection with ForgeRock’s software or services.
  * ForgeRock only offers ForgeRock software or services to legal entities who have entered
@@ -104,6 +109,8 @@ public class OS_IDV_IdentityVerificationNode implements Node {
         default String role() {
             return "Customer";
         }
+        @Attribute(order = 1000)
+        default boolean customPayload() { return false; }
 
     }
 
@@ -192,97 +199,127 @@ public class OS_IDV_IdentityVerificationNode implements Node {
 
             String opaqueId = String.valueOf(UUID.randomUUID());
             ns.putShared("opaqueId", opaqueId);
-            HttpURLConnection conn1 = null;
-            URL url;
+            int responseCode = 0;
+            String redirectURL = null;
 
-            url = new URL(config.url() + "transaction/");
+            if(config.customPayload()) {
+                HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(60)).build();
+                HttpRequest.Builder requestBuilder;
+                String osBody = ns.get("os_payload_body").asString();
+                JSONObject jsonBody = new JSONObject(osBody);
+                jsonBody.put("opaqueId", opaqueId);
 
+                requestBuilder = HttpRequest.newBuilder().PUT(HttpRequest.BodyPublishers.ofString(jsonBody.toString()));
 
-            conn1 = (HttpURLConnection) url.openConnection();
-            conn1.setDoOutput(true);
-            conn1.setDoInput(true);
-            conn1.setRequestMethod("PUT");
-            conn1.setRequestProperty("X-Tenant", config.XTenant());
-            conn1.setRequestProperty("Content-Type", "application/json");
-            conn1.setRequestProperty("Authorization", "Bearer " + config.authToken());
+                requestBuilder.header("Authorization", "Bearer " + config.authToken());
+                requestBuilder.header("X-Tenant", config.XTenant());
+                requestBuilder.header("Content-Type", "application/json");
+                
+                HttpRequest request = requestBuilder.uri(URI.create(config.url() + "transaction/")).timeout(Duration.ofSeconds(60)).build();
 
-            JSONObject bodyObject = new JSONObject();
-            JSONObject userObject = new JSONObject();
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
+                responseCode =  response.statusCode();
 
-            userObject.put("first_name", ns.get("objectAttributes").get("givenName").asString());
-            userObject.put("last_name", ns.get("objectAttributes").get("sn").asString());
-            userObject.put("role", config.role());
-            userObject.put("phone_number", ns.get("objectAttributes").get("telephoneNumber").asString());
-
-            ArrayList<JSONObject> users = new ArrayList<>();
-            users.add(userObject);
-
-            JSONObject bodyObject2 = new JSONObject();
-            bodyObject2.put("role", config.role());
-
-            ArrayList<JSONObject> tokens = new ArrayList<>();
-            tokens.add(bodyObject2);
-
-            JSONObject configurationObject = new JSONObject();
-
-            ArrayList<JSONObject> redirects = new ArrayList<>();
-
-            JSONObject redirectFailObject = new JSONObject();
-            redirectFailObject.put("id", "REDIRECT_DOCID_FAIL");
-            redirectFailObject.put("url", config.failUrl());
-
-            JSONObject redirectPassObject = new JSONObject();
-            redirectPassObject.put("id", "REDIRECT_DOCID_PASS");
-            redirectPassObject.put("url", config.passUrl());
-
-            JSONObject redirectTimeoutObject = new JSONObject();
-            redirectTimeoutObject.put("id", "REDIRECT_SESSION_TIMEOUT");
-            redirectTimeoutObject.put("url", config.sessionTimeoutUrl());
-
-            JSONObject redirectErrorObject = new JSONObject();
-            redirectErrorObject.put("id", "REDIRECT_ERROR");
-            redirectErrorObject.put("url", config.errorUrl());
-
-            JSONObject redirectDefaultObject = new JSONObject();
-            redirectDefaultObject.put("id", "REDIRECT_DEFAULT_URL");
-            redirectDefaultObject.put("url", config.defaultUrl());
-
-            redirects.add(redirectFailObject);
-            redirects.add(redirectPassObject);
-            redirects.add(redirectTimeoutObject);
-            redirects.add(redirectErrorObject);
-            redirects.add(redirectDefaultObject);
-
-            configurationObject.put("redirects", redirects);
-
-            bodyObject.put("configuration", configurationObject);
-
-
-            bodyObject.put("workflow_id", config.workflowId());
-            bodyObject.put("opaque_id", opaqueId);
-            bodyObject.put("language", config.language());
-            bodyObject.put("brand_id", config.brandId());
-            bodyObject.put("users", users);
-
-            bodyObject.put("tokens", tokens);
-            OutputStreamWriter wr1;
-            int responseCode;
-
-
-            wr1 = new OutputStreamWriter(conn1.getOutputStream());
-            wr1.write(bodyObject.toString());
-            wr1.flush();
-
-            String streamToString, redirectURL;
-            streamToString = convertStreamToString(conn1.getInputStream());
-            responseCode = conn1.getResponseCode();
-
-            if (responseCode == 200) {
-                JSONObject jo = new JSONObject(streamToString);
+                JSONObject jo = new JSONObject(response.body());
                 redirectURL = (String) jo.getJSONArray("tokens").getJSONObject(0).getString("accessUrl");
 
+                
+            } else {
 
+                HttpURLConnection conn1 = null;
+                URL url;
+
+                url = new URL(config.url() + "transaction/");
+
+
+                conn1 = (HttpURLConnection) url.openConnection();
+                conn1.setDoOutput(true);
+                conn1.setDoInput(true);
+                conn1.setRequestMethod("PUT");
+                conn1.setRequestProperty("X-Tenant", config.XTenant());
+                conn1.setRequestProperty("Content-Type", "application/json");
+                conn1.setRequestProperty("Authorization", "Bearer " + config.authToken());
+
+                JSONObject bodyObject = new JSONObject();
+                JSONObject userObject = new JSONObject();
+
+
+                userObject.put("first_name", ns.get("objectAttributes").get("givenName").asString());
+                userObject.put("last_name", ns.get("objectAttributes").get("sn").asString());
+                userObject.put("role", config.role());
+                userObject.put("phone_number", ns.get("objectAttributes").get("telephoneNumber").asString());
+                if(ns.get("objectAttributes") != null && ns.get("objectAttributes").get("mail") != null) {
+                    userObject.put("email", ns.get("objectAttributes").get("mail").asString());
+                }
+
+                ArrayList<JSONObject> users = new ArrayList<>();
+                users.add(userObject);
+
+                JSONObject bodyObject2 = new JSONObject();
+                bodyObject2.put("role", config.role());
+
+                ArrayList<JSONObject> tokens = new ArrayList<>();
+                tokens.add(bodyObject2);
+
+                JSONObject configurationObject = new JSONObject();
+
+                ArrayList<JSONObject> redirects = new ArrayList<>();
+
+                JSONObject redirectFailObject = new JSONObject();
+                redirectFailObject.put("id", "REDIRECT_DOCID_FAIL");
+                redirectFailObject.put("url", config.failUrl());
+
+                JSONObject redirectPassObject = new JSONObject();
+                redirectPassObject.put("id", "REDIRECT_DOCID_PASS");
+                redirectPassObject.put("url", config.passUrl());
+
+                JSONObject redirectTimeoutObject = new JSONObject();
+                redirectTimeoutObject.put("id", "REDIRECT_SESSION_TIMEOUT");
+                redirectTimeoutObject.put("url", config.sessionTimeoutUrl());
+
+                JSONObject redirectErrorObject = new JSONObject();
+                redirectErrorObject.put("id", "REDIRECT_ERROR");
+                redirectErrorObject.put("url", config.errorUrl());
+
+                JSONObject redirectDefaultObject = new JSONObject();
+                redirectDefaultObject.put("id", "REDIRECT_DEFAULT_URL");
+                redirectDefaultObject.put("url", config.defaultUrl());
+
+                redirects.add(redirectFailObject);
+                redirects.add(redirectPassObject);
+                redirects.add(redirectTimeoutObject);
+                redirects.add(redirectErrorObject);
+                redirects.add(redirectDefaultObject);
+
+                configurationObject.put("redirects", redirects);
+
+                bodyObject.put("configuration", configurationObject);
+
+
+                bodyObject.put("workflow_id", config.workflowId());
+                bodyObject.put("opaque_id", opaqueId);
+                bodyObject.put("language", config.language());
+                bodyObject.put("brand_id", config.brandId());
+                bodyObject.put("users", users);
+
+                bodyObject.put("tokens", tokens);
+                OutputStreamWriter wr1;
+
+
+                wr1 = new OutputStreamWriter(conn1.getOutputStream());
+                wr1.write(bodyObject.toString());
+                wr1.flush();
+
+                String streamToString;
+                streamToString = convertStreamToString(conn1.getInputStream());
+                responseCode = conn1.getResponseCode();
+                JSONObject jo = new JSONObject(streamToString);
+                redirectURL = (String) jo.getJSONArray("tokens").getJSONObject(0).getString("accessUrl");
+                
+            }
+
+            if (responseCode == 200) {
                 RedirectCallback redirectCallback = new RedirectCallback(redirectURL, null, "GET");
                 redirectCallback.setTrackingCookie(true);
                 return Action.send(redirectCallback).build();
