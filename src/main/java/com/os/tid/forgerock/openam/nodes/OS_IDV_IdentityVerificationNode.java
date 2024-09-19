@@ -157,6 +157,7 @@ public class OS_IDV_IdentityVerificationNode implements Node {
                     return Action.goTo("fail").build();
                 }
                 String transactionId = parameters.get("transaction").get(0);
+                ns.putShared("os_transactionId", transactionId);
                 String sharedOpaqueId = ns.get("opaqueId").asString();
                 ns.remove("opaqueId");
                 String opaqueId = parameters.get("opaqueId").get(0);
