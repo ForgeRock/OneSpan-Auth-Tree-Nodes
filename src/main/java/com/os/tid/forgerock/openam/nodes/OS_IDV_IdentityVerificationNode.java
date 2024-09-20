@@ -266,8 +266,6 @@ public class OS_IDV_IdentityVerificationNode implements Node {
 
                     jsonBody.put("tokens", tokens);
 
-                    logger.error(jsonBody.toString());
-
                     requestBuilder = HttpRequest.newBuilder().PUT(HttpRequest.BodyPublishers.ofString(jsonBody.toString()));
 
                     requestBuilder.header("Authorization", "Bearer " + config.authToken());
