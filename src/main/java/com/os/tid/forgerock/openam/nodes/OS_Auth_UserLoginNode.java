@@ -328,6 +328,15 @@ public class OS_Auth_UserLoginNode implements Node {
 	            logger.debug(loggerPrefix + "OS_Auth_UserLoginNode user login outcome:" + userLoginOutcome.name());
 	            return goTo(userLoginOutcome).replaceSharedState(sharedState).build();
             } else {
+                GeneralResponseOutput loginOutput = JSON.toJavaObject(responseJSON, GeneralResponseOutput.class);
+                int irmResponse = loginOutput.getRiskResponseCode();
+                sharedState.put(Constants.OSTID_LOGIN_OUTPUT, loginOutput);
+                sharedState.put(Constants.OSTID_IRM_RESPONSE,irmResponse);
+                sharedState.put(Constants.OSTID_SESSIONID,sessionID);
+                sharedState.put(Constants.OSTID_EVENT_ID,loginOutput.getEventId());
+                sharedState.put(Constants.OSTID_REQUEST_ID, org.apache.commons.lang.StringUtils.isEmpty(loginOutput.getRequestID())? requestID : loginOutput.getRequestID());
+                sharedState.put(Constants.OSTID_COMMAND,loginOutput.getRequestMessage());
+                sharedState.put(Constants.OSTID_EVENT_EXPIRY_DATE, DateUtils.getMilliStringAfterCertainSecs(config.timeout()));
                 String log_correction_id = httpEntity.getLog_correlation_id();
                 String message = responseJSON.getString("message");
                 String requestJSON = "POST " + StringUtils.getAPIEndpoint(tenantName, environment, customUrl) + APIUrl + " : " + userLoginJSON;
