@@ -137,6 +137,15 @@ public class OS_Auth_UserLoginNode implements Node {
         default VisualCodeMessageOptions visualCodeMessageOptions() {
             return VisualCodeMessageOptions.sessionID;
         }
+
+        @Attribute(order = 900)
+        default boolean sendRequestID() {
+            return true;
+        }
+        @Attribute(order = 1000)
+        default boolean sendCDDCData() {
+            return true;
+        }
     }
 
     @Inject
@@ -241,26 +250,50 @@ public class OS_Auth_UserLoginNode implements Node {
             String sessionID = sharedState.get(Constants.OSTID_SESSIONID).isString() ? sharedState.get(Constants.OSTID_SESSIONID).asString() : StringUtils.stringToHex(UUID.randomUUID().toString());
             String relationshipRef = sharedState.get("relationshipRef").isString() ? sharedState.get("relationshipRef").asString():usernameJsonValue.asString();
 
-            String IAA = String.format(Constants.OSTID_JSON_ADAPTIVE_USER_LOGIN_IAA,
-                    cddcIpJsonValue.asString(),                         								//param6.1
-                    cddcHashJsonValue.asString(),                       								//param6.2
-                    StringEscapeUtils.escapeJava(cddcJsonJsonValue.asString()),                         //param6.3
+            String IAA = String.format(Constants.OSTID_JSON_ADAPTIVE_USER_LOGIN_IAA_NO_CDDC_DATA,
                     relationshipRef,      																//param6.4
                     sessionID,                                          								//param6.5
                     serviceConfig.applicationRef()                      								//param6.6
             );
+
+            if(config.sendCDDCData()) {
+
+                IAA = String.format(Constants.OSTID_JSON_ADAPTIVE_USER_LOGIN_IAA,
+                        cddcIpJsonValue.asString(),                                                         //param6.1
+                        cddcHashJsonValue.asString(),                                                       //param6.2
+                        StringEscapeUtils.escapeJava(cddcJsonJsonValue.asString()),                         //param6.3
+                        relationshipRef,                                                                    //param6.4
+                        sessionID,                                                                          //param6.5
+                        serviceConfig.applicationRef()                                                      //param6.6
+                );
+            }
+
             IAA = config.objectType() == ObjectType.AdaptiveLoginInput ? IAA : "";
 
-            String userLoginJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_USER_LOGIN,
+
+            String userLoginJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_USER_LOGIN_NO_REQUEST,
                     objectType,                                                     //param1
-                    credentials,                                                    //param2
-                    requestID,                                                      //param3
+                    credentials,                                                    //param2                                                   //param3
                     orchestrationDelivery,                                          //param4
                     timeout,                                                        //param5
                     IAA,                                                            //param6
                     optionalAttributesStringBuilder.toString(),                     //param7
                     fido                                                            //param8
             );
+
+            if(config.sendRequestID()) {
+
+                 userLoginJSON = String.format(Constants.OSTID_JSON_ADAPTIVE_USER_LOGIN,
+                        objectType,                                                     //param1
+                        credentials,                                                    //param2
+                        requestID,                                                      //param3
+                        orchestrationDelivery,                                          //param4
+                        timeout,                                                        //param5
+                        IAA,                                                            //param6
+                        optionalAttributesStringBuilder.toString(),                     //param7
+                        fido                                                            //param8
+                );
+            }
             logger.debug(loggerPrefix + "OS_Auth_UserLoginNode user login JSON:" + userLoginJSON);
 
             String customUrl = serviceConfig.customUrl().toLowerCase();
