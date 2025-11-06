@@ -60,11 +60,11 @@ public class Constants {
     public static final String OSTID_JSON_ADAPTIVE_ACTIVATE_DEVICE = "{\"signature\":\"%1$s\"}";
     public static final String OSTID_JSON_ADAPTIVE_ADD_DEVICE = "{\"deviceCode\":\"%1$s\"}";
     public static final String OSTID_JSON_ADAPTIVE_USER_LOGIN = "{%8$s%7$s%2$s%3$s%4$s%5$s%6$s\"objectType\":\"%1$s\"}";
-    public static final String OSTID_JSON_ADAPTIVE_USER_LOGIN_NO_REQUEST = "{%8$s%7$s%2$s%4$s%5$s%6$s\"objectType\":\"%1$s\"}";
+    public static final String OSTID_JSON_ADAPTIVE_USER_LOGIN_NO_REQUEST = "{%7$s%6$s%2$s%3$s%4$s%5$s\"objectType\":\"%1$s\"}";
     public static final String OSTID_JSON_ADAPTIVE_EVENT_VALIDATION = "{%8$s%7$s%2$s%3$s%4$s%5$s%6$s\"eventType\":\"%1$s\"}";
     public static final String OSTID_JSON_ADAPTIVE_SEND_TRANSACTION = "{%2$s%3$s%4$s%5$s\"objectType\":\"%1$s\"}";
-    public static final String OSTID_JSON_ADAPTIVE_USER_LOGIN_IAA = "\"relationshipRef\":\"%4$s\",\"sessionID\":\"%5$s\",\"applicationRef\":\"%6$s\",";
-    public static final String OSTID_JSON_ADAPTIVE_USER_LOGIN_IAA_NO_CDDC_DATA = "\"clientIP\":\"%1$s\",\"cddc\":{\"browserCDDC\":{\"fingerprintHash\":\"%2$s\",\"fingerprintRaw\":\"%3$s\"}},\"relationshipRef\":\"%4$s\",\"sessionID\":\"%5$s\",\"applicationRef\":\"%6$s\",";
+    public static final String OSTID_JSON_ADAPTIVE_USER_LOGIN_IAA_NO_CDDC_DATA = "\"relationshipRef\":\"%1$s\",\"sessionID\":\"%2$s\",\"applicationRef\":\"%3$s\",";
+    public static final String OSTID_JSON_ADAPTIVE_USER_LOGIN_IAA = "\"clientIP\":\"%1$s\",\"cddc\":{\"browserCDDC\":{\"fingerprintHash\":\"%2$s\",\"fingerprintRaw\":\"%3$s\"}},\"relationshipRef\":\"%4$s\",\"sessionID\":\"%5$s\",\"applicationRef\":\"%6$s\",";
     public static final String OSTID_JSON_ADAPTIVE_GENERATE_CHALLENGE = "{\"length\":\"%1$s\",\"checkDigit\":\"%2$s\"}";
     public static final String OSTID_JSON_ADAPTIVE_DATATOSIGN_FIDO = "\"data\":{\"fido\":{%3$s\"fidoProtocol\":\"%1$s\",\"authenticationResponse\":\"%2$s\"}},";
     public static final String OSTID_JSON_ADAPTIVE_DATATOSIGN_STANDARD = "\"data\":{\"standard\":{\"dataFields\":[%1$s],\"signature\":\"%2$s\"}},";
