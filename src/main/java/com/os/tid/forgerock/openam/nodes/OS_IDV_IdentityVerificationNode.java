@@ -201,6 +201,10 @@ public class OS_IDV_IdentityVerificationNode implements Node {
 
             }
 
+            if (ns.get("opaqueId").isString() && !ns.get("opaqueId").asString().isEmpty()) {
+                return Action.goTo("error").build();
+            }
+
             String opaqueId = String.valueOf(UUID.randomUUID());
             ns.putShared("opaqueId", opaqueId);
             int responseCode = 0;
