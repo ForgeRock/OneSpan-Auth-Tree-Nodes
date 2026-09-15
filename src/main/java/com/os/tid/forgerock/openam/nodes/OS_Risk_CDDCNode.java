@@ -171,7 +171,7 @@ public class OS_Risk_CDDCNode extends SingleOutcomeNode {
 			}
 
 		}catch (Exception ex) {
-			String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
+			String stackTrace = org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace(ex);
 			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
 			context.getStateFor(this).putShared("OS_Risk_CDDCNode Exception", new Date() + ": " + stackTrace)
 					.putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan Risk CDDC: " + stackTrace);

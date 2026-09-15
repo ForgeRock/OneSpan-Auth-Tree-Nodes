@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 
-import org.apache.commons.lang.text.StrSubstitutor;
+import org.apache.commons.lang3.text.StrSubstitutor;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
@@ -151,7 +151,7 @@ public class OS_Sample_StoreCommandNode implements Node {
                 throw new NodeProcessException(httpEntity.getResponseJSON().toJSONString());
             }
     	}catch (Exception ex) {
-	   		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
+	   		String stackTrace = org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace(ex);
 			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
 		    context.getStateFor(this).putShared(loggerPrefix + "StackTrace", new Date() + ": " + stackTrace);
 		    context.getStateFor(this).putShared(loggerPrefix + "OSTID_DEMO_BackCommandsNode Exception", new Date() + ": " + ex.getMessage());

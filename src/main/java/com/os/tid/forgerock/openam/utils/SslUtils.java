@@ -46,7 +46,7 @@ public class SslUtils {
     		try {
 				return getSSLConnectionSocketFactory(serviceConfig.privateKey(), serviceConfig.publicKey());
 			} catch (Exception e) {
-				String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(e);
+				String stackTrace = org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace(e);
 				logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
 				return null;
 			}

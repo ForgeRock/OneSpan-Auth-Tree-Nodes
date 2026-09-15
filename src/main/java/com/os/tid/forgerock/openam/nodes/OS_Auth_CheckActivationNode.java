@@ -137,7 +137,7 @@ public class OS_Auth_CheckActivationNode implements Node {
 	                return goTo(ActivationStatusOutcome.pending).replaceSharedState(sharedState).build();
 	        }
     	}catch (Exception ex) {
-    		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
+    		String stackTrace = org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace(ex);
 			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
 			context.getStateFor(this).putShared(loggerPrefix + "StackTrace", new Date() + ": " + stackTrace);
 			context.getStateFor(this).putShared(loggerPrefix + "OS_Auth_CheckActivationNode Exception", new Date() + ": " + ex.getMessage());
