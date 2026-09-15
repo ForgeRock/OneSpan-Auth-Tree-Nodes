@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
-import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
@@ -279,7 +279,7 @@ public class OS_Auth_UserRegisterNode implements Node {
                 }
             }
     	}catch (Exception ex) {
-	   		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
+	   		String stackTrace = org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace(ex);
 			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
 			context.getStateFor(this).putShared(loggerPrefix + "StackTrace", new Date() + ": " + stackTrace);
 			context.getStateFor(this).putShared(loggerPrefix + "OS_Auth_UserRegisterNode Exception", new Date() + ": " + ex.getMessage());

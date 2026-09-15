@@ -223,7 +223,7 @@ public class OS_Auth_VDPUserRegisterNode implements Node {
                 }
             }
     	}catch (Exception ex) {
-    		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
+    		String stackTrace = org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace(ex);
 			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
 //			context.getStateFor(this).putShared("OS_Auth_VDPUserRegisterNode Exception", new Date() + ": " + stackTrace)
 //									 .putShared(Constants.OSTID_ERROR_MESSAGE, "OneSpan VDP User Register process: " + stackTrace);

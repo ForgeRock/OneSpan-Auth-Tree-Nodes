@@ -251,7 +251,7 @@ public class OS_Auth_VDPGenerateVOTPNode implements Node {
             
 	        return goTo(OS_Auth_VDPGenerateVOTPNode.GenerateVOTPOutcome.success).replaceSharedState(sharedState).build();
     	}catch (Exception ex) {
-	   		String stackTrace = org.apache.commons.lang.exception.ExceptionUtils.getStackTrace(ex);
+	   		String stackTrace = org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace(ex);
 			logger.error(loggerPrefix + "Exception occurred: " + stackTrace);
 			context.getStateFor(this).putShared(loggerPrefix + "StackTrace", new Date() + ": " + stackTrace);
 			context.getStateFor(this).putShared(loggerPrefix + "OS_Auth_VDPGenerateVOTP Exception", new Date() + ": " + ex.getMessage());
