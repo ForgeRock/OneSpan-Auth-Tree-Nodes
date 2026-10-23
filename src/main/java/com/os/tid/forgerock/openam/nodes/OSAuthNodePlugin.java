@@ -16,7 +16,6 @@
 
 package com.os.tid.forgerock.openam.nodes;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -28,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 
 /**
@@ -62,12 +62,13 @@ import com.google.common.collect.ImmutableList;
  * @since AM 5.5.0
  */
 public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
-	static private String currentVersion = "1.2.52";
+	static private String currentVersion = "2.0.0";
 	static final String logAppender = "[Version: " + currentVersion + "][Marketplace] ";
     private final Logger logger = LoggerFactory.getLogger(OSAuthNodePlugin.class);
 	private String loggerPrefix = "[OSAuthNodePlugin]" + OSAuthNodePlugin.logAppender;
 
-
+	// Version 1 nodes: the original classes, unchanged. Existing journey instances keep resolving to these
+	// after the plugin upgrade, so their behavior is preserved byte-for-byte (OPENAM-29243 versioning).
 	private final List<Class<? extends Node>> nodeList = ImmutableList.of(
 			//OCA
 			OS_Auth_AddDeviceNode.class,
@@ -105,9 +106,43 @@ public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
 			OS_IDV_IdentityVerificationNode.class
 	);
 
+	// Version 2 nodes: hardened copies (strict TLS validation, JSON/URL escaping, redacted logging;
+	// jackson-based JSON instead of fastjson). New journeys should use these; existing journeys are
+	// untouched until an admin deliberately swaps the node instances (OPENAM-29243 versioning).
+	private final List<Class<? extends Node>> nodeListV2 = ImmutableList.of(
+			//OCA
+			OS_Auth_AddDeviceNodeV2.class,
+			OS_Auth_ActivateDeviceNodeV2.class,
+			OS_Auth_GenerateChallengeNodeV2.class,
+
+			//Adaptive
+			OS_Auth_CheckActivationNodeV2.class,
+			OS_Auth_CheckSessionStatusNodeV2.class,
+			OS_Auth_UserRegisterNodeV2.class,
+			OS_Auth_UserLoginNodeV2.class,
+			OS_Auth_ValidateTransactionNodeV2.class,
+			OS_Auth_ValidateEventNodeV2.class,
+			OS_Auth_GetUserAuthenticatorNodeV2.class,
+
+			//VDP
+			OS_Auth_VDPAssignAuthenticatorNodeV2.class,
+			OS_Auth_VDPGenerateVOTPNodeV2.class,
+			OS_Auth_VDPUserRegisterNodeV2.class,
+
+			//Risk
+			OS_Risk_InsertTransactionNodeV2.class,
+
+			//Util
+			OS_Auth_VisualCodeNodeV2.class,
+
+			//Sample
+			OS_Sample_StoreCommandNodeV2.class,
+			OS_Sample_TransactionCollectorV2.class
+	);
+
 //	private final Class serviceClass = OSConfigurationsService.class;
 
-    /** 
+    /**
      * Specify the Map of list of node classes that the plugin is providing. These will then be installed and
      *  registered at the appropriate times in plugin lifecycle.
      *
@@ -115,7 +150,10 @@ public class OSAuthNodePlugin extends AbstractNodeAmPlugin {
      */
 	@Override
 	protected Map<String, Iterable<? extends Class<? extends Node>>> getNodesByVersion() {
-		return Collections.singletonMap(OSAuthNodePlugin.currentVersion, nodeList);
+		return ImmutableMap.of(
+				"1.2.52", nodeList,
+				OSAuthNodePlugin.currentVersion, nodeListV2
+		);
 	}
 
     /** 
